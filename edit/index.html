@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Site editor</title>
+  <link rel="stylesheet" href="editor.css" />
+  <link rel="stylesheet" href="guests.css" />
+</head>
+<body>
+  <div id="app" class="app" data-device="desktop">
+    <header class="tb" role="banner">
+      <div class="tb-l">
+        <div class="brand" id="brand">Site editor</div>
+        <div class="seg" role="group" aria-label="Preview width" id="devices">
+          <button type="button" id="dev-phone" data-w="390" title="Phone (390 px)" aria-label="Phone width"></button>
+          <button type="button" id="dev-tablet" data-w="768" title="Tablet (768 px)" aria-label="Tablet width"></button>
+          <button type="button" id="dev-desktop" data-w="1280" title="Desktop (1280 px)" aria-label="Desktop width" aria-pressed="true"></button>
+        </div>
+        <label class="sel"><span class="vh">Page</span><select id="page-select" aria-label="Page"></select></label>
+        <label class="sel"><span class="vh">Preview as</span><select id="preview-as" aria-label="Preview as"><option value="all">Everyone (all events)</option><option value="public">Public visitor</option></select></label>
+      </div>
+      <div class="tb-r">
+        <button type="button" class="ibtn" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo" disabled></button>
+        <button type="button" class="ibtn" id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled></button>
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+        <button type="button" class="badge-btn" id="badge" title="Check your page for problems" aria-haspopup="dialog"></button>
+        <button type="button" class="ibtn" id="toggle-panel" title="Show or hide the side panel" aria-label="Toggle side panel"></button>
+        <button type="button" class="ibtn" id="more" title="More" aria-label="More options" aria-haspopup="menu"></button>
+        <button type="button" class="btn primary" id="publish" title="Publish your changes to the website">Publish</button>
+      </div>
+    </header>
+    <div class="phone-note" id="phone-note" hidden>Editing works best on a computer. <button type="button" class="link" id="phone-ok">Continue anyway</button></div>
+    <div class="lock-banner" id="lock-banner" role="status" hidden><span>Unlock guest list to edit private events and guests</span><button type="button" class="btn small" id="unlock-btn">Unlock</button></div>
+    <main class="work">
+      <section class="stage" id="stage" aria-label="Page preview">
+        <div class="sizer" id="sizer">
+          <div class="device" id="device">
+            <div class="chrome" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="screen"><iframe id="frame" title="Website preview" src="about:blank"></iframe></div>
+          </div>
+        </div>
+      </section>
+      <aside class="panel" id="panel" aria-label="Inspector">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-edit" data-tab="edit" aria-selected="true">Edit</button>
+          <button type="button" role="tab" id="tab-guests" data-tab="guests" aria-selected="false">Guests</button>
+          <button type="button" role="tab" id="tab-history" data-tab="history" aria-selected="false">History</button>
+        </div>
+        <div class="tabbody" id="body-edit" role="tabpanel" aria-labelledby="tab-edit"></div>
+        <div class="tabbody" id="body-guests" role="tabpanel" aria-labelledby="tab-guests" hidden></div>
+        <div class="tabbody" id="body-history" role="tabpanel" aria-labelledby="tab-history" hidden></div>
+      </aside>
+    </main>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <div id="sr-live" class="vh" aria-live="polite" role="status"></div>
+    <input type="file" id="file-input" accept="image/*" hidden />
+    <div id="boot" class="boot"><div class="spin big"></div><p>Loading the editor&hellip;</p></div>
+  </div>
+  <script type="module" src="editor.js"></script>
+</body>
+</html>

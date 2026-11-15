@@ -1,0 +1,823 @@
+{
+  "site": {
+    "title": "Anastasia-Konstantina & Venkataraghavan",
+    "couple": {
+      "first": "Anastasia-Konstantina Pemberton-Whitlock",
+      "second": "Venkataraghavan Subramaniam-Chaturvedi"
+    },
+    "initials": "P A",
+    "hashtag": "#[PearlAndAman2027]",
+    "timezone": "America/Toronto",
+    "weddingDate": "2027-07-25T16:00",
+    "dateText": "Sunday, the Twenty-Fifth of July, Two Thousand Twenty-Seven",
+    "city": "[City], Ontario",
+    "rsvpEndpoint": "",
+    "siteUrl": "",
+    "ogImage": {
+      "src": "assets/wax-seal.jpg",
+      "alt": "A wax seal on an olive-green envelope",
+      "focal": [
+        50,
+        50
+      ]
+    },
+    "contacts": [
+      {
+        "name": "[Supercalifragilisticexpialidocious-and-Pneumonoultramicrosco]",
+        "role": "Guest coordinator for the entire extended family and all friends",
+        "phone": "+1 416 555 0142",
+        "whatsapp": true
+      },
+      {
+        "name": "[Supercalifragilisticexpialidocious-and-Pneumonoultramicrosco]",
+        "role": "Guest coordinator for the entire extended family and all friends",
+        "phone": "+1 647 555 0178",
+        "whatsapp": true
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "enabled": true,
+      "order": 1
+    },
+    "schedule": {
+      "enabled": true,
+      "order": 2
+    },
+    "travel": {
+      "enabled": true,
+      "order": 3
+    },
+    "story": {
+      "enabled": true,
+      "order": 4
+    },
+    "faq": {
+      "enabled": true,
+      "order": 5
+    },
+    "registry": {
+      "enabled": true,
+      "order": 6
+    },
+    "rsvp": {
+      "enabled": true,
+      "order": 7
+    }
+  },
+  "home": {
+    "photo": {
+      "src": "assets/couple-1.jpg",
+      "alt": "Pearl and Aman together",
+      "focal": [
+        50,
+        40
+      ]
+    },
+    "invitationLines": {
+      "small": "Please join us for the extraordinarily long wedding of",
+      "venueLines": [
+        "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "[A Very Long City Name Like Llanfairpwllgwyngyll],",
+        "Ontario [Postal Code]"
+      ]
+    },
+    "welcome": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-"
+  },
+  "events": [
+    {
+      "id": "ev1",
+      "name": "Welcome Drinks ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-22T09:00",
+      "end": "2027-07-22T11:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.4675,
+        "lng": -79.6877,
+        "mapsQuery": "Oakville Ontario",
+        "parking": "[Street parking and driveway; please carpool where you can.]",
+        "notes": "[Backyard tent, rain or shine.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Colourful and comfortable",
+        "text": "Bright, easy outfits you can sit in. Avoid long sleeves that cover the wrists, so the henna can be applied.",
+        "swatches": [
+          "#e0a526",
+          "#7d7b4a",
+          "#c2185b",
+          "#2e7d6b"
+        ],
+        "tips": [
+          "Short or three-quarter sleeves work best.",
+          "Flat shoes or sandals; we will be on grass."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": false
+    },
+    {
+      "id": "ev2",
+      "name": "Mehndi ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-22T16:00",
+      "end": "2027-07-22T19:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.5448,
+        "lng": -79.6174,
+        "mapsQuery": "Port Credit Mississauga Ontario",
+        "parking": "[Driveway and nearby street parking.]",
+        "notes": "[Outdoor courtyard.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Wear something you can stain",
+        "text": "Yellow, white or pastel cotton outfits you will not mind getting turmeric on.",
+        "swatches": [
+          "#f2c230",
+          "#f5f0e0",
+          "#f3d9a4",
+          "#fbe9a6"
+        ],
+        "tips": [
+          "Bring a change of clothes for afterwards.",
+          "Old white or yellow kurtas are ideal."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": false
+    },
+    {
+      "id": "ev3",
+      "name": "Haldi ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-22T19:30",
+      "end": "2027-07-22T23:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.5612,
+        "lng": -79.5632,
+        "mapsQuery": "Mississauga Ontario banquet hall",
+        "parking": "[Underground parking, $15 flat rate.]",
+        "notes": "[Dance floor and stage inside; cocktail reception on the terrace.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Festive Indian or cocktail attire",
+        "text": "Jewel tones, sequins and sparkle. You will be dancing, so choose something you can move in.",
+        "swatches": [
+          "#5c1a24",
+          "#7a3238",
+          "#2e3522",
+          "#b89a5e"
+        ],
+        "tips": [
+          "Lehengas, sarees, sherwanis, or a cocktail dress and suit are all welcome.",
+          "Comfortable shoes for the dance floor."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": true
+    },
+    {
+      "id": "ev4",
+      "name": "Sangeet ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-23T09:00",
+      "end": "2027-07-23T11:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.3255,
+        "lng": -79.799,
+        "mapsQuery": "Burlington Ontario wedding venue",
+        "parking": "[Complimentary on-site parking; accessible spaces beside the main entrance.]",
+        "notes": "[Garden lawn; weather backup in the Grand Hall.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Traditional Indian or formal",
+        "text": "Rich, elegant colours. Sarees, lehengas, sherwanis, suits or formal gowns are all welcome.",
+        "swatches": [
+          "#4a3f28",
+          "#7d7b4a",
+          "#7a3238",
+          "#4b1c22"
+        ],
+        "tips": [
+          "Please avoid white and black; they are not traditional for celebrations.",
+          "Shoes come off in the ceremony hall; bring socks or go barefoot.",
+          "Please keep shoulders covered during the ceremony."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": {
+        "src": "assets/gallery-venue.jpg",
+        "alt": "The wedding venue grounds",
+        "focal": [
+          50,
+          50
+        ]
+      },
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": true
+    },
+    {
+      "id": "ev5",
+      "name": "Pooja and Lunch ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-23T16:00",
+      "end": "2027-07-23T19:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.3255,
+        "lng": -79.799,
+        "mapsQuery": "Burlington Ontario wedding venue",
+        "parking": "[Complimentary on-site parking.]",
+        "notes": "[Indoors, air-conditioned.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Traditional Indian or formal",
+        "text": "Same elegant palette as the ceremony; feel free to change into something lighter for dancing.",
+        "swatches": [
+          "#4a3f28",
+          "#7d7b4a",
+          "#7a3238",
+          "#4b1c22"
+        ],
+        "tips": [
+          "Comfortable shoes for dancing."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": true
+    },
+    {
+      "id": "ev6",
+      "name": "Baraat ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-23T19:30",
+      "end": "2027-07-23T23:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.4675,
+        "lng": -79.6877,
+        "mapsQuery": "Oakville Ontario",
+        "parking": "[Street parking and driveway; please carpool where you can.]",
+        "notes": "[Backyard tent, rain or shine.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Colourful and comfortable",
+        "text": "Bright, easy outfits you can sit in. Avoid long sleeves that cover the wrists, so the henna can be applied.",
+        "swatches": [
+          "#e0a526",
+          "#7d7b4a",
+          "#c2185b",
+          "#2e7d6b"
+        ],
+        "tips": [
+          "Short or three-quarter sleeves work best.",
+          "Flat shoes or sandals; we will be on grass."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": false
+    },
+    {
+      "id": "ev7",
+      "name": "Wedding Ceremony Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-24T09:00",
+      "end": "2027-07-24T11:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.5448,
+        "lng": -79.6174,
+        "mapsQuery": "Port Credit Mississauga Ontario",
+        "parking": "[Driveway and nearby street parking.]",
+        "notes": "[Outdoor courtyard.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Wear something you can stain",
+        "text": "Yellow, white or pastel cotton outfits you will not mind getting turmeric on.",
+        "swatches": [
+          "#f2c230",
+          "#f5f0e0",
+          "#f3d9a4",
+          "#fbe9a6"
+        ],
+        "tips": [
+          "Bring a change of clothes for afterwards.",
+          "Old white or yellow kurtas are ideal."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": false
+    },
+    {
+      "id": "ev8",
+      "name": "Cocktail Hour ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-24T16:00",
+      "end": "2027-07-24T19:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.5612,
+        "lng": -79.5632,
+        "mapsQuery": "Mississauga Ontario banquet hall",
+        "parking": "[Underground parking, $15 flat rate.]",
+        "notes": "[Dance floor and stage inside; cocktail reception on the terrace.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Festive Indian or cocktail attire",
+        "text": "Jewel tones, sequins and sparkle. You will be dancing, so choose something you can move in.",
+        "swatches": [
+          "#5c1a24",
+          "#7a3238",
+          "#2e3522",
+          "#b89a5e"
+        ],
+        "tips": [
+          "Lehengas, sarees, sherwanis, or a cocktail dress and suit are all welcome.",
+          "Comfortable shoes for the dance floor."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": true
+    },
+    {
+      "id": "ev9",
+      "name": "Reception ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-24T19:30",
+      "end": "2027-07-24T23:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.3255,
+        "lng": -79.799,
+        "mapsQuery": "Burlington Ontario wedding venue",
+        "parking": "[Complimentary on-site parking; accessible spaces beside the main entrance.]",
+        "notes": "[Garden lawn; weather backup in the Grand Hall.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Traditional Indian or formal",
+        "text": "Rich, elegant colours. Sarees, lehengas, sherwanis, suits or formal gowns are all welcome.",
+        "swatches": [
+          "#4a3f28",
+          "#7d7b4a",
+          "#7a3238",
+          "#4b1c22"
+        ],
+        "tips": [
+          "Please avoid white and black; they are not traditional for celebrations.",
+          "Shoes come off in the ceremony hall; bring socks or go barefoot.",
+          "Please keep shoulders covered during the ceremony."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": {
+        "src": "assets/gallery-venue.jpg",
+        "alt": "The wedding venue grounds",
+        "focal": [
+          50,
+          50
+        ]
+      },
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": true
+    },
+    {
+      "id": "ev10",
+      "name": "Farewell Brunch ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-25T09:00",
+      "end": "2027-07-25T11:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.3255,
+        "lng": -79.799,
+        "mapsQuery": "Burlington Ontario wedding venue",
+        "parking": "[Complimentary on-site parking.]",
+        "notes": "[Indoors, air-conditioned.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Traditional Indian or formal",
+        "text": "Same elegant palette as the ceremony; feel free to change into something lighter for dancing.",
+        "swatches": [
+          "#4a3f28",
+          "#7d7b4a",
+          "#7a3238",
+          "#4b1c22"
+        ],
+        "tips": [
+          "Comfortable shoes for dancing."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": true
+    },
+    {
+      "id": "ev11",
+      "name": "Afterparty ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-25T16:00",
+      "end": "2027-07-25T19:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.4675,
+        "lng": -79.6877,
+        "mapsQuery": "Oakville Ontario",
+        "parking": "[Street parking and driveway; please carpool where you can.]",
+        "notes": "[Backyard tent, rain or shine.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Colourful and comfortable",
+        "text": "Bright, easy outfits you can sit in. Avoid long sleeves that cover the wrists, so the henna can be applied.",
+        "swatches": [
+          "#e0a526",
+          "#7d7b4a",
+          "#c2185b",
+          "#2e7d6b"
+        ],
+        "tips": [
+          "Short or three-quarter sleeves work best.",
+          "Flat shoes or sandals; we will be on grass."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": false
+    },
+    {
+      "id": "ev12",
+      "name": "Garden Games ",
+      "subtitle": "A long subtitle describing this event in far too many words to fit on one line comfortably",
+      "start": "2027-07-25T19:30",
+      "end": "2027-07-25T23:00",
+      "venue": {
+        "name": "The Extraordinarily Long-Named Grand Lakeshore Waterfront Boutique Hotel & Conference Spa Resort",
+        "address": "[1234 Extraordinarily Long Street Name Boulevard West, Unit 5678], Mississauga, Ontario [L5L 5L5]",
+        "lat": 43.5448,
+        "lng": -79.6174,
+        "mapsQuery": "Port Credit Mississauga Ontario",
+        "parking": "[Driveway and nearby street parking.]",
+        "notes": "[Outdoor courtyard.]"
+      },
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "dressCode": {
+        "title": "Wear something you can stain",
+        "text": "Yellow, white or pastel cotton outfits you will not mind getting turmeric on.",
+        "swatches": [
+          "#f2c230",
+          "#f5f0e0",
+          "#f3d9a4",
+          "#fbe9a6"
+        ],
+        "tips": [
+          "Bring a change of clothes for afterwards.",
+          "Old white or yellow kurtas are ideal."
+        ]
+      },
+      "notes": [
+        "A note: Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "Another note"
+      ],
+      "photo": null,
+      "visibility": "public",
+      "rsvp": true,
+      "shuttle": false
+    }
+  ],
+  "hotels": [],
+  "travel": {
+    "intro": "Most guests fly into Toronto Pearson (YYZ). The wedding venues are all within an hour of the airport.",
+    "airports": [
+      {
+        "id": "yyz",
+        "code": "YYZ",
+        "name": "Toronto Pearson International",
+        "primary": true,
+        "driveMinutes": 35,
+        "tips": "Largest airport with the most direct flights, including to India."
+      },
+      {
+        "id": "ytz",
+        "code": "YTZ",
+        "name": "Billy Bishop Toronto City",
+        "primary": false,
+        "driveMinutes": 55,
+        "tips": "Small downtown airport with short lines; mostly domestic and US flights."
+      },
+      {
+        "id": "yhm",
+        "code": "YHM",
+        "name": "John C. Munro Hamilton International",
+        "primary": false,
+        "driveMinutes": 25,
+        "tips": "Budget carriers; quietest option and closest to the Burlington venue."
+      }
+    ],
+    "gettingAround": [
+      {
+        "id": "rideshare",
+        "title": "Rideshare and taxis",
+        "text": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis- word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word "
+      },
+      {
+        "id": "rental",
+        "title": "Car rental",
+        "text": "Rental cars are available at all airports. A car is helpful if you plan to explore. Parking at every event is free or inexpensive."
+      },
+      {
+        "id": "transit",
+        "title": "Transit",
+        "text": "UP Express and GO Transit connect the airport and downtown. Transit does not reach the venues, so plan on a car or our shuttles."
+      }
+    ],
+    "shuttles": [
+      {
+        "id": "shuttle-sangeet",
+        "eventId": "sangeet",
+        "from": "[Lakeside Hotel & Spa]",
+        "departs": "5:45 PM",
+        "returns": "Every 30 minutes after 10:30 PM"
+      },
+      {
+        "id": "shuttle-wedding",
+        "eventId": "wedding",
+        "from": "[Lakeside Hotel & Spa]",
+        "departs": "2:45 PM and 3:15 PM",
+        "returns": "After the reception"
+      },
+      {
+        "id": "shuttle-reception",
+        "eventId": "reception",
+        "from": "[Downtown Mississauga Suites]",
+        "departs": "2:30 PM",
+        "returns": "11:45 PM"
+      }
+    ],
+    "international": {
+      "title": "Travelling from outside Canada",
+      "text": "Check entry requirements early. Visitors from visa-exempt countries need an eTA (about CAD $7, usually approved within minutes). Others may need a visitor visa, which can take weeks. We are happy to provide an invitation letter; message a coordinator."
+    },
+    "aroundTown": [
+      {
+        "id": "a0",
+        "category": "See",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      },
+      {
+        "id": "a1",
+        "category": "Eat",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      },
+      {
+        "id": "a2",
+        "category": "See",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      },
+      {
+        "id": "a3",
+        "category": "Eat",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      },
+      {
+        "id": "a4",
+        "category": "See",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      },
+      {
+        "id": "a5",
+        "category": "Eat",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      },
+      {
+        "id": "a6",
+        "category": "See",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      },
+      {
+        "id": "a7",
+        "category": "Eat",
+        "name": "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicov",
+        "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "address": "Somewhere very long, ON"
+      }
+    ]
+  },
+  "story": {
+    "teaser": "Every love story is beautiful, but ours is our favourite.",
+    "paragraphs": [
+      "Every love story is beautiful, but ours is our favourite.",
+      "[How you met: a few sentences about the first time Pearl and Aman crossed paths.]",
+      "[The moments in between: trips, inside jokes, the little things that made it feel like home.]",
+      "[The proposal: where, when, and who cried first.]",
+      "Thank you for being part of our story. We can't wait to celebrate the next chapter with you.",
+      "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-"
+    ],
+    "photos": [
+      {
+        "src": "assets/couple-1.jpg",
+        "alt": "Pearl and Aman smiling",
+        "focal": [
+          50,
+          40
+        ]
+      },
+      {
+        "src": "assets/couple-3.jpg",
+        "alt": "Pearl and Aman at sunset",
+        "focal": [
+          50,
+          40
+        ]
+      }
+    ]
+  },
+  "people": [],
+  "registry": {
+    "photo": {
+      "src": "assets/couple-2.jpg",
+      "alt": "Pearl and Aman laughing together",
+      "focal": [
+        50,
+        40
+      ]
+    },
+    "paragraphs": [
+      "Having you there to celebrate with us is the greatest gift of all.",
+      "For those who have asked, we've put together a small registry, and a contribution toward our first home together would be warmly appreciated.",
+      "Thank you for your love and support."
+    ],
+    "links": [
+      {
+        "label": "View our registry at an extremely long named store Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-",
+        "url": "https://example.com/Supercalifragilisticexpialidocious-and-Pneumonoultramicroscopicsilicovolcanoconiosis-"
+      },
+      {
+        "label": "View our registry",
+        "url": "https://example.com/registry"
+      }
+    ]
+  },
+  "faqCategories": [
+    {
+      "id": "before",
+      "title": "Before you come"
+    },
+    {
+      "id": "events",
+      "title": "The events"
+    },
+    {
+      "id": "travel",
+      "title": "Getting here"
+    },
+    {
+      "id": "food",
+      "title": "Food and drink"
+    },
+    {
+      "id": "family",
+      "title": "Family and kids"
+    },
+    {
+      "id": "gifts",
+      "title": "Gifts"
+    }
+  ],
+  "faq": [],
+  "rsvp": {
+    "deadline": "2027-06-01",
+    "deadlineText": "June 1st, 2027",
+    "intro": [
+      "We'd love for you to be part of our celebration!",
+      "Kindly let us know which events you can join."
+    ],
+    "mealOptions": [
+      "Vegetarian",
+      "Vegan",
+      "Jain"
+    ],
+    "dietaryOptions": [
+      "Nut allergy",
+      "Gluten free",
+      "Dairy free",
+      "Other"
+    ],
+    "questions": {
+      "hotel": "Do you need a hotel?",
+      "travelDates": "When are you arriving and departing?",
+      "flight": "Flight details (optional)",
+      "address": "Mailing address for a thank-you note",
+      "shuttle": "How many shuttle seats do you need?",
+      "phone": "Best phone number",
+      "song": "A song that will get you dancing"
+    }
+  }
+}

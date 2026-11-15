@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "content/schema.json",
+  "title": "Wedding website content",
+  "description": "Everything guests see on the wedding website. Edited through the visual editor.",
+  "type": "object",
+  "required": ["site", "pages", "home", "events", "hotels", "travel", "story", "registry", "faqCategories", "faq", "rsvp"],
+  "$defs": {
+    "image": {
+      "title": "Image",
+      "description": "A photo with alt text and a focal point.",
+      "type": "object",
+      "x-widget": "image",
+      "required": ["src", "alt"],
+      "properties": {
+        "src": { "type": "string", "title": "Image file", "description": "Path to the full-size image, for example assets/couple-1.jpg." },
+        "srcSmall": { "type": "string", "title": "Small image file", "description": "Optional 600px-wide version used on phones." },
+        "alt": { "type": "string", "title": "Alt text", "description": "A short description for screen readers. Use an empty string only for purely decorative images." },
+        "focal": {
+          "type": "array", "title": "Focal point", "description": "Percent from the left and from the top that must stay visible when the image is cropped.",
+          "items": { "type": "number", "minimum": 0, "maximum": 100 }, "minItems": 2, "maxItems": 2, "default": [50, 50]
+        }
+      }
+    },
+    "imageOrNull": {
+      "title": "Image",
+      "description": "Optional photo.",
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/image" }]
+    },
+    "pageConfig": {
+      "type": "object", "title": "Page", "description": "Visibility and position of one page.",
+      "properties": {
+        "enabled": { "type": "boolean", "title": "Show this page", "description": "Turn off to hide the page from the menu.", "default": true },
+        "order": { "type": "integer", "title": "Menu position", "description": "Lower numbers appear first.", "minimum": 0 }
+      }
+    },
+    "id": { "type": "string", "title": "Identifier", "description": "Short unique id, lowercase letters, digits and dashes. Used in links; do not change once shared.", "pattern": "^[a-z0-9-]+$" }
+  },
+  "properties": {
+    "_note": { "type": "string", "title": "Developer note", "description": "Internal note; never shown to guests." },
+    "site": {
+      "type": "object", "title": "Site settings", "description": "Names, date and contact details used across the site.",
+      "required": ["title", "couple", "timezone", "weddingDate"],
+      "properties": {
+        "title": { "type": "string", "title": "Site title", "description": "Shown in the browser tab and when the link is shared." },
+        "couple": {
+          "type": "object", "title": "Couple", "description": "The two names on the invitation.", "required": ["first", "second"],
+          "properties": {
+            "first": { "type": "string", "title": "First name", "description": "First partner's name." },
+            "second": { "type": "string", "title": "Second name", "description": "Second partner's name." }
+          }
+        },
+        "initials": { "type": "string", "title": "Initials", "description": "Short monogram, for example P A." },
+        "hashtag": { "type": "string", "title": "Hashtag", "description": "Wedding photo hashtag." },
+        "timezone": { "type": "string", "title": "Time zone", "description": "IANA time zone of the venues, for example America/Toronto.", "default": "America/Toronto" },
+        "weddingDate": { "type": "string", "format": "date-time-local", "title": "Wedding ceremony start", "description": "Local date and time of the ceremony. The home countdown counts down to this moment." },
+        "dateText": { "type": "string", "title": "Date as written", "description": "How the date appears on the invitation, for example July 25th, 2027." },
+        "city": { "type": "string", "title": "City", "description": "Where the wedding takes place." },
+        "rsvpEndpoint": { "type": "string", "format": "uri", "title": "RSVP endpoint", "description": "Google Apps Script web app URL. Leave empty for demo mode." },
+        "siteUrl": { "type": "string", "format": "uri", "title": "Website address", "description": "Public address of this site; used by the QR code and share links." },
+        "ogImage": { "$ref": "#/$defs/image", "title": "Share preview image", "description": "Image shown when the link is shared in messages." },
+        "contacts": {
+          "type": "array", "title": "Contacts", "description": "People guests can message for help.",
+          "items": {
+            "type": "object", "title": "Contact", "description": "One coordinator.", "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "title": "Name", "description": "Contact's name." },
+              "role": { "type": "string", "title": "Role", "description": "For example Guest coordinator." },
+              "phone": { "type": "string", "format": "tel", "title": "Phone number", "description": "Include the country code, for example +1 416 555 0142." },
+              "whatsapp": { "type": "boolean", "title": "Uses WhatsApp", "description": "Show a WhatsApp button for this contact." }
+            }
+          }
+        }
+      }
+    },
+    "pages": {
+      "type": "object", "title": "Pages", "description": "Turn pages on or off and set their order in the menu.",
+      "properties": {
+        "home": { "$ref": "#/$defs/pageConfig" },
+        "schedule": { "$ref": "#/$defs/pageConfig" },
+        "travel": { "$ref": "#/$defs/pageConfig" },
+        "story": { "$ref": "#/$defs/pageConfig" },
+        "faq": { "$ref": "#/$defs/pageConfig" },
+        "registry": { "$ref": "#/$defs/pageConfig" },
+        "rsvp": { "$ref": "#/$defs/pageConfig" }
+      }
+    },
+    "home": {
+      "type": "object", "title": "Home page", "description": "The invitation flat-lay.",
+      "properties": {
+        "photo": { "$ref": "#/$defs/image", "title": "Envelope photo", "description": "The photo that slides out of the envelope." },
+        "invitationLines": {
+          "type": "object", "title": "Invitation text", "description": "Wording on the invitation card.",
+          "properties": {
+            "small": { "type": "string", "title": "Opening line", "description": "Text above the names. A new line starts a new row.", "x-widget": "textarea" },
+            "venueLines": { "type": "array", "title": "Venue lines", "description": "Venue address lines shown at the bottom of the card.", "items": { "type": "string", "title": "Line", "description": "One line of the venue address." } }
+          }
+        },
+        "welcome": { "type": "string", "title": "Welcome message", "description": "A short greeting shown on the home page.", "x-widget": "textarea" },
+        "board": {
+          "type": "object", "title": "Invitation board labels", "description": "The small words on the flat-lay: two tags and a handwritten note.",
+          "properties": {
+            "detailsLabel": { "type": "string", "title": "Details tag", "description": "Text on the tag that opens the schedule. Default: Details." },
+            "respondLabel": { "type": "string", "title": "Respond tag", "description": "Text on the tag that opens the RSVP page. Default: Respond." },
+            "kindly": { "type": "string", "title": "Handwritten word above RSVP", "description": "Decorative script word. Default: Kindly." },
+            "rsvpWord": { "type": "string", "title": "Handwritten RSVP word", "description": "Decorative script word. Default: Rsvp." }
+          }
+        }
+      }
+    },
+    "schedule": {
+      "type": "object", "title": "Schedule page", "description": "Wording on the schedule page.",
+      "properties": {
+        "intro": { "type": "string", "title": "Introduction", "description": "One or two sentences under the Schedule heading.", "x-widget": "textarea" }
+      }
+    },
+    "events": {
+      "type": "array", "title": "Events", "description": "Every event of the wedding weekend. Always shown in date order.",
+      "items": {
+        "type": "object", "title": "Event", "description": "One event.",
+        "required": ["id", "name", "start", "visibility"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string", "title": "Event name", "description": "For example Sangeet." },
+          "subtitle": { "type": "string", "title": "Tagline", "description": "One short line under the name." },
+          "start": { "type": "string", "format": "date-time-local", "title": "Starts", "description": "Local start date and time at the venue." },
+          "end": { "type": "string", "format": "date-time-local", "title": "Ends", "description": "Local end date and time at the venue." },
+          "timezone": { "type": "string", "title": "Time zone override", "description": "Only if this event is in a different time zone from the site." },
+          "venue": {
+            "type": "object", "title": "Venue", "description": "Where the event takes place.",
+            "properties": {
+              "name": { "type": "string", "title": "Venue name", "description": "Name of the place." },
+              "address": { "type": "string", "title": "Street address", "description": "Full street address." },
+              "lat": { "type": "number", "title": "Latitude", "description": "Latitude for maps.", "minimum": -90, "maximum": 90 },
+              "lng": { "type": "number", "title": "Longitude", "description": "Longitude for maps.", "minimum": -180, "maximum": 180 },
+              "mapsQuery": { "type": "string", "title": "Map search text", "description": "Text used to search maps if the street address is not specific enough." },
+              "parking": { "type": "string", "title": "Parking info", "description": "Where to park.", "x-widget": "textarea" },
+              "notes": { "type": "string", "title": "Venue notes", "description": "Anything else guests should know about the venue.", "x-widget": "textarea" }
+            }
+          },
+          "description": { "type": "string", "title": "Description", "description": "What happens at this event.", "x-widget": "textarea" },
+          "dressCode": {
+            "type": "object", "title": "Dress code", "description": "What guests should wear.",
+            "properties": {
+              "title": { "type": "string", "title": "Dress code headline", "description": "For example Festive Indian or cocktail." },
+              "text": { "type": "string", "title": "Dress code details", "description": "A sentence or two explaining the dress code.", "x-widget": "textarea" },
+              "swatches": {
+                "type": "array", "title": "Colour palette", "description": "Suggested colours.", "x-widget": "swatches",
+                "items": { "type": "string", "format": "color", "title": "Colour", "description": "A hex colour such as #7a3238." }
+              },
+              "tips": { "type": "array", "title": "Tips", "description": "Short practical tips.", "items": { "type": "string", "title": "Tip", "description": "One tip." } }
+            }
+          },
+          "notes": { "type": "array", "title": "Good to know", "description": "Short notices such as Phone-free ceremony.", "items": { "type": "string", "title": "Note", "description": "One notice." } },
+          "photo": { "$ref": "#/$defs/imageOrNull", "title": "Event photo", "description": "Optional photo for this event." },
+          "visibility": { "type": "string", "enum": ["public", "private"], "title": "Who can see it", "description": "Public events are visible to everyone. Private events are only shown to invited households." },
+          "rsvp": { "type": "boolean", "title": "Collect RSVPs", "description": "Ask guests whether they will attend this event.", "default": true },
+          "shuttle": { "type": "boolean", "title": "Shuttle available", "description": "A shuttle serves this event.", "default": false }
+        }
+      }
+    },
+    "hotels": {
+      "type": "array", "title": "Hotels", "description": "Block hotels and nearby options.",
+      "items": {
+        "type": "object", "title": "Hotel", "description": "One hotel.", "required": ["id", "name", "type"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string", "title": "Hotel name", "description": "Name of the hotel." },
+          "type": { "type": "string", "enum": ["block", "nearby"], "title": "Hotel type", "description": "Block hotels have a reserved group rate; nearby hotels do not." },
+          "recommended": { "type": "boolean", "title": "Recommended", "description": "Highlight this hotel as our top pick." },
+          "photo": { "$ref": "#/$defs/imageOrNull", "title": "Hotel photo", "description": "Optional photo." },
+          "rate": { "type": "string", "title": "Nightly rate", "description": "For example $189/night CAD." },
+          "rateNote": { "type": "string", "title": "Rate note", "description": "Taxes, breakfast and similar." },
+          "bookingUrl": { "type": "string", "format": "uri", "title": "Booking link", "description": "Link to the group booking page." },
+          "groupCode": { "type": "string", "title": "Group code", "description": "Code guests mention or enter when booking." },
+          "bookBy": { "type": "string", "format": "date", "title": "Book by", "description": "Last day to get the group rate." },
+          "address": { "type": "string", "title": "Street address", "description": "Hotel address." },
+          "lat": { "type": "number", "title": "Latitude", "description": "Latitude for maps.", "minimum": -90, "maximum": 90 },
+          "lng": { "type": "number", "title": "Longitude", "description": "Longitude for maps.", "minimum": -180, "maximum": 180 },
+          "phone": { "type": "string", "format": "tel", "title": "Phone number", "description": "Hotel phone number." },
+          "perks": { "type": "array", "title": "Perks", "description": "Benefits of staying here.", "items": { "type": "string", "title": "Perk", "description": "One perk." } },
+          "driveMinutes": {
+            "type": "object", "title": "Drive times", "description": "Optional manual drive times in minutes, by event id. Overrides the automatic estimate.",
+            "additionalProperties": { "type": "number", "title": "Minutes", "description": "Drive time in minutes." }
+          },
+          "notes": { "type": "string", "title": "Notes", "description": "Anything else guests should know.", "x-widget": "textarea" }
+        }
+      }
+    },
+    "travel": {
+      "type": "object", "title": "Travel", "description": "Getting to and around the wedding.",
+      "properties": {
+        "intro": { "type": "string", "title": "Introduction", "description": "Opening paragraph.", "x-widget": "textarea" },
+        "airports": {
+          "type": "array", "title": "Airports", "description": "Airports guests can fly into.",
+          "items": {
+            "type": "object", "title": "Airport", "description": "One airport.", "required": ["id", "code", "name"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "code": { "type": "string", "title": "Airport code", "description": "Three-letter code such as YYZ." },
+              "name": { "type": "string", "title": "Airport name", "description": "Full name." },
+              "primary": { "type": "boolean", "title": "Main airport", "description": "Recommend this airport first." },
+              "driveMinutes": { "type": "number", "title": "Drive time", "description": "Minutes by car to the main venue." },
+              "tips": { "type": "string", "title": "Tips", "description": "Why choose this airport.", "x-widget": "textarea" }
+            }
+          }
+        },
+        "gettingAround": {
+          "type": "array", "title": "Getting around", "description": "Rideshare, rental car and transit advice.",
+          "items": {
+            "type": "object", "title": "Option", "description": "One way of getting around.", "required": ["id", "title"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "title": { "type": "string", "title": "Heading", "description": "For example Rideshare." },
+              "text": { "type": "string", "title": "Details", "description": "What guests need to know.", "x-widget": "textarea" }
+            }
+          }
+        },
+        "shuttles": {
+          "type": "array", "title": "Shuttles", "description": "Shuttle schedule.",
+          "items": {
+            "type": "object", "title": "Shuttle", "description": "One shuttle service.", "required": ["id", "eventId"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "eventId": { "type": "string", "title": "Event", "description": "The event this shuttle serves.", "x-widget": "event-picker" },
+              "from": { "type": "string", "title": "Pick-up point", "description": "Where the shuttle departs from." },
+              "departs": { "type": "string", "title": "Departure times", "description": "When it leaves for the event." },
+              "returns": { "type": "string", "title": "Return times", "description": "When it brings guests back." }
+            }
+          }
+        },
+        "international": {
+          "type": "object", "title": "International guests", "description": "Visa and entry requirements note.",
+          "properties": {
+            "title": { "type": "string", "title": "Heading", "description": "Heading of the note." },
+            "text": { "type": "string", "title": "Details", "description": "Entry requirements such as the Canada eTA.", "x-widget": "textarea" }
+          }
+        },
+        "aroundTown": {
+          "type": "array", "title": "Around town", "description": "Things to see and eat nearby.",
+          "items": {
+            "type": "object", "title": "Place", "description": "One recommendation.", "required": ["id", "name"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "category": { "type": "string", "title": "Category", "description": "For example See, Eat or Relax." },
+              "name": { "type": "string", "title": "Name", "description": "Name of the place." },
+              "text": { "type": "string", "title": "Description", "description": "Why we love it.", "x-widget": "textarea" },
+              "url": { "type": "string", "format": "uri", "title": "Website", "description": "Link to learn more." },
+              "address": { "type": "string", "title": "Address", "description": "Where it is." }
+            }
+          }
+        }
+      }
+    },
+    "story": {
+      "type": "object", "title": "Our story", "description": "The love story page.",
+      "properties": {
+        "teaser": { "type": "string", "title": "Teaser", "description": "One line shown to invite people to read more.", "x-widget": "textarea" },
+        "paragraphs": { "type": "array", "title": "Story paragraphs", "description": "The story, one paragraph per item.", "items": { "type": "string", "title": "Paragraph", "description": "One paragraph.", "x-widget": "textarea" } },
+        "photos": { "type": "array", "title": "Story photos", "description": "Photos shown beside the story.", "items": { "$ref": "#/$defs/image" } }
+      }
+    },
+    "people": {
+      "type": "array", "title": "Wedding party", "description": "Optional. The page is hidden while this list is empty.",
+      "items": {
+        "type": "object", "title": "Person", "description": "One member of the wedding party.", "required": ["id", "name"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string", "title": "Name", "description": "Full name." },
+          "role": { "type": "string", "title": "Role", "description": "For example Best man." },
+          "side": { "type": "string", "title": "Side", "description": "Which side of the family or friends." },
+          "bio": { "type": "string", "title": "Bio", "description": "A line or two about them.", "x-widget": "textarea" },
+          "photo": { "$ref": "#/$defs/imageOrNull", "title": "Photo", "description": "Optional portrait." }
+        }
+      }
+    },
+    "registry": {
+      "type": "object", "title": "Registry", "description": "Gift information.",
+      "properties": {
+        "photo": { "$ref": "#/$defs/image", "title": "Background photo", "description": "Photo behind the registry text." },
+        "paragraphs": { "type": "array", "title": "Message", "description": "Text about gifts, one paragraph per item.", "items": { "type": "string", "title": "Paragraph", "description": "One paragraph.", "x-widget": "textarea" } },
+        "links": {
+          "type": "array", "title": "Registry links", "description": "Where guests can find the registry.",
+          "items": {
+            "type": "object", "title": "Link", "description": "One registry link.", "required": ["label", "url"],
+            "properties": {
+              "label": { "type": "string", "title": "Button label", "description": "Text on the button." },
+              "url": { "type": "string", "format": "uri", "title": "Link address", "description": "Where the button goes." }
+            }
+          }
+        }
+      }
+    },
+    "faqCategories": {
+      "type": "array", "title": "Q&A categories", "description": "Groups for the questions.",
+      "items": {
+        "type": "object", "title": "Category", "description": "One group of questions.", "required": ["id", "title"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "title": { "type": "string", "title": "Category name", "description": "Heading shown to guests." }
+        }
+      }
+    },
+    "faq": {
+      "type": "array", "title": "Questions and answers", "description": "Frequently asked questions.",
+      "items": {
+        "type": "object", "title": "Question", "description": "One Q&A.", "required": ["id", "category", "q", "a"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "category": { "type": "string", "title": "Category", "description": "Id of the category this question belongs to." },
+          "q": { "type": "string", "title": "Question", "description": "The question as guests would ask it." },
+          "a": { "type": "string", "title": "Answer", "description": "The answer.", "x-widget": "textarea" }
+        }
+      }
+    },
+    "rsvp": {
+      "type": "object", "title": "RSVP", "description": "RSVP form settings.",
+      "properties": {
+        "deadline": { "type": "string", "format": "date", "title": "Reply by", "description": "Last day to RSVP." },
+        "deadlineText": { "type": "string", "title": "Reply-by wording", "description": "How the deadline is written, for example June 1st, 2027." },
+        "intro": { "type": "array", "title": "Introduction", "description": "Opening text, one paragraph per item.", "items": { "type": "string", "title": "Paragraph", "description": "One paragraph.", "x-widget": "textarea" } },
+        "mealOptions": { "type": "array", "title": "Meal choices", "description": "Meal options guests can choose from.", "items": { "type": "string", "title": "Meal", "description": "One option." } },
+        "dietaryOptions": { "type": "array", "title": "Dietary options", "description": "Quick-pick dietary needs.", "items": { "type": "string", "title": "Option", "description": "One option." } },
+        "questions": {
+          "type": "object", "title": "Extra questions", "description": "Wording of the optional questions.",
+          "properties": {
+            "hotel": { "type": "string", "title": "Hotel question", "description": "Asks whether guests need a hotel." },
+            "travelDates": { "type": "string", "title": "Travel dates question", "description": "Asks arrival and departure dates." },
+            "flight": { "type": "string", "title": "Flight question", "description": "Asks for flight details." },
+            "address": { "type": "string", "title": "Address question", "description": "Asks for a mailing address." },
+            "shuttle": { "type": "string", "title": "Shuttle question", "description": "Asks how many shuttle seats are needed." },
+            "phone": { "type": "string", "title": "Phone question", "description": "Asks for a phone number." },
+            "song": { "type": "string", "title": "Song question", "description": "Asks for a song request." }
+          }
+        }
+      }
+    }
+  }
+}

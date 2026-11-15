@@ -1,0 +1,41 @@
+/* Injected into the guest site inside the editor iframe. Only affects edit mode. */
+:root { --ed-accent: #0a84ff; --ed-accent-soft: rgba(10, 132, 255, .14); }
+
+[data-edit="text"], [data-edit="multiline"] { cursor: text; border-radius: 3px; transition: outline-color .12s, background-color .12s; outline: 1px dashed transparent; outline-offset: 3px; }
+[data-edit="text"]:hover, [data-edit="multiline"]:hover { outline-color: rgba(10, 132, 255, .75); background-color: rgba(10, 132, 255, .06); }
+[data-edit][data-editing="1"] { outline: 2px solid var(--ed-accent) !important; outline-offset: 3px; background-color: rgba(255, 255, 255, .08) !important; cursor: text; caret-color: var(--ed-accent); user-select: text; -webkit-user-select: text; }
+[data-edit="text"]:empty::before, [data-edit="multiline"]:empty::before { content: attr(data-placeholder); color: rgba(120, 120, 128, .85); font-style: italic; font-weight: 400; text-transform: none; letter-spacing: normal; }
+[data-edit="text"]:empty:not([data-placeholder])::before, [data-edit="multiline"]:empty:not([data-placeholder])::before { content: "Add text"; }
+[data-edit="image"] { cursor: pointer; }
+[data-edit="image"]:hover { outline: 2px solid rgba(10, 132, 255, .8); outline-offset: -2px; }
+[data-edit="image"].ed-dropping { outline: 3px dashed var(--ed-accent) !important; outline-offset: -3px; filter: brightness(.85); }
+a, button, summary, [role="button"] { cursor: default; }
+.ed-dragging { opacity: .45; }
+.ed-drag-active, .ed-drag-active * { cursor: grabbing !important; user-select: none !important; }
+/* Make sure sticky/fixed site chrome can't cover our overlay */
+.ed-ui { position: fixed; inset: 0; pointer-events: none; z-index: 2147483000; font: 500 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; letter-spacing: normal; text-transform: none; }
+.ed-ui [hidden] { display: none !important; }
+.ed-ui *, .ed-ui *::before { box-sizing: border-box; }
+.ed-hover { position: fixed; border: 1.5px dashed rgba(10, 132, 255, .7); border-radius: 8px; pointer-events: none; }
+.ed-sel { position: fixed; border: 2px solid var(--ed-accent); border-radius: 8px; box-shadow: 0 0 0 4px var(--ed-accent-soft); pointer-events: none; }
+.ed-sel-tag { position: absolute; left: -2px; bottom: 100%; margin-bottom: 4px; background: var(--ed-accent); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; white-space: nowrap; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; display: none; }
+.ed-sel-tag:not(:empty) { display: block; }
+.ed-toolbar { position: fixed; display: flex; align-items: center; gap: 1px; padding: 3px; background: rgba(28, 28, 30, .94); color: #fff; border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, .28), 0 0 0 .5px rgba(255, 255, 255, .15) inset; pointer-events: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.ed-b { all: unset; box-sizing: border-box; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; cursor: pointer; color: #f2f2f7; }
+.ed-b:hover { background: rgba(255, 255, 255, .16); }
+.ed-b:focus-visible { outline: 2px solid #64b5ff; outline-offset: 1px; }
+.ed-b:disabled { opacity: .3; cursor: default; pointer-events: none; }
+.ed-b[hidden] { display: none; }
+.ed-drag { cursor: grab; }
+.ed-danger:hover { background: #ff453a; }
+.ed-sep { width: 1px; height: 16px; background: rgba(255, 255, 255, .22); margin: 0 3px; }
+.ed-b svg, .ed-replace svg { display: block; }
+.ed-replace { all: unset; box-sizing: border-box; position: fixed; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; background: rgba(28, 28, 30, .88); color: #fff; font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; cursor: pointer; pointer-events: auto; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.ed-replace:hover { background: #0a84ff; }
+.ed-replace:focus-visible { outline: 2px solid #64b5ff; outline-offset: 2px; }
+.ed-drop { position: fixed; background: var(--ed-accent); border-radius: 3px; box-shadow: 0 0 0 3px var(--ed-accent-soft); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Show collapsed Q&A answers so they can be edited, without toggling them (toggling would change the page hash). */
+details::details-content { content-visibility: visible !important; display: block !important; height: auto !important; opacity: 1 !important; }
+details:not([open]) > :not(summary) { display: revert; }

@@ -1,0 +1,39 @@
+[data-page="story"] .story-grid { display: grid; gap: var(--space-xl); align-items: center; }
+/* On phones the story leads; the polaroids follow */
+@media (max-width: 767.98px) {
+  [data-page="story"] .story-grid.has-photos .story-text { order: -1; }
+}
+[data-page="story"] .story-text { max-width: var(--container-text); margin-inline: auto; width: 100%; }
+[data-page="story"] .story-text .page-title { margin-bottom: var(--head-gap); }
+[data-page="story"] .story-text p { font-size: var(--step-1); line-height: 1.5; }
+[data-page="story"] .polaroids { display: grid; gap: var(--space-l); justify-items: center; padding-block: var(--space-xs); }
+[data-page="story"] .polaroid { width: min(100%, 20rem); background: #f7f5f0; padding: var(--space-xs) var(--space-xs) var(--space-xl); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); }
+[data-page="story"] .polaroid img { width: 100%; aspect-ratio: 1.05; object-fit: cover; }
+[data-page="story"] .polaroid:nth-child(odd) { transform: rotate(-2.5deg); }
+[data-page="story"] .polaroid:nth-child(even) { transform: rotate(2.5deg); }
+@media (min-width: 768px) {
+  [data-page="story"] .story-grid.has-photos { grid-template-columns: 1fr 1.2fr; gap: var(--space-2xl); }
+  [data-page="story"] .polaroids { position: sticky; top: calc(var(--scroll-offset) + var(--space-2xs)); align-self: start; }
+  [data-page="story"] .story-grid.has-photos { align-items: start; }
+  [data-page="story"] .story-text { align-self: center; }
+}
+
+[data-page="story"] .families .display { color: var(--burgundy); }
+[data-page="story"] .people { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--space-m); }
+[data-page="story"] .person { display: flex; flex-direction: column; gap: var(--space-s); padding: 0; overflow: hidden; background: #faf8f3; }
+[data-page="story"] .person-photo { aspect-ratio: 4 / 5; background: var(--card); }
+[data-page="story"] .person-photo:empty { display: none; }
+[data-page="story"] .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+[data-page="story"] .person-body { padding: 0 var(--space-m) var(--space-m); }
+[data-page="story"] .person:not(:has(.person-photo img)) .person-body { padding-top: var(--space-m); }
+[data-page="story"] .person-meta { display: block; }
+@media (max-width: 767.98px) {
+  [data-page="story"] .polaroid { width: min(100%, 17rem); }
+  [data-page="story"] .polaroids { gap: var(--space-m); }
+}
+[data-page="story"] .story-text .page-title { text-wrap: balance; }
+[data-page="story"] .person-body .display { text-transform: none; font-size: var(--step-1); }
+[data-page="story"] .person-meta { text-wrap: balance; }
+[data-page="story"] .person-meta { text-wrap: pretty; letter-spacing: 0.1em; }
+@media (max-width: 599.98px) { [data-page="story"] .person-photo { aspect-ratio: 4 / 3; } }
+[data-page="story"] .polaroids { padding-inline: var(--space-xs); }

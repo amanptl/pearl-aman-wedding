@@ -1,0 +1,11 @@
+{
+  "_comment": "DEV ONLY sample data. The dev passphrase is 'dev-passphrase'. Never use it for the real guest list. Replace these households with the real list before publishing.",
+  "households": [
+    { "id": "sharma", "household": "Sharma Family", "members": ["Raj Sharma", "Priya Sharma", "Anika Sharma"], "eventIds": ["mehndi", "haldi", "sangeet", "wedding", "reception"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "mehta", "household": "Mehta Family", "members": ["Rohan Mehta", "Sunita Mehta"], "eventIds": ["mehndi", "haldi", "sangeet", "wedding", "reception"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "chen", "household": "Chen & Okafor", "members": ["Daniel Chen", "Ada Okafor"], "eventIds": ["sangeet", "wedding", "reception"], "tags": ["friends"], "plusOnes": 0 },
+    { "id": "garcia", "household": "Maria Garcia", "members": ["Maria Garcia"], "eventIds": ["sangeet", "wedding", "reception"], "tags": ["friends"], "plusOnes": 0 },
+    { "id": "walker", "household": "Jordan & Sam Walker", "members": ["Jordan Walker", "Sam Walker"], "eventIds": ["wedding", "reception"], "tags": ["colleagues"], "plusOnes": 0 },
+    { "id": "patel", "household": "Neha Patel", "members": ["Neha Patel"], "eventIds": ["sangeet", "wedding", "reception"], "tags": ["friends"], "plusOnes": 1 }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "code": "FRIEND2345",
+  "household": "Jordan Lee",
+  "greeting": "Dear Jordan",
+  "members": [
+    {
+      "id": "m1",
+      "name": "Jordan Lee"
+    }
+  ],
+  "plusOnes": 1,
+  "eventIds": [
+    "sangeet",
+    "wedding",
+    "reception"
+  ],
+  "privateEvents": [
+    {
+      "id": "sangeet",
+      "name": "Sangeet",
+      "subtitle": "An evening of dance, performances and dinner",
+      "start": "2027-07-24T18:30",
+      "end": "2027-07-24T23:30",
+      "venue": {
+        "name": "[The Grand Ballroom at Lakeview Hotel]",
+        "address": "[900 Lakeshore Rd E], Mississauga, ON [L5E 1E1]",
+        "lat": 43.5612,
+        "lng": -79.5632,
+        "mapsQuery": "Mississauga Ontario banquet hall",
+        "parking": "[Underground parking, $15 flat rate.]",
+        "notes": "[Dance floor and stage inside; cocktail reception on the terrace.]"
+      },
+      "description": "Both families perform, then the dance floor opens. Dinner is served at 8:00 PM.",
+      "dressCode": {
+        "title": "Festive Indian or cocktail attire",
+        "text": "Jewel tones, sequins and sparkle. You will be dancing, so choose something you can move in.",
+        "swatches": [
+          "#5c1a24",
+          "#7a3238",
+          "#2e3522",
+          "#b89a5e"
+        ],
+        "tips": [
+          "Lehengas, sarees, sherwanis, or a cocktail dress and suit are all welcome.",
+          "Comfortable shoes for the dance floor."
+        ]
+      },
+      "notes": [
+        "Performances start promptly at 7:00 PM."
+      ],
+      "photo": null,
+      "visibility": "private",
+      "rsvp": true,
+      "shuttle": true
+    }
+  ],
+  "tags": [
+    "friends"
+  ]
+}

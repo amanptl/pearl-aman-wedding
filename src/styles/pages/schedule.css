@@ -1,0 +1,112 @@
+/* Schedule: day picker + event cards */
+[data-page="schedule"] { --nav-h: 0px; --pick-h: 4.5rem; --sticky-offset: calc(var(--nav-h) + var(--pick-h) + var(--space-s)); }
+@media (min-width: 768px) { [data-page="schedule"] { --nav-h: 53px; } }
+[data-page="schedule"] .tz-note { margin: 0; }
+[data-page="schedule"] .tz-note .chip { border-color: var(--line-light); }
+
+/* Sticky segmented day picker */
+[data-page="schedule"] .daynav {
+  position: sticky; top: var(--nav-h); z-index: calc(var(--z-nav) - 1);
+  background: var(--olive-deep); color: var(--ivory); --focus: var(--gold-light);
+  border-bottom: 1px solid rgba(236, 232, 223, 0.18);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+[data-page="schedule"] .daynav-list {
+  display: flex; gap: var(--space-2xs); width: min(100%, var(--container-narrow)); margin-inline: auto;
+  padding: var(--space-2xs) var(--gutter);
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+[data-page="schedule"] .daynav-list::-webkit-scrollbar { display: none; }
+[data-page="schedule"] .daynav li { flex: 1 0 auto; scroll-snap-align: center; }
+[data-page="schedule"] .daynav-btn {
+  width: 100%; min-width: 4.75rem; min-height: 3.5rem; padding: calc(var(--space-3xs) + var(--space-4xs)) calc(var(--space-xs) + var(--space-4xs));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  background: transparent; color: inherit; border: 1px solid rgba(236, 232, 223, 0.35); border-radius: var(--radius-m);
+  line-height: 1.2; white-space: nowrap;
+  transition: background var(--dur), color var(--dur), border-color var(--dur);
+}
+[data-page="schedule"] .daynav-btn:hover { background: rgba(236, 232, 223, 0.12); }
+[data-page="schedule"] .daynav-btn[aria-current="true"] { background: var(--ivory); color: var(--ink); border-color: var(--ivory); }
+[data-page="schedule"] .dn-wd { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--step--1); }
+[data-page="schedule"] .dn-date { font-size: var(--step--1); opacity: 0.9; }
+
+[data-page="schedule"] .day { scroll-margin-top: var(--sticky-offset); }
+[data-page="schedule"] .day-title { padding-bottom: var(--space-2xs); border-bottom: 1px solid var(--rule); color: var(--burgundy); }
+
+/* Event card */
+[data-page="schedule"] .event { padding: 0; overflow: hidden; scroll-margin-top: var(--sticky-offset); transition: box-shadow var(--dur), border-color var(--dur); background: #faf8f3; }
+[data-page="schedule"] .event.is-target { border-color: var(--burgundy); box-shadow: 0 0 0 3px var(--burgundy); }
+[data-page="schedule"] .event-body { padding: var(--space-m); }
+[data-page="schedule"] .event-photo { aspect-ratio: 16 / 9; background: var(--card); }
+[data-page="schedule"] .event-photo img { width: 100%; height: 100%; object-fit: cover; }
+[data-page="schedule"] .event-top { justify-content: flex-start; }
+[data-page="schedule"] .event-time { display: inline-flex; align-items: center; gap: var(--space-2xs); }
+[data-page="schedule"] .event-time svg { width: 1.1em; height: 1.1em; }
+[data-page="schedule"] .event-title { --stack-gap: var(--space-2xs); }
+[data-page="schedule"] .event .badge { vertical-align: middle; }
+[data-page="schedule"] .event-venue,
+[data-page="schedule"] .event-parking,
+[data-page="schedule"] .event-shuttle { display: flex; gap: var(--space-xs); align-items: flex-start; }
+[data-page="schedule"] .event-venue svg,
+[data-page="schedule"] .event-parking svg,
+[data-page="schedule"] .event-shuttle svg,
+[data-page="schedule"] .dress-head svg { margin-top: 0.2em; color: var(--burgundy); width: 1.25rem; height: 1.25rem; }
+[data-page="schedule"] .event-venue > span,
+[data-page="schedule"] .event-parking > span,
+[data-page="schedule"] .event-shuttle > span,
+[data-page="schedule"] .dress-head > span { flex: 1; min-width: 0; }
+[data-page="schedule"] .event-shuttle { padding: var(--space-xs) var(--space-s); background: rgba(184, 154, 94, 0.18); border-radius: var(--radius-m); }
+[data-page="schedule"] .event-shuttle a { text-underline-offset: 0.2em; }
+[data-page="schedule"] .event-notes .chip { align-items: flex-start; border-color: rgba(31, 28, 23, 0.35); }
+[data-page="schedule"] .event-notes .chip svg { margin-top: 0.15em; }
+
+/* Dress code */
+[data-page="schedule"] .dress { display: flex; flex-direction: column; gap: var(--space-xs); padding: var(--space-s); border: 1px solid var(--rule); border-radius: var(--radius-m); background: rgba(255, 255, 255, 0.5); }
+[data-page="schedule"] .dress-head { display: flex; gap: var(--space-xs); align-items: flex-start; }
+[data-page="schedule"] .dress-label { display: block; font-size: var(--step--1); letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-text); }
+[data-page="schedule"] .swatches { padding-left: calc(1.25rem + var(--space-xs)); }
+[data-page="schedule"] .swatch { display: block; border-color: rgba(255, 255, 255, 0.7); }
+[data-page="schedule"] .wear { border-top: 1px solid var(--rule); }
+[data-page="schedule"] .wear summary {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-s);
+  min-height: var(--tap); cursor: pointer; list-style: none;
+  font-size: var(--step--1); letter-spacing: 0.1em; text-transform: uppercase;
+}
+[data-page="schedule"] .wear summary::-webkit-details-marker { display: none; }
+[data-page="schedule"] .wear summary svg { width: 1.25rem; height: 1.25rem; transition: transform var(--dur); }
+[data-page="schedule"] .wear[open] summary svg { transform: rotate(90deg); }
+[data-page="schedule"] .wear-body { padding-bottom: var(--space-2xs); }
+[data-page="schedule"] .tips { display: flex; flex-direction: column; gap: var(--space-2xs); }
+[data-page="schedule"] .tips li { position: relative; padding-left: 1.25rem; }
+[data-page="schedule"] .tips li::before { content: ""; position: absolute; left: var(--space-4xs); top: 0.7em; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--gold); }
+
+/* Actions: Directions is the primary; the other two share a row */
+[data-page="schedule"] .event-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xs); margin-top: var(--space-2xs); }
+[data-page="schedule"] .event-actions .btn { width: 100%; padding-inline: var(--space-xs); }
+[data-page="schedule"] .event-actions .btn--primary { grid-column: 1 / -1; }
+@media (min-width: 560px) {
+  [data-page="schedule"] .event-actions { display: flex; flex-wrap: wrap; }
+  [data-page="schedule"] .event-actions .btn { width: auto; flex: 1 1 0; }
+  [data-page="schedule"] .event-actions .btn--primary { flex: 1.2 1 0; }
+}
+
+[data-page="schedule"] .empty { padding: var(--space-xl) var(--space-m); }
+
+/* Calendar sheet (rendered in body, so scoped by class) */
+.cal-sheet .cal-h { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; font-size: var(--step-0); }
+.cal-sheet .cal-links li:last-child a { border-bottom: 0; }
+.cal-sheet .cal-links a { min-height: 56px; padding-block: var(--space-2xs); }
+.cal-sheet .cal-links a > span:not(.visually-hidden) { flex: 1; min-width: 0; }
+
+/* Action buttons: sentence case so labels never break mid-word */
+[data-page="schedule"] .event-actions .btn { text-transform: none; letter-spacing: 0.01em; font-size: var(--step-0); white-space: normal; }
+[data-page="schedule"] .event-notes .chip { border-radius: var(--radius-m); }
+
+/* Narrow phones: stack the actions so labels never wrap inside a pill */
+@media (max-width: 29.99rem) {
+  [data-page="schedule"] .event-actions { grid-template-columns: 1fr; }
+}
+[data-page="schedule"] .event-time { white-space: nowrap; flex-wrap: nowrap; }
+[data-page="schedule"] .day-title, [data-page="schedule"] .event-title h3 { text-wrap: balance; }
+[data-page="schedule"] [data-cal-all] { text-transform: none; letter-spacing: 0.01em; font-size: var(--step-0); text-wrap: balance; }

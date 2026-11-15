@@ -1,0 +1,10 @@
+import { chromium } from "@playwright/test";
+const [,, url, out, w] = process.argv;
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: +w, height: 900 }, deviceScaleFactor: 1 });
+await p.addInitScript(() => sessionStorage.setItem("pa.intro", "1"));
+p.on("console", m => m.type()==="error" && console.log("ERR", m.text()));
+p.on("pageerror", e => console.log("PAGEERR", e));
+await p.goto(url); await p.waitForSelector("html[data-ready]"); await p.waitForTimeout(1500);
+await p.screenshot({ path: out, fullPage: true });
+await b.close();

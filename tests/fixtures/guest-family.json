@@ -1,0 +1,146 @@
+{
+  "code": "FAMILY2345",
+  "household": "Sharma Family",
+  "greeting": "Dear Sharma Family",
+  "members": [
+    {
+      "id": "m1",
+      "name": "Raj Sharma"
+    },
+    {
+      "id": "m2",
+      "name": "Priya Sharma"
+    },
+    {
+      "id": "m3",
+      "name": "Anika Sharma"
+    }
+  ],
+  "plusOnes": 0,
+  "eventIds": [
+    "mehndi",
+    "haldi",
+    "sangeet",
+    "wedding",
+    "reception"
+  ],
+  "privateEvents": [
+    {
+      "id": "mehndi",
+      "name": "Mehndi",
+      "subtitle": "An afternoon of henna, chai and music",
+      "start": "2027-07-23T17:00",
+      "end": "2027-07-23T21:00",
+      "venue": {
+        "name": "[Sharma Family Home]",
+        "address": "[123 Maple Grove Dr], Oakville, ON [L6H 0A1]",
+        "lat": 43.4675,
+        "lng": -79.6877,
+        "mapsQuery": "Oakville Ontario",
+        "parking": "[Street parking and driveway; please carpool where you can.]",
+        "notes": "[Backyard tent, rain or shine.]"
+      },
+      "description": "Henna artists will decorate hands and arms while we share chai, snacks and music. Come relaxed and ready to sit for a while.",
+      "dressCode": {
+        "title": "Colourful and comfortable",
+        "text": "Bright, easy outfits you can sit in. Avoid long sleeves that cover the wrists, so the henna can be applied.",
+        "swatches": [
+          "#e0a526",
+          "#7d7b4a",
+          "#c2185b",
+          "#2e7d6b"
+        ],
+        "tips": [
+          "Short or three-quarter sleeves work best.",
+          "Flat shoes or sandals; we will be on grass."
+        ]
+      },
+      "notes": [
+        "Henna takes 3 to 4 hours to set; plan your evening accordingly."
+      ],
+      "photo": null,
+      "visibility": "private",
+      "rsvp": true,
+      "shuttle": false
+    },
+    {
+      "id": "haldi",
+      "name": "Haldi",
+      "subtitle": "A morning of turmeric, laughter and blessings",
+      "start": "2027-07-24T10:30",
+      "end": "2027-07-24T13:00",
+      "venue": {
+        "name": "[Mehta Family Home]",
+        "address": "[45 Lakeshore Rd W], Mississauga, ON [L5H 1G3]",
+        "lat": 43.5448,
+        "lng": -79.6174,
+        "mapsQuery": "Port Credit Mississauga Ontario",
+        "parking": "[Driveway and nearby street parking.]",
+        "notes": "[Outdoor courtyard.]"
+      },
+      "description": "Family and close friends gather to apply haldi (turmeric paste) to the couple. It is messy and joyful.",
+      "dressCode": {
+        "title": "Wear something you can stain",
+        "text": "Yellow, white or pastel cotton outfits you will not mind getting turmeric on.",
+        "swatches": [
+          "#f2c230",
+          "#f5f0e0",
+          "#f3d9a4",
+          "#fbe9a6"
+        ],
+        "tips": [
+          "Bring a change of clothes for afterwards.",
+          "Old white or yellow kurtas are ideal."
+        ]
+      },
+      "notes": [
+        "Turmeric stains fabric; we will provide towels and wipes."
+      ],
+      "photo": null,
+      "visibility": "private",
+      "rsvp": true,
+      "shuttle": false
+    },
+    {
+      "id": "sangeet",
+      "name": "Sangeet",
+      "subtitle": "An evening of dance, performances and dinner",
+      "start": "2027-07-24T18:30",
+      "end": "2027-07-24T23:30",
+      "venue": {
+        "name": "[The Grand Ballroom at Lakeview Hotel]",
+        "address": "[900 Lakeshore Rd E], Mississauga, ON [L5E 1E1]",
+        "lat": 43.5612,
+        "lng": -79.5632,
+        "mapsQuery": "Mississauga Ontario banquet hall",
+        "parking": "[Underground parking, $15 flat rate.]",
+        "notes": "[Dance floor and stage inside; cocktail reception on the terrace.]"
+      },
+      "description": "Both families perform, then the dance floor opens. Dinner is served at 8:00 PM.",
+      "dressCode": {
+        "title": "Festive Indian or cocktail attire",
+        "text": "Jewel tones, sequins and sparkle. You will be dancing, so choose something you can move in.",
+        "swatches": [
+          "#5c1a24",
+          "#7a3238",
+          "#2e3522",
+          "#b89a5e"
+        ],
+        "tips": [
+          "Lehengas, sarees, sherwanis, or a cocktail dress and suit are all welcome.",
+          "Comfortable shoes for the dance floor."
+        ]
+      },
+      "notes": [
+        "Performances start promptly at 7:00 PM."
+      ],
+      "photo": null,
+      "visibility": "private",
+      "rsvp": true,
+      "shuttle": true
+    }
+  ],
+  "tags": [
+    "close-family"
+  ]
+}
