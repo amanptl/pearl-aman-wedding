@@ -15,18 +15,18 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => { try { sessionStorage.setItem("pa.intro", "1"); } catch {} });
 });
 
-test("family fixture: greeting, 5 events, quick actions", async ({ page }) => {
+test("family fixture: greeting, 3 events, quick actions", async ({ page }) => {
   await open(page, `/?guest=${FAMILY}#home`);
   await expect(page.locator("[data-greeting]")).toHaveText("Dear Sharma Family");
-  await expect(page.locator(".quick-card", { hasText: "Schedule" })).toContainText("Your 5 events");
+  await expect(page.locator(".quick-card", { hasText: "Schedule" })).toContainText("Your 3 events");
   await expect(page.locator(".welcome-dates")).toContainText("July 23");
   await open(page, `/?guest=${FAMILY}#schedule`);
-  await expect(page.locator(".event")).toHaveCount(5);
+  await expect(page.locator(".event")).toHaveCount(3);
 });
 
-test("friend fixture shows exactly 3 events", async ({ page }) => {
+test("friend fixture shows exactly its event", async ({ page }) => {
   await open(page, `/?guest=${FRIEND}#schedule`);
-  await expect(page.locator(".event")).toHaveCount(3);
+  await expect(page.locator(".event")).toHaveCount(1);
 });
 
 test("home without a guest offers the lookup slot", async ({ page }) => {
@@ -56,18 +56,18 @@ test("Up next badge goes to the next event", async ({ page }) => {
   await expect(page.locator(".event .badge", { hasText: "Up next" })).toHaveCount(1);
   await expect(page.locator("#event-haldi .badge--gold")).toHaveText("Up next");
   await open(page, `/?guest=${FAMILY}#home`);
-  await expect(page.locator(".nextup")).toContainText("Haldi");
+  await expect(page.locator(".nextup")).toHaveCount(0); // home card hidden for now (SHOW_NEXT_UP in src/pages/home.js)
 });
 
 test("Add all to calendar yields an .ics with one VEVENT per event", async ({ page }) => {
   await open(page, `/?guest=${FAMILY}#schedule`);
   await page.locator("[data-cal-all]").click();
   await expect(page.locator("dialog.sheet")).toBeVisible();
-  await expect(page.locator("dialog.sheet .cal-links a")).toHaveCount(5);
+  await expect(page.locator("dialog.sheet .cal-links a")).toHaveCount(3);
   const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("dialog.sheet [data-ics]").click()]);
   const path = await dl.path();
   const text = fs.readFileSync(path, "utf8");
-  expect((text.match(/BEGIN:VEVENT/g) || []).length).toBe(5);
+  expect((text.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
 });
 
 test("deep link highlights and scrolls to the event card", async ({ page }) => {
@@ -94,7 +94,7 @@ test("what to wear expands and swatches have names", async ({ page }) => {
 });
 
 test("story people grid and registry image layer", async ({ page }) => {
-  await open(page, "/#registry");
+  await open(page, "/?content=tests/fixtures/stress.json#registry");
   await expect(page.locator(".registry-bg img")).toHaveCount(1);
   await expect(page.locator(".registry-link").first()).toHaveAttribute("rel", /noopener/);
 });
@@ -102,7 +102,8 @@ test("story people grid and registry image layer", async ({ page }) => {
 const ROUTES = ["home", "schedule", "story", "registry"];
 for (const fx of ["", "stress", "stress-empty"]) {
   test(`layout clean on ${fx || "default"} content`, async ({ page }) => {
-    for (const r of ROUTES) {
+    const routes = fx ? ROUTES : ROUTES.filter((r) => r !== "registry");
+    for (const r of routes) {
       const q = fx ? `content=tests/fixtures/${fx}.json&all=1&` : `guest=${FAMILY}&`;
       await open(page, `/?${q}#${r}`);
       await page.waitForTimeout(250);
@@ -114,7 +115,7 @@ for (const fx of ["", "stress", "stress-empty"]) {
 }
 
 test("axe: no serious or critical violations", async ({ page }) => {
-  for (const r of ROUTES) {
+  for (const r of ROUTES.filter((id) => id !== "registry")) {
     await open(page, `/?guest=${FAMILY}#${r}`);
     await page.waitForTimeout(250);
     const bad = (await runAxe(page)).filter((v) => ["serious", "critical"].includes(v.impact));

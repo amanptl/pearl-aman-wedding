@@ -7,6 +7,7 @@ import { toast, openSheet } from "./lib/ui.js";
 import { telUrl, whatsappUrl } from "./lib/maps.js";
 import * as icon from "./lib/icons.js";
 import { renderGuestBadge } from "./pages/_lookup.js";
+import { createFilm } from "./lib/film.js";
 
 import home from "./pages/home.js";
 import schedule from "./pages/schedule.js";
@@ -24,7 +25,7 @@ const TAB_ICON = { home: icon.home, schedule: icon.calendarPlus, travel: icon.pl
 const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
 const params = new URLSearchParams(location.search);
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-const store = (fn) => { try { return fn(); } catch { return null; } };
+const skipsEnvelope = () => EDIT || params.get("intro") === "0";
 /* View Transitions are supported in Safari 18+, but WebKit still crashes under rapid hash navigations. */
 const canViewTransition = () => typeof document.startViewTransition === "function"
   && !(navigator.vendor === "Apple Computer, Inc." && !("chrome" in window));
@@ -35,6 +36,12 @@ if (EDIT) document.documentElement.dataset.mode = "edit";
 let ctx;
 let current = { id: null, sub: null };
 let pageTransitioning = false;
+let introEl = null;
+let envelopeGen = 0;
+let envelopeClosing = false;
+let envelopeOpening = false;
+let envelopeHideTimer = 0;
+let film = null; // the opening film (src/lib/film.js) while the sealed envelope is up
 
 function contentUrl() {
   const o = params.get("content");
@@ -63,9 +70,21 @@ function pageVisible(p) {
 const orderOf = (p) => ctx.content.pages?.[p.id]?.order ?? 99;
 const visiblePages = () => PAGES.filter(pageVisible).sort((a, b) => orderOf(a) - orderOf(b));
 
+function hashBody() {
+  return decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+}
+
+/** Empty hash is the sealed envelope. A named route, including #home, is the opened site. */
 function parseHash() {
-  const [id, ...rest] = decodeURIComponent(location.hash.replace(/^#\/?/, "")).split("/");
+  const raw = hashBody();
+  if (!raw) return { id: null, sub: null };
+  const [id, ...rest] = raw.split("/");
   return { id: byId[id] ? id : "home", sub: rest.join("/") || null };
+}
+
+function isHomeHash() {
+  const raw = hashBody();
+  return raw === "home" || raw.startsWith("home/");
 }
 
 /* ---------- Navigation ---------- */
@@ -146,12 +165,17 @@ function applyRoute(id, sub, { animate = false, focus = true } = {}) {
 
 function route(initial = false) {
   let { id, sub } = parseHash();
+  const sealed = id === null && !skipsEnvelope();
+  if (id === null) { id = "home"; sub = null; }
+  if (sealed) showEnvelope();
+  else if (!envelopeOpening) hideEnvelope();
   const page = byId[id];
   if (!pageVisible(page)) { id = "home"; sub = null; if (location.hash && location.hash !== "#home") history.replaceState(null, "", "#home"); }
   if (!rendered.has(id)) renderPage(byId[id]);
   const samePage = current.id === id;
   const shouldEnter = !samePage || initial;
-  const focus = !initial || !$("#intro") || $("#intro").hidden;
+  const introGone = !introEl || !introEl.isConnected || introEl.hidden;
+  const focus = !sealed && !envelopeOpening && (!initial || introGone);
   if (!shouldEnter) {
     current = { id, sub };
     document.documentElement.dataset.route = id;
@@ -177,57 +201,102 @@ function focusHeading(root) {
   h.focus({ preventScroll: true });
 }
 
-/* ---------- Intro ---------- */
-function setupIntro() {
-  const intro = $("#intro");
+/* ---------- Envelope ----------
+   `/` (empty hash) is the sealed envelope. Opening it pushes `#home`.
+   `#home` and every other hash are the opened site, with no ceremony.
+   ?intro=0 and edit mode never show the envelope. */
+function setupEnvelope() {
+  introEl = $("#intro");
+  if (!introEl) return;
+  if (skipsEnvelope()) {
+    document.documentElement.classList.remove("intro-early");
+    introEl.remove();
+    introEl = null;
+    return;
+  }
+  // Skip / Escape jump to the last frame, also mid-shot.
+  const skip = () => { if (film?.state === "play") film.finish(); else openEnvelope(false); };
+  $("#intro-open").addEventListener("click", () => openEnvelope(true));
+  $("#intro-skip").addEventListener("click", skip);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && introEl?.isConnected && !introEl.hidden) skip();
+  });
+}
+
+function showEnvelope() {
+  if (!introEl) return;
+  envelopeGen++;
+  envelopeClosing = false;
+  envelopeOpening = false;
+  clearTimeout(envelopeHideTimer);
+  if (!introEl.isConnected) $("#app")?.before(introEl);
+  introEl.classList.remove("opening", "gone", "is-ready");
+  introEl.hidden = false;
+  document.documentElement.classList.remove("intro-early");
+  queueFilm();
+  delete document.documentElement.dataset.reveal;
   const app = $("#app");
-  const done = store(() => sessionStorage.getItem("pa.intro"));
-  const wantsHome = parseHash().id === "home";
-  if (EDIT || done || !wantsHome || params.get("intro") === "0") { intro.remove(); return; }
-  intro.hidden = false;
-  app.inert = true;
+  if (app) app.inert = true;
   const skip = $(".skip-link");
   if (skip) skip.inert = true;
   document.body.classList.add("locked");
-  $("#intro-open").focus();
-  let closing = false;
-  const finish = (animated) => {
-    if (closing) return;
-    closing = true;
-    store(() => sessionStorage.setItem("pa.intro", "1"));
-    const end = () => {
-      app.inert = false;
-      if (skip) skip.inert = false;
-      document.body.classList.remove("locked");
-      intro.classList.add("gone");
-      setTimeout(() => intro.remove(), 800);
-      focusHeading(sectionFor(current.id));
-    };
-    if (!animated) { end(); return; }
-    intro.classList.add("opening");
-    if (reduced()) { setTimeout(end, 260); return; }
-    document.documentElement.dataset.reveal = "1";
-    const flap = intro.querySelector(".ienv-flap");
-    let settled = false;
-    const settle = () => {
-      if (settled) return;
-      settled = true;
-      end();
-    };
-    const onFlapDone = (e) => {
-      if (e.target !== flap) return;
-      flap.removeEventListener("transitionend", onFlapDone);
-      // Let the envelope drift finish, then hand off to the board reveal.
-      setTimeout(settle, 450);
-    };
-    if (flap) flap.addEventListener("transitionend", onFlapDone);
-    setTimeout(settle, 1800);
-  };
-  $("#intro-open").addEventListener("click", () => finish(true));
-  $("#intro-skip").addEventListener("click", () => finish(false));
-  document.addEventListener("keydown", function esc(e) {
-    if (e.key === "Escape" && document.body.contains(intro)) { finish(false); document.removeEventListener("keydown", esc); }
+  introEl.querySelector("#intro-open")?.focus();
+}
+
+/** Close in on the home board's envelope (after this route's render), then fade up from black once its art is in. */
+function queueFilm() {
+  const gen = envelopeGen;
+  requestAnimationFrame(async () => {
+    if (gen !== envelopeGen || !introEl?.isConnected || introEl.hidden || envelopeClosing) return;
+    const board = sectionFor("home")?.querySelector(".board");
+    if (!board) { introEl.classList.add("is-ready"); return; }
+    film?.finish();
+    film = createFilm(board, { chrome: [$("#site-header"), $("#top-nav"), $("#tabbar"), $("#help"), $("#guest-badge")], vignette: introEl.querySelector(".intro-lens") });
+    const art = ["env-back", "env-pocket", "env-flap-out"].map((n) => { const i = new Image(); i.src = `assets/img/${n}.webp`; return i.decode().catch(() => {}); });
+    await Promise.race([Promise.all(art), new Promise((r) => setTimeout(r, 1500))]);
+    if (gen === envelopeGen && introEl?.isConnected) introEl.classList.add("is-ready");
   });
+}
+
+function hideEnvelope() {
+  if (film && film.state !== "play") { film.finish(); film = null; }
+  document.documentElement.classList.remove("intro-early");
+  const app = $("#app");
+  if (app) app.inert = false;
+  const skip = $(".skip-link");
+  if (skip) skip.inert = false;
+  document.body.classList.remove("locked");
+  if (!introEl?.isConnected) return;
+  if (introEl.hidden) { introEl.remove(); return; }
+  introEl.classList.add("gone");
+  const gen = envelopeGen;
+  clearTimeout(envelopeHideTimer);
+  envelopeHideTimer = setTimeout(() => {
+    if (gen !== envelopeGen || !introEl) return;
+    introEl.hidden = true;
+    introEl.classList.remove("opening", "gone");
+    introEl.remove();
+  }, reduced() ? 260 : 800);
+}
+
+function openEnvelope(animated) {
+  if (!introEl?.isConnected || introEl.hidden || envelopeClosing) return;
+  envelopeClosing = true;
+  const gen = envelopeGen;
+  const end = () => {
+    if (gen !== envelopeGen) return;
+    envelopeOpening = false;
+    hideEnvelope();
+    if (!isHomeHash()) location.hash = "home";
+    focusHeading(sectionFor("home"));
+  };
+  if (!animated) { film?.finish(); film = null; end(); return; }
+  envelopeOpening = true;
+  introEl.classList.add("opening");
+  if (!isHomeHash()) location.hash = "home";
+  if (reduced() || !film) { film?.finish(); film = null; setTimeout(end, 260); return; }
+  const f = film;
+  f.play().then(() => { if (film === f) film = null; end(); });
 }
 
 /* ---------- Boot ---------- */
@@ -241,7 +310,8 @@ async function boot() {
     content = await (early ? early.catch(() => loadContent(contentUrl())) : loadContent(contentUrl()));
   } catch (err) {
     console.error(err);
-    $("#intro").remove();
+    $("#intro")?.remove();
+    document.documentElement.classList.remove("intro-early");
     $("#boot")?.remove();
     $("#app").hidden = false;
     main.innerHTML = "<section class='section section--paper'><div class='container center'><h1 class='page-title'>Pearl &amp; Aman</h1><p>We couldn't load the invitation. Please refresh, or contact us directly.</p></div></section>";
@@ -271,15 +341,15 @@ async function boot() {
 
   main.replaceChildren(...PAGES.map((p) => { const el = document.createElement("section"); el.dataset.page = p.id; el.hidden = true; return el; }));
   // Render only the page being opened first, so the first paint is quick; the rest follow right after.
-  const first = parseHash().id;
+  const first = parseHash().id || "home";
   if (EDIT || !byId[first] || !pageVisible(byId[first])) PAGES.forEach(renderPage); else renderPage(byId[first]);
   setupHelp();
   if (!EDIT) renderGuestBadge($("#guest-badge"), ctx);
   $("#app").hidden = false;
   const boot_ = $("#boot");
   if (boot_) { boot_.classList.add("is-done"); setTimeout(() => boot_.remove(), 400); }
+  setupEnvelope();
   route(true);
-  setupIntro();
   window.addEventListener("hashchange", () => route());
   $("#tabbar").addEventListener("click", (e) => { if (e.target.closest("[data-more]")) openMore(); });
   if (EDIT) exposeEditBridge();

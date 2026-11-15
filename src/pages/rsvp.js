@@ -1,11 +1,18 @@
-import { html, raw, esc, editAttrs, listAttrs, setPath, getPath } from "../lib/dom.js";
+import { html, raw, editAttrs, listAttrs, setPath } from "../lib/dom.js";
 import { renderLookup } from "./_lookup.js";
 import { formatDate, formatTime, toInstant } from "../lib/time.js";
 import { downloadIcs, googleCalUrl } from "../lib/calendar.js";
+import { seatsOf } from "../lib/guestfiles.js";
+
+/*
+ * RSVP by household headcount: for each invited event the family says how many of them are coming (0 up to the
+ * household's seats), plus optional names, food preferences as counts, and the household questions (hotel, travel…).
+ * Payload v2: { v:2, code, household, seats, submittedAt, counts:{eventId:n}, names, diet:{label:n}, dietNote, extras }.
+ */
 
 /* ---------- storage helpers (always guarded) ---------- */
-const KEY = (code) => `pa.rsvp.v1.${code}`;
-const DRAFT = (code) => `pa.rsvp.draft.v1.${code}`;
+const KEY = (code) => `pa.rsvp.v1.${code}`; // the last reply sent (also read by the home page); v1 or v2 payloads
+const DRAFT = (code) => `pa.rsvp.draft.v2.${code}`;
 const read = (area, k) => { try { return JSON.parse(window[area].getItem(k)); } catch { return null; } };
 const write = (area, k, v) => { try { window[area].setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
 const drop = (area, k) => { try { window[area].removeItem(k); } catch { /* ignore */ } };
@@ -15,61 +22,75 @@ const STEP_NAMES = ["Who's coming", "Details", "Review"];
 const HOTEL = [["need", "Yes, we'd like a room"], ["booked", "We've already booked"], ["local", "No, we're local"]];
 
 const blank = () => ({
-  phase: "form", step: 1, plus: [], att: {}, meal: {}, diet: {}, other: {}, replied: null,
+  phase: "form", step: 1, counts: {}, names: "", diet: {}, dietNote: "", replied: null,
   x: { hotel: "", arrival: "", departure: "", flight: "", flightTime: "", address: "", phone: "", song: "", message: "", shuttle: {} },
 });
 
 /* ---------- derived data ---------- */
 const rsvpEvents = (ctx) => ctx.events.filter((e) => e.rsvp !== false);
-const chipOptions = (ctx) => (ctx.content.rsvp?.dietaryOptions || []).filter((o) => !/^other$/i.test(o));
+/** Food preferences asked as counts: the meal options then the dietary options, without "Other" (that's the notes box). */
+const foodOptions = (ctx) => [...new Set([...(ctx.content.rsvp?.mealOptions || []), ...(ctx.content.rsvp?.dietaryOptions || [])])].filter((o) => o && !/^other$/i.test(o));
 const evTz = (e, ctx) => e.timezone || ctx.tz;
 const when = (e, ctx) => `${formatDate(e.start, evTz(e, ctx), "long")} · ${formatTime(e.start, evTz(e, ctx))}`;
+const seats = (ctx) => seatsOf(ctx.guest);
+const plural = (n, one, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 
-function people(st, ctx) {
-  const list = ctx.guest.members.map((m) => ({ id: m.id, name: m.name, plus: false }));
-  st.plus.forEach((p, i) => list.push({ id: p.id, name: (p.name || "").trim() || `Guest ${i + 1}`, plus: true, raw: p.name }));
-  return list;
-}
-const says = (st, pid, eid) => st.att[pid]?.[eid];
-const attendsAny = (st, pid, ctx) => rsvpEvents(ctx).some((e) => says(st, pid, e.id) === "yes");
-const attendees = (st, ctx) => people(st, ctx).filter((p) => attendsAny(st, p.id, ctx));
-const countAt = (st, eid, ctx) => people(st, ctx).filter((p) => says(st, p.id, eid) === "yes").length;
-const dietString = (st, pid) => [...(st.diet[pid] || []), (st.other[pid] || "").trim()].filter(Boolean).join("; ");
+const countAt = (st, eid) => (Number.isInteger(st.counts[eid]) ? st.counts[eid] : 0);
+const answered = (st, eid) => Number.isInteger(st.counts[eid]);
+/** The most people coming to any one event: the cap for food and shuttle counts. */
+const most = (st, ctx) => Math.max(0, ...rsvpEvents(ctx).map((e) => countAt(st, e.id)));
+const dietTotal = (st) => Object.values(st.diet).reduce((a, n) => a + (+n || 0), 0);
+const comingLabel = (n, ctx) => (n === 0 ? (seats(ctx) === 1 ? "Not coming" : "None of us") : seats(ctx) === 1 ? "Coming" : plural(n, "guest"));
 
 function buildPayload(st, ctx) {
   const evs = rsvpEvents(ctx);
-  const ppl = people(st, ctx);
-  const any = ppl.some((p) => attendsAny(st, p.id, ctx));
+  const cap = seats(ctx);
+  const counts = Object.fromEntries(evs.map((e) => [e.id, Math.min(cap, countAt(st, e.id))]));
+  const any = Object.values(counts).some((n) => n > 0);
+  const top = Math.max(0, ...Object.values(counts));
   const x = st.x;
   const shuttle = {};
-  if (any) for (const e of evs) { const n = Math.min(+x.shuttle?.[e.id] || 0, countAt(st, e.id, ctx)); if (e.shuttle && n > 0) shuttle[e.id] = n; }
+  if (any) for (const e of evs) { const n = Math.min(+x.shuttle?.[e.id] || 0, counts[e.id]); if (e.shuttle && n > 0) shuttle[e.id] = n; }
+  const diet = {};
+  if (any) for (const o of foodOptions(ctx)) { const n = Math.min(+st.diet[o] || 0, top); if (n > 0) diet[o] = n; }
   return {
+    v: 2,
     code: ctx.guest.code,
     household: ctx.guest.household,
+    seats: cap,
     submittedAt: ctx.now().toISOString(),
-    members: ppl.map((p) => {
-      const a = attendsAny(st, p.id, ctx);
-      return { id: p.id, name: p.name, meal: a ? st.meal[p.id] || "" : "", dietary: a ? dietString(st, p.id) : "" };
-    }),
-    responses: ppl.flatMap((p) => evs.map((e) => ({ memberId: p.id, eventId: e.id, attending: says(st, p.id, e.id) === "yes" ? "yes" : "no" }))),
+    counts,
+    names: any ? (st.names || "").trim() : "",
+    diet,
+    dietNote: any ? (st.dietNote || "").trim() : "",
     extras: any
       ? { hotel: x.hotel || "", arrival: x.arrival || "", departure: x.departure || "", flight: x.flight || "", flightTime: x.flightTime || "", address: x.address || "", shuttle, phone: x.phone || "", song: x.song || "", message: x.message || "" }
       : { hotel: "", arrival: "", departure: "", flight: "", flightTime: "", address: "", shuttle: {}, phone: "", song: "", message: x.message || "" },
   };
 }
 
+/** State from a saved reply. Also reads the older per-person replies (v1): counts are the yeses, names the people saying yes. */
 function fromPayload(P, ctx) {
   const st = blank();
-  const known = new Set(ctx.guest.members.map((m) => m.id));
-  const chips = chipOptions(ctx);
-  for (const m of P.members || []) {
-    if (!known.has(m.id)) st.plus.push({ id: m.id, name: m.name });
-    st.meal[m.id] = m.meal || "";
-    const parts = String(m.dietary || "").split(";").map((s) => s.trim()).filter(Boolean);
-    st.diet[m.id] = parts.filter((p) => chips.includes(p));
-    st.other[m.id] = parts.filter((p) => !chips.includes(p)).join("; ");
+  if (P.v === 2 || P.counts) {
+    for (const [id, n] of Object.entries(P.counts || {})) if (Number.isInteger(n)) st.counts[id] = n;
+    st.names = P.names || "";
+    st.diet = { ...(P.diet || {}) };
+    st.dietNote = P.dietNote || "";
+  } else {
+    const yes = new Set();
+    for (const r of P.responses || []) {
+      st.counts[r.eventId] = (st.counts[r.eventId] || 0) + (r.attending === "yes" ? 1 : 0);
+      if (r.attending === "yes") yes.add(r.memberId);
+    }
+    const people = (P.members || []).filter((m) => yes.has(m.id));
+    st.names = people.map((m) => m.name).filter(Boolean).join(", ");
+    const opts = foodOptions(ctx), notes = [];
+    for (const m of people) for (const part of [m.meal, ...String(m.dietary || "").split(";")].map((v) => String(v || "").trim()).filter(Boolean)) {
+      if (opts.includes(part)) st.diet[part] = (st.diet[part] || 0) + 1; else notes.push(`${m.name}: ${part}`);
+    }
+    st.dietNote = notes.join("; ");
   }
-  for (const r of P.responses || []) (st.att[r.memberId] ||= {})[r.eventId] = r.attending === "yes" ? "yes" : "no";
   Object.assign(st.x, P.extras || {});
   st.x.shuttle = { ...(P.extras?.shuttle || {}) };
   st.replied = P.submittedAt || null;
@@ -99,34 +120,41 @@ function contactsHtml(ctx) {
 }
 
 function summaryHtml(st, ctx) {
-  const evs = rsvpEvents(ctx);
-  const ppl = people(st, ctx);
   return html`<ul class="rv-sum" data-summary>
-    ${evs.map((e) => html`<li class="rv-sum-ev">
-      <p class="rv-sum-name">${e.name} <span class="rv-muted">${when(e, ctx)}</span></p>
-      <p class="rv-sum-who">${ppl.map((p, i) => {
-        const y = says(st, p.id, e.id) === "yes";
-        return html`<span class="rv-pill ${y ? "is-yes" : "is-no"}">${p.name} <span aria-hidden="true">${y ? "✓" : "✗"}</span><span class="visually-hidden">${y ? ", attending" : ", not attending"}</span></span>`;
-      })}</p>
-    </li>`)}
+    ${rsvpEvents(ctx).map((e) => {
+      const n = countAt(st, e.id);
+      return html`<li class="rv-sum-ev" data-sum-event="${e.id}">
+        <p class="rv-sum-name">${e.name} <span class="rv-muted">${when(e, ctx)}</span></p>
+        <p class="rv-sum-who"><span class="rv-pill ${n > 0 ? "is-yes" : "is-no"}">${comingLabel(n, ctx)} <span aria-hidden="true">${n > 0 ? "✓" : "✗"}</span></span></p>
+      </li>`;
+    })}
   </ul>`;
+}
+
+function stepper(act, key, n, max, label) {
+  return html`<span class="rv-step-ctl">
+    <button type="button" class="rv-round" data-act="${act}-" data-k="${key}" aria-label="Fewer: ${label}" ${n <= 0 ? "disabled" : ""}>−</button>
+    <output class="rv-num" data-num="${act}:${key}" aria-live="polite">${n}</output>
+    <button type="button" class="rv-round" data-act="${act}+" data-k="${key}" data-max="${max}" aria-label="More: ${label}" ${n >= max ? "disabled" : ""}>+</button>
+  </span>`;
 }
 
 function detailsSummary(st, ctx) {
   const q = ctx.content.rsvp?.questions || {};
-  const att = attendees(st, ctx);
   const rows = [];
-  for (const p of att) {
-    const bits = [st.meal[p.id], dietString(st, p.id)].filter(Boolean);
-    if (bits.length) rows.push([p.name, bits.join(" · ")]);
-  }
   const x = st.x;
-  if (att.length) {
+  const any = most(st, ctx) > 0;
+  if (any) {
+    if ((st.names || "").trim()) rows.push(["Names", st.names.trim()]);
+    const top = most(st, ctx);
+    const food = foodOptions(ctx).filter((o) => +st.diet[o] > 0).map((o) => `${o}: ${Math.min(+st.diet[o], top)}`);
+    if (food.length) rows.push(["Food", food.join(", ")]);
+    if ((st.dietNote || "").trim()) rows.push(["Allergies and notes", st.dietNote.trim()]);
     if (q.hotel && x.hotel) rows.push(["Hotel", HOTEL.find((h) => h[0] === x.hotel)?.[1] || x.hotel]);
     if (q.travelDates && (x.arrival || x.departure)) rows.push(["Travel dates", [x.arrival && `Arrive ${x.arrival}`, x.departure && `Leave ${x.departure}`].filter(Boolean).join(", ")]);
     if (q.flight && (x.flight || x.flightTime)) rows.push(["Flight", [x.flight, x.flightTime].filter(Boolean).join(" at ")]);
-    const sh = Object.entries(x.shuttle || {}).filter(([id, n]) => n > 0 && rsvpEvents(ctx).some((e) => e.id === id && e.shuttle) && countAt(st, id, ctx) > 0);
-    if (q.shuttle && sh.length) rows.push(["Shuttle seats", sh.map(([id, n]) => `${rsvpEvents(ctx).find((e) => e.id === id).name}: ${Math.min(n, countAt(st, id, ctx))}`).join(", ")]);
+    const sh = Object.entries(x.shuttle || {}).filter(([id, n]) => n > 0 && rsvpEvents(ctx).some((e) => e.id === id && e.shuttle) && countAt(st, id) > 0);
+    if (q.shuttle && sh.length) rows.push(["Shuttle seats", sh.map(([id, n]) => `${rsvpEvents(ctx).find((e) => e.id === id).name}: ${Math.min(n, countAt(st, id))}`).join(", ")]);
     if (q.phone && x.phone) rows.push(["Phone", x.phone]);
     if (q.address && x.address) rows.push(["Mailing address", x.address]);
     if (q.song && x.song) rows.push(["Song", x.song]);
@@ -143,42 +171,39 @@ function stepHead(n, title, help) {
 
 function step1(st, ctx) {
   const evs = rsvpEvents(ctx);
-  const ppl = people(st, ctx);
-  const max = +ctx.guest.plusOnes || 0;
-  const plusBlock = max > 0 ? html`<div class="rv-card rv-plus">
-      <h3>Additional guests</h3>
-      <p class="rv-help">You may bring up to ${max} extra ${max === 1 ? "guest" : "guests"}. We need their name for the seating plan.</p>
-      ${st.plus.map((p, i) => html`<div class="rv-plus-row">
-        <div class="rv-field"><label for="pn-${p.id}">Guest ${i + 1} full name</label>
-          <input id="pn-${p.id}" data-f="plus.${i}.name" data-pname-input="${p.id}" value="${p.name || ""}" autocomplete="off" maxlength="80" aria-describedby="pe-${p.id}" />
-          <p class="rv-err" id="pe-${p.id}" hidden></p></div>
-        <button type="button" class="btn btn--secondary btn--small" data-act="remove-plus" data-id="${p.id}" aria-label="Remove guest ${i + 1}${p.name ? ", " + p.name : ""}">Remove</button>
-      </div>`)}
-      ${st.plus.length < max ? html`<button type="button" class="btn btn--secondary" data-act="add-plus">+ Add a guest</button>` : html`<p class="rv-help">That's the most guests allowed on your invitation.</p>`}
-    </div>` : "";
+  const cap = seats(ctx);
+  const one = cap === 1;
+  const known = (ctx.guest.members || []).map((m) => m.name).filter(Boolean);
+  const anyComing = evs.some((e) => countAt(st, e.id) > 0);
   return html`<fieldset class="rv-step" data-step="1">
-    ${stepHead(1, "Who's coming?", "For each person and each event, tap one answer. You can change it any time before the deadline.")}
+    ${stepHead(1, "Who's coming?", one
+      ? "For each event, let us know if you can join us. You can change it any time before the deadline."
+      : html`Your invitation is for up to ${plural(cap, "guest")}. For each event, tap how many of you will join us. You can change it any time before the deadline.`)}
     <div class="rv-quick" role="group" aria-label="Quick answers">
-      <button type="button" class="btn btn--secondary btn--small" data-act="all">Everyone, all events ✓</button>
+      <button type="button" class="btn btn--secondary btn--small" data-act="all">${one ? "Coming to all events ✓" : `All ${cap} of us, every event ✓`}</button>
       <button type="button" class="btn btn--secondary btn--small" data-act="clear">Clear</button>
     </div>
-    ${plusBlock}
-    ${evs.map((e) => html`<section class="rv-card rv-ev" aria-labelledby="evh-${e.id}">
-      <header class="rv-ev-head"><h3 id="evh-${e.id}">${e.name}</h3><p class="rv-when">${when(e, ctx)}</p></header>
-      <div class="rv-who-list">
-        ${ppl.map((p) => {
-          const v = says(st, p.id, e.id);
-          return html`<div class="rv-who" role="radiogroup" aria-labelledby="evh-${e.id} wl-${p.id}-${e.id}" aria-describedby="er-${p.id}-${e.id}" data-m="${p.id}" data-e="${e.id}">
-            <span class="rv-who-name" id="wl-${p.id}-${e.id}" ${p.plus ? html`data-pname="${p.id}"` : ""}>${p.name}</span>
-            <div class="rv-seg">
-              <label class="rv-segopt is-yes"><input type="radio" name="a__${p.id}__${e.id}" value="yes" data-m="${p.id}" data-e="${e.id}" ${v === "yes" ? "checked" : ""} /><span><span aria-hidden="true">✓ </span>Joyfully accepts</span></label>
-              <label class="rv-segopt is-no"><input type="radio" name="a__${p.id}__${e.id}" value="no" data-m="${p.id}" data-e="${e.id}" ${v === "no" ? "checked" : ""} /><span><span aria-hidden="true">✗ </span>Regretfully declines</span></label>
-            </div>
-            <p class="rv-err" id="er-${p.id}-${e.id}" hidden></p>
-          </div>`;
-        })}
-      </div>
-    </section>`)}
+    ${evs.map((e) => {
+      const v = st.counts[e.id];
+      const opts = Array.from({ length: cap + 1 }, (_, n) => n);
+      return html`<section class="rv-card rv-ev" aria-labelledby="evh-${e.id}" data-ev="${e.id}">
+        <header class="rv-ev-head"><h3 id="evh-${e.id}">${e.name}</h3><p class="rv-when">${when(e, ctx)}</p></header>
+        <div class="rv-howmany" role="radiogroup" aria-labelledby="evh-${e.id} hm-${e.id}" aria-describedby="er-${e.id}">
+          <p class="rv-howmany-q" id="hm-${e.id}">${one ? "Will you join us?" : "How many of you will join us?"}</p>
+          <div class="rv-seg rv-seg--counts ${one ? "" : "is-many"}">
+            ${opts.map((n) => html`<label class="rv-segopt ${n === 0 ? "is-no" : "is-yes"}"><input type="radio" name="n__${e.id}" value="${n}" data-count="${e.id}" ${v === n ? "checked" : ""} /><span>${n === 0
+              ? html`<span aria-hidden="true">✗ </span>${one ? "Regretfully declines" : "None of us"}`
+              : one ? html`<span aria-hidden="true">✓ </span>Joyfully accepts` : html`${n}<span class="visually-hidden"> ${n === 1 ? "guest" : "guests"}</span>`}</span></label>`)}
+          </div>
+          <p class="rv-err" id="er-${e.id}" hidden></p>
+        </div>
+      </section>`;
+    })}
+    ${one ? "" : html`<div class="rv-card rv-names" data-names-card ${anyComing ? "" : "hidden"}>
+      <div class="rv-field"><label for="x-names">Names of those coming <span class="rv-muted">(optional)</span></label>
+        <textarea id="x-names" data-f="names" rows="2" maxlength="600" autocomplete="off" aria-describedby="x-names-h" placeholder="${known.length ? `e.g. ${known.slice(0, 3).join(", ")}` : "e.g. Raj Sharma, Priya Sharma"}">${st.names}</textarea>
+        <p class="rv-help" id="x-names-h">It helps us with name cards and seating.</p></div>
+    </div>`}
   </fieldset>`;
 }
 
@@ -189,21 +214,20 @@ function optRadio(name, value, label, checked, f, path) {
 function step2(st, ctx) {
   const r = ctx.content.rsvp || {};
   const q = r.questions || {};
-  const att = attendees(st, ctx);
-  if (!att.length) {
+  const top = most(st, ctx);
+  if (!top) {
     return html`<fieldset class="rv-step" data-step="2">
       ${stepHead(2, "Send your wishes", "We're sorry you can't make it, and we'll be thinking of you. A note is always welcome.")}
       <div class="rv-card"><div class="rv-field"><label for="x-message">A note for the couple (optional)</label>
         <textarea id="x-message" data-f="x.message" rows="4" maxlength="1000">${st.x.message}</textarea></div></div>
     </fieldset>`;
   }
-  const meals = r.mealOptions || [];
-  const chips = chipOptions(ctx);
+  const food = foodOptions(ctx);
   const evs = rsvpEvents(ctx);
   const all = evs.map((e) => e.start.slice(0, 10)).sort();
   const lo = all.length ? shiftDate(all[0], -10) : "";
   const hi = all.length ? shiftDate(all[all.length - 1], 10) : "";
-  const shuttleEvs = evs.filter((e) => e.shuttle && countAt(st, e.id, ctx) > 0);
+  const shuttleEvs = evs.filter((e) => e.shuttle && countAt(st, e.id) > 0);
   const x = st.x;
   const extras = [];
   if (q.hotel) extras.push(html`<fieldset class="rv-sub"><legend>${q.hotel}</legend><div class="rv-opts">${HOTEL.map(([v, l]) => optRadio("x-hotel", v, l, x.hotel === v, "x.hotel"))}</div></fieldset>`);
@@ -215,35 +239,34 @@ function step2(st, ctx) {
     <div class="rv-field"><label for="x-flightTime">Arrival time</label><input id="x-flightTime" type="time" data-f="x.flightTime" value="${x.flightTime}" /></div></div></fieldset>`);
   if (q.shuttle && shuttleEvs.length) extras.push(html`<fieldset class="rv-sub"><legend>${q.shuttle}</legend>
     ${shuttleEvs.map((e) => {
-      const mx = countAt(st, e.id, ctx);
+      const mx = countAt(st, e.id);
       const n = Math.min(+x.shuttle?.[e.id] || 0, mx);
       return html`<div class="rv-shuttle" role="group" aria-labelledby="sh-${e.id}">
         <span id="sh-${e.id}" class="rv-shuttle-name">${e.name} <span class="rv-muted">(up to ${mx})</span></span>
-        <span class="rv-step-ctl">
-          <button type="button" class="rv-round" data-act="seat-" data-e="${e.id}" aria-label="Fewer seats for ${e.name}" ${n <= 0 ? "disabled" : ""}>−</button>
-          <output class="rv-num" data-seats="${e.id}" aria-live="polite">${n}</output>
-          <button type="button" class="rv-round" data-act="seat+" data-e="${e.id}" data-max="${mx}" aria-label="More seats for ${e.name}" ${n >= mx ? "disabled" : ""}>+</button>
-        </span></div>`;
+        ${stepper("seat", e.id, n, mx, `shuttle seats for ${e.name}`)}</div>`;
     })}</fieldset>`);
   if (q.phone) extras.push(html`<div class="rv-field"><label for="x-phone">${q.phone}</label><input id="x-phone" type="tel" inputmode="tel" autocomplete="tel" data-f="x.phone" value="${x.phone}" maxlength="30" /></div>`);
   if (q.address) extras.push(html`<div class="rv-field"><label for="x-address">${q.address}</label><textarea id="x-address" rows="3" autocomplete="street-address" data-f="x.address" maxlength="300">${x.address}</textarea></div>`);
   if (q.song) extras.push(html`<div class="rv-field"><label for="x-song">${q.song}</label><input id="x-song" data-f="x.song" value="${x.song}" autocomplete="off" maxlength="120" /></div>`);
+  const one = top === 1;
   return html`<fieldset class="rv-step" data-step="2">
     ${stepHead(2, "A few details", "Just so we can look after everyone. Everything here is optional.")}
-    ${att.map((p, pi) => html`<section class="rv-card rv-person" aria-labelledby="pp-${p.id}">
-      <h3 id="pp-${p.id}">${p.name}</h3>
-      ${meals.length ? html`<fieldset class="rv-sub"><legend>Meal choice</legend>
-        <div class="rv-opts" ${pi === 0 ? listAttrs("rsvp.mealOptions") : ""}>
-          ${optRadio(`meal-${p.id}`, "", "No preference", !st.meal[p.id], `meal.${p.id}`)}
-          ${meals.map((m, i) => html`<label class="rv-opt" data-index="${i}"><input type="radio" name="meal-${p.id}" value="${m}" data-f="meal.${p.id}" ${st.meal[p.id] === m ? "checked" : ""} /><span ${editAttrs("text", `rsvp.mealOptions.${i}`)}>${m}</span></label>`)}
+    <section class="rv-card rv-food" aria-labelledby="food-h">
+      <h3 id="food-h">Food</h3>
+      ${food.length ? html`<fieldset class="rv-sub"><legend>${one ? "Do any of these apply to you?" : `How many of you are…`}</legend>
+        <p class="rv-help">${one ? "Tap + for each one that applies." : `Leave at 0 if none. Up to ${top}, the most of you coming to one event.`}</p>
+        <div class="rv-diet">
+          ${food.map((o, i) => {
+            const n = Math.min(+st.diet[o] || 0, top);
+            const mi = (r.mealOptions || []).indexOf(o), di = (r.dietaryOptions || []).indexOf(o);
+            return html`<div class="rv-shuttle" role="group" aria-labelledby="dt-${i}">
+              <span id="dt-${i}" class="rv-shuttle-name" ${editAttrs("text", mi >= 0 ? `rsvp.mealOptions.${mi}` : `rsvp.dietaryOptions.${di}`)}>${o}</span>
+              ${stepper("diet", i, n, top, o)}</div>`;
+          })}
         </div></fieldset>` : ""}
-      <fieldset class="rv-sub"><legend>Dietary needs</legend>
-        <div class="rv-opts" ${pi === 0 ? listAttrs("rsvp.dietaryOptions") : ""}>
-          ${chips.map((c, i) => html`<label class="rv-opt" data-index="${i}"><input type="checkbox" data-diet="${p.id}" value="${c}" ${(st.diet[p.id] || []).includes(c) ? "checked" : ""} /><span ${editAttrs("text", `rsvp.dietaryOptions.${(r.dietaryOptions || []).indexOf(c)}`)}>${c}</span></label>`)}
-        </div>
-        <div class="rv-field"><label for="ot-${p.id}">Other (please tell us)</label><input id="ot-${p.id}" data-f="other.${p.id}" value="${st.other[p.id] || ""}" autocomplete="off" maxlength="120" /></div>
-      </fieldset>
-    </section>`)}
+      <div class="rv-field"><label for="x-dietNote">Allergies or anything else about food <span class="rv-muted">(optional)</span></label>
+        <input id="x-dietNote" data-f="dietNote" value="${st.dietNote}" autocomplete="off" maxlength="300" placeholder="e.g. one child with a peanut allergy, no onion or garlic" /></div>
+    </section>
     ${extras.length ? html`<section class="rv-card rv-extras" aria-labelledby="hh-h"><h3 id="hh-h">For your household</h3>${extras}</section>` : ""}
     <div class="rv-card"><div class="rv-field"><label for="x-message">A note for the couple (optional)</label>
       <textarea id="x-message" data-f="x.message" rows="3" maxlength="1000">${x.message}</textarea></div></div>
@@ -278,7 +301,7 @@ function formView(ui, ctx) {
 
 function passedView(ui, ctx) {
   const st = ui.st;
-  const has = rsvpEvents(ctx).some((e) => people(st, ctx).some((p) => says(st, p.id, e.id)));
+  const has = rsvpEvents(ctx).some((e) => answered(st, e.id));
   return html`<div class="rv-card rv-passed" data-passed>
       <h2 tabindex="-1" data-step-heading>The RSVP deadline has passed</h2>
       <p>The RSVP deadline has passed — please message us and we'll do our best to help.</p>
@@ -289,14 +312,14 @@ function passedView(ui, ctx) {
 
 function doneView(ui, ctx) {
   const st = ui.st;
-  const evs = rsvpEvents(ctx).filter((e) => countAt(st, e.id, ctx) > 0);
+  const evs = rsvpEvents(ctx).filter((e) => countAt(st, e.id) > 0);
   const site = ctx.content.site || {};
   return html`<div class="rv-card rv-done" data-done>
     <h2 tabindex="-1" data-step-heading>Thank you, ${ctx.guest.household}</h2>
     ${evs.length ? html`<p class="rv-help">Your reply is in. We can't wait to celebrate with you.</p>` : html`<p class="rv-help">Your reply is in. We'll miss you and are grateful for your kind wishes.</p>`}
     ${evs.length ? html`<h3>You're joining us for</h3>
       <ul class="rv-sum">${evs.map((e) => html`<li class="rv-sum-ev"><p class="rv-sum-name">${e.name} <span class="rv-muted">${when(e, ctx)}</span></p>
-        <p class="rv-sum-who">${people(st, ctx).filter((p) => says(st, p.id, e.id) === "yes").map((p) => html`<span class="rv-pill is-yes">${p.name} <span aria-hidden="true">✓</span></span>`)}</p></li>`)}</ul>
+        <p class="rv-sum-who"><span class="rv-pill is-yes">${comingLabel(countAt(st, e.id), ctx)} <span aria-hidden="true">✓</span></span></p></li>`)}</ul>
       <h3>Add these events to your calendar</h3>
       <div class="rv-cal"><button type="button" class="btn btn--primary" data-act="ics">Download calendar file (.ics)</button></div>
       <ul class="rv-gcal">${evs.map((e) => html`<li><a class="btn btn--secondary btn--small" href="${googleCalUrl(e, site)}" target="_blank" rel="noopener">${e.name} on Google Calendar</a></li>`)}</ul>` : ""}
@@ -342,7 +365,7 @@ function goStep(root, n) {
   ui.sendErr = "";
   saveDraft(ui);
   draw(root, "heading");
-  setLive(root, `Step ${n} of 3: ${n === 2 && !attendees(ui.st, ui.ctx).length ? "Send your wishes" : STEP_NAMES[n - 1]}`);
+  setLive(root, `Step ${n} of 3: ${n === 2 && !most(ui.st, ui.ctx) ? "Send your wishes" : STEP_NAMES[n - 1]}`);
 }
 
 /* ---------- validation ---------- */
@@ -352,24 +375,20 @@ function validate1(root) {
   const body = root.querySelector("[data-body]");
   let first = null;
   let count = 0;
-  const fail = (el, errEl, msg) => { errEl.textContent = msg; errEl.hidden = false; count++; if (!first) first = el; };
-  st.plus.forEach((p, i) => {
-    const err = body.querySelector(`#pe-${p.id}`);
-    if (!(p.name || "").trim()) fail(body.querySelector(`#pn-${p.id}`), err, `Please enter guest ${i + 1}'s full name, or remove them.`);
-    else err.hidden = true;
-  });
   for (const e of rsvpEvents(ctx)) {
-    for (const p of people(st, ctx)) {
-      const err = body.querySelector(`#er-${p.id}-${e.id}`);
-      if (!err) continue;
-      if (!says(st, p.id, e.id)) fail(body.querySelector(`input[name="a__${p.id}__${e.id}"]`), err, `Please choose an answer for ${p.name} at ${e.name}.`);
-      else err.hidden = true;
-    }
+    const err = body.querySelector(`#er-${e.id}`);
+    if (!err) continue;
+    if (!answered(st, e.id)) {
+      err.textContent = seats(ctx) === 1 ? `Please let us know if you can come to ${e.name}.` : `Please choose how many of you are coming to ${e.name}.`;
+      err.hidden = false;
+      count++;
+      if (!first) first = body.querySelector(`input[name="n__${e.id}"]`);
+    } else err.hidden = true;
   }
   if (first) {
     first.focus();
     first.scrollIntoView({ block: "center" });
-    setLive(root, `${count} ${count === 1 ? "answer is" : "answers are"} still needed. ${first.closest(".rv-who, .rv-plus-row")?.querySelector(".rv-err")?.textContent || ""}`);
+    setLive(root, `${count} ${count === 1 ? "answer is" : "answers are"} still needed. ${first.closest(".rv-howmany")?.querySelector(".rv-err")?.textContent || ""}`);
     return false;
   }
   return true;
@@ -453,24 +472,43 @@ function bind(root) {
     if (t.dataset.f) {
       if (t.type === "radio" && !t.checked) return;
       setPath(st, t.dataset.f, t.value);
-      if (t.dataset.pnameInput) {
-        const i = st.plus.findIndex((p) => p.id === t.dataset.pnameInput);
-        root.querySelectorAll(`[data-pname="${t.dataset.pnameInput}"]`).forEach((n) => { n.textContent = (t.value || "").trim() || `Guest ${i + 1}`; });
-        const err = root.querySelector(`#pe-${t.dataset.pnameInput}`); if (err && t.value.trim()) err.hidden = true;
-      }
       if (t.id === "x-arrival") { const d = root.querySelector("#x-departure"); if (d) d.min = t.value || d.min; }
-    } else if (t.dataset.diet) {
-      const set = new Set(st.diet[t.dataset.diet] || []);
-      t.checked ? set.add(t.value) : set.delete(t.value);
-      st.diet[t.dataset.diet] = [...set];
-    } else if (t.type === "radio" && t.dataset.m && t.dataset.e) {
-      (st.att[t.dataset.m] ||= {})[t.dataset.e] = t.value;
-      const err = root.querySelector(`#er-${t.dataset.m}-${t.dataset.e}`); if (err) err.hidden = true;
+    } else if (t.dataset.count) {
+      if (!t.checked) return;
+      st.counts[t.dataset.count] = Math.max(0, Math.min(seats(ctx), Math.round(+t.value) || 0));
+      const err = root.querySelector(`#er-${t.dataset.count}`); if (err) err.hidden = true;
+      const names = root.querySelector("[data-names-card]");
+      if (names) names.hidden = !rsvpEvents(ctx).some((ev) => countAt(st, ev.id) > 0);
     } else return;
     saveDraft(ui);
   };
   root.addEventListener("change", onField);
   root.addEventListener("input", (e) => { if (e.target.matches("input:not([type=radio]):not([type=checkbox]), textarea")) onField(e); });
+
+  /** −/+ on a counter: shuttle seats per event (cap: that event's count) or a food count (cap: the biggest event). */
+  function bump(root, b, st, ctx) {
+    const [kind, dir] = [b.dataset.act.slice(0, -1), b.dataset.act.slice(-1)];
+    const k = b.dataset.k;
+    let mx, cur, set;
+    if (kind === "seat") {
+      mx = countAt(st, k);
+      cur = Math.min(+st.x.shuttle[k] || 0, mx);
+      set = (n) => { st.x.shuttle[k] = n; };
+    } else {
+      const label = foodOptions(ctx)[+k];
+      mx = most(st, ctx);
+      cur = Math.min(+st.diet[label] || 0, mx);
+      set = (n) => { if (n) st.diet[label] = n; else delete st.diet[label]; };
+    }
+    const n = Math.max(0, Math.min(mx, cur + (dir === "+" ? 1 : -1)));
+    set(n);
+    const out = root.querySelector(`[data-num="${kind}:${k}"]`);
+    if (out) out.textContent = n;
+    const grp = b.closest(".rv-step-ctl");
+    grp.querySelector(`[data-act='${kind}-']`).disabled = n <= 0;
+    grp.querySelector(`[data-act='${kind}+']`).disabled = n >= mx;
+    if (b.disabled) grp.querySelector("button:not([disabled])")?.focus();
+  }
 
   root.addEventListener("click", (e) => {
     const b = e.target.closest("[data-act]");
@@ -481,43 +519,22 @@ function bind(root) {
     ui.dirty = true;
     if (act === "all" || act === "clear") {
       const yes = act === "all";
-      for (const p of people(st, ctx)) { st.att[p.id] = {}; if (yes) for (const ev of rsvpEvents(ctx)) st.att[p.id][ev.id] = "yes"; }
+      st.counts = {};
+      if (yes) for (const ev of rsvpEvents(ctx)) st.counts[ev.id] = seats(ctx);
       saveDraft(ui);
       draw(root);
       root.querySelector(`[data-act=${act}]`)?.focus();
-      setLive(root, yes ? "Everyone is set to joyfully accept all events." : "All answers cleared.");
-    } else if (act === "add-plus") {
-      let n = 1; while (st.plus.some((p) => p.id === "p" + n)) n++;
-      st.plus.push({ id: "p" + n, name: "" });
-      saveDraft(ui);
-      draw(root, `#pn-p${n}`);
-    } else if (act === "remove-plus") {
-      const id = b.dataset.id;
-      st.plus = st.plus.filter((p) => p.id !== id);
-      delete st.att[id]; delete st.meal[id]; delete st.diet[id]; delete st.other[id];
-      saveDraft(ui);
-      draw(root, st.plus.length ? "[data-act=remove-plus]" : "[data-act=add-plus]");
-      setLive(root, "Guest removed.");
+      setLive(root, yes ? (seats(ctx) === 1 ? "Set to coming to every event." : `Set to all ${seats(ctx)} of you at every event.`) : "All answers cleared.");
     } else if (act === "next") {
       if (st.step === 1 && !validate1(root)) return;
       goStep(root, Math.min(3, st.step + 1));
     } else if (act === "back") goStep(root, Math.max(1, st.step - 1));
     else if (act === "goto") goStep(root, +b.dataset.step);
-    else if (act === "seat+" || act === "seat-") {
-      const id = b.dataset.e;
-      const mx = countAt(st, id, ctx);
-      const cur = Math.min(+st.x.shuttle[id] || 0, mx);
-      const n = Math.max(0, Math.min(mx, cur + (act === "seat+" ? 1 : -1)));
-      st.x.shuttle[id] = n;
-      const out = root.querySelector(`[data-seats="${id}"]`);
-      if (out) out.textContent = n;
-      const grp = b.closest(".rv-step-ctl");
-      grp.querySelector("[data-act='seat-']").disabled = n <= 0;
-      grp.querySelector("[data-act='seat+']").disabled = n >= mx;
-      if (b.disabled) grp.querySelector("button:not([disabled])")?.focus();
+    else if (/^(seat|diet)[+-]$/.test(act)) {
+      bump(root, b, st, ctx);
       saveDraft(ui);
     } else if (act === "ics") {
-      const evs = rsvpEvents(ctx).filter((ev) => countAt(st, ev.id, ctx) > 0);
+      const evs = rsvpEvents(ctx).filter((ev) => countAt(st, ev.id) > 0);
       downloadIcs(evs, ctx.content.site, "wedding-events.ics");
     } else if (act === "change") {
       st.phase = "form"; st.step = 1;
@@ -532,16 +549,16 @@ function initUi(root, ctx) {
   const code = ctx.guest.code;
   const ui = { code, ctx, st: blank(), dirty: false, busy: false, sendErr: "" };
   const prior = read("localStorage", KEY(code));
-  if (prior && prior.members) ui.st = fromPayload(prior, ctx);
+  if (prior && (prior.counts || prior.members)) ui.st = fromPayload(prior, ctx);
   const draft = read("sessionStorage", DRAFT(code));
-  if (draft && draft.att) { ui.st = { ...blank(), ...draft, x: { ...blank().x, ...draft.x }, replied: ui.st.replied }; ui.dirty = true; }
+  if (draft && draft.counts) { ui.st = { ...blank(), ...draft, x: { ...blank().x, ...draft.x }, replied: ui.st.replied }; ui.dirty = true; }
   UI.set(root, ui);
   const ep = ctx.content.site?.rsvpEndpoint;
   if (ep && ctx.mode !== "edit") {
     const url = ep + (ep.includes("?") ? "&" : "?") + "action=get&code=" + encodeURIComponent(code);
     fetch(url).then((r) => r.json()).then((j) => {
       const P = j && j.ok && j.P;
-      if (!P || !P.members) return;
+      if (!P || !(P.counts || P.members)) return;
       const mine = ui.st.replied;
       if (mine && new Date(mine) >= new Date(P.submittedAt)) return;
       write("localStorage", KEY(code), P);

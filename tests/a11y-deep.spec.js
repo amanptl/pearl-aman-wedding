@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-const ROUTES = ["home", "schedule", "travel", "story", "faq", "registry", "rsvp"];
+const ROUTES = ["home", "schedule", "travel", "story", "faq", "rsvp"];
 const FONT_NOISE = /fonts\.(googleapis|gstatic)\.com|ERR_(INTERNET|NAME|CONNECTION|BLOCKED)|Failed to load resource/i;
 const FAMILY = "/?guest=tests/fixtures/guest-family.json&intro=0";
 
@@ -108,7 +108,6 @@ test.describe("dialogs and sheets", () => {
 });
 
 test("intro envelope is keyboard operable (Space opens, focus lands on the page heading)", async ({ page, browserName }) => {
-  await page.addInitScript(() => { try { sessionStorage.removeItem("pa.intro"); } catch {} });
   await open(page, "/");
   await expect(page.locator("#intro")).toBeVisible();
   await expect(page.locator("#intro-open")).toBeFocused();
@@ -120,6 +119,7 @@ test("intro envelope is keyboard operable (Space opens, focus lands on the page 
   await page.locator("#intro-open").focus();
   await page.keyboard.press("Space");
   await expect(page.locator("#intro")).toHaveCount(0, { timeout: 5000 });
+  await expect(page).toHaveURL(/#home$/);
   await expect(page.locator('[data-page="home"] h1')).toBeFocused();
 });
 
@@ -168,14 +168,14 @@ test("RSVP stepper completes by keyboard alone (Tab / Space / Enter)", async ({ 
   }
   await tabTo(`${R} .rv-quick .btn`);
   await page.keyboard.press("Space");
-  await expect(page.locator(`${R} input[value=yes]:checked`).first()).toBeAttached();
+  await expect(page.locator(`${R} input[data-count]:checked`).first()).toBeAttached();
   await tabTo(`${R} [data-act=next]`);
   await page.keyboard.press("Enter");
   await expect(H).toHaveText("A few details");
   await expect(H).toBeFocused();
-  await tabTo(`${R} input[name="meal-m1"]`);
+  await tabTo(`${R} [data-act="diet+"]`);
   await page.keyboard.press("Space");
-  await expect(page.locator(`${R} input[name="meal-m1"]:checked`)).toHaveCount(1);
+  await expect(page.locator(`${R} [data-num="diet:0"]`)).toHaveText("1");
   await tabTo(`${R} [data-act=next]`);
   await page.keyboard.press("Enter");
   await expect(H).toHaveText("Review and send");

@@ -46,6 +46,12 @@ function dayParts(key, tz) {
   return { wd, date: rest || "" };
 }
 
+/** Date is set, clock time is not. Stored as local midnight with no end. */
+function whenLabel(e, tz) {
+  if (!e.end && /T00:00(?::00)?$/.test(e.start || "")) return "Time to be confirmed";
+  return formatRange(e.start, e.end, tz);
+}
+
 function eventCard(e, ctx, flags) {
   const i = ctx.content.events.findIndex((x) => x.id === e.id);
   const p = (f) => (i >= 0 ? `events.${i}.${f}` : `events.x.${f}`);
@@ -62,9 +68,8 @@ function eventCard(e, ctx, flags) {
       ${e.photo ? html`<div class="event-photo">${imgTag(e.photo, { path: p("photo"), sizes: "(min-width: 768px) 40rem, 100vw" })}</div>` : ""}
       <div class="event-body stack stack--s">
         <div class="event-top cluster cluster--s">
-          <span class="event-time eyebrow">${icon.clock()}<span>${formatRange(e.start, e.end, tz)}</span></span>
+          <span class="event-time eyebrow">${icon.clock()}<span>${whenLabel(e, tz)}</span></span>
           ${flags.current ? html`<span class="badge">Happening now</span>` : flags.next ? html`<span class="badge badge--gold">Up next</span>` : ""}
-          ${e.visibility === "private" ? html`<span class="badge badge--outline">Invitation only</span>` : ""}
         </div>
         <div class="stack stack--s event-title">
           <h3 class="display display--m" ${editAttrs("text", p("name"), { placeholder: "Add event name" })}>${e.name}</h3>
@@ -127,14 +132,14 @@ export default {
   id: "schedule",
   navLabel: "Schedule",
   title: () => "Schedule",
-  isEmpty: (ctx) => ctx.events.length === 0,
+  isEmpty: () => false,
   render(root, ctx) {
     root._ctx = ctx;
     root._io?.disconnect();
     const days = groupByDay(ctx.events, ctx.tz);
     const { current, next } = nowNext(ctx.events, ctx.now(), ctx.tz);
     const tzNote = guestTzDiffers(ctx.tz);
-    const intro = ctx.content.schedule?.intro ?? (ctx.events.length === 1 ? "Here are the details for the day." : "A weekend of celebration. Open an event for what to wear, directions and more.");
+    const intro = ctx.content.schedule?.intro ?? (ctx.events.length === 1 ? "Here are the details for the day." : "Open an event for what to wear, directions and more.");
     let tzLabel = "";
     if (tzNote) {
       const city = ctx.tz.split("/").pop().replace(/_/g, " ");
@@ -150,8 +155,8 @@ export default {
       <div class="section section--paper page-head">
         <div class="container container--narrow center stack">
           <h1 class="page-title">Schedule</h1>
+          ${intro || isEdit() ? html`<p class="lede" ${editAttrs("multiline", "schedule.intro", { placeholder: "Add a short introduction" })}>${multiline(intro)}</p>` : ""}
           ${ctx.events.length ? html`
-            ${intro || isEdit() ? html`<p class="lede" ${editAttrs("multiline", "schedule.intro", { placeholder: "Add a short introduction" })}>${multiline(intro)}</p>` : ""}
             <div class="cluster cluster--center"><button class="btn btn--light" type="button" data-cal-all aria-haspopup="dialog">${icon.calendarPlus()}Add all my events to calendar</button></div>
             ${tzNote ? html`<p class="tz-note"><span class="chip">${icon.clock()}<span>${tzLabel}</span></span></p>` : ""}` : ""}
         </div>

@@ -28,11 +28,11 @@ Private events (for example Mehndi, Haldi, Sangeet) and your households are stor
 
 Open the **Guests** tab (after unlocking).
 
-- **Households:** one row per invitation. Edit the household name, the guests (type a name, press Enter), plus-ones (extra unnamed guests), groups, and tick the events they are invited to. Ticking an event decides what that household sees on its Schedule and RSVP pages.
+- **Households:** one row per invitation. Edit the household name, **Guests** (how many people the household may bring; the RSVP asks "how many of you will join us?" up to this number), optional names (type a name, press Enter), groups, and tick the events they are invited to. Ticking an event decides what that household sees on its Schedule and RSVP pages.
 - **Groups (presets):** tick some households, then press a group such as *Close family* (all events) or *Friends* (Sangeet + Wedding + Reception) to set their events in one go. *Edit groups…* lets you change what each group means.
 - **Add household** adds a row and puts the cursor in the name field. **Delete** asks first.
 - **Search and filters:** by name, group or event.
-- **Import CSV:** columns `household, members, tags, events, plusOnes`. Separate several names or events with `;`. `events` can be event ids (`wedding;reception`), `all`, or a group name (`Friends`). You see a preview with any problems before anything is added. Existing households (same name) keep their personal link.
+- **Import CSV:** columns `household, guests, members, tags, events` (`members` = optional names). Separate several names or events with `;`. Older files with `plusOnes` and no `guests` still work: guests = names + plus-ones. `events` can be event ids (`wedding;reception`), `all`, or a group name (`Friends`). You see a preview with any problems before anything is added. Existing households (same name) keep their personal link.
 - **Export CSV** gives every household with its personal link, handy for mail merges.
 - Per household:
   - **Copy link:** the personal link `https://yoursite/?i=CODE`.
@@ -87,7 +87,7 @@ node apps-script/test-harness.mjs
 ```
 - Use another port with `PORT=5207 npx playwright test --workers=4` (output goes to `test-results/<port>`). Keep to 4 workers or WebKit gets flaky.
 - `SHOTS=1 npx playwright test tests/guests-editor.spec.js` saves screenshots to `tests/screens/`.
-- Dev switches (localhost only): `?content=tests/fixtures/stress.json` loads a content fixture; `?guest=tests/fixtures/guest-family.json` loads a plaintext guest; `?all=1` shows every event of the loaded content, but private events are no longer in `content.json`, so **`?all=1` only reveals them together with `?guest=`** (the guest fixture carries its private events). `?intro=0` skips the envelope.
+- Dev switches (localhost only): `?content=tests/fixtures/stress.json` loads a content fixture; `?guest=tests/fixtures/guest-family.json` loads a plaintext guest; `?all=1` shows every event of the loaded content, but private events are no longer in `content.json`, so **`?all=1` only reveals them together with `?guest=`** (the guest fixture carries its private events). `/` is the sealed envelope and `#home` is the opened invitation. `?intro=0` skips the envelope and shows the opened board.
 - **Rebuild the sample guest files** (dev passphrase is `dev-passphrase`; never use it for the real list):
   `node tools/make-guests.mjs --households tools/sample-households.json --passphrase dev-passphrase`
   Existing codes are kept. In real use the editor writes `guests.json` and `admin.enc.json` for you on Publish.

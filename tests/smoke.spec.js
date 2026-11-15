@@ -3,6 +3,7 @@ import { assertNoHorizontalOverflow, assertNoClippedText, runAxe } from "./helpe
 import fs from "node:fs";
 
 const ROUTES = ["home", "schedule", "travel", "story", "faq", "registry", "rsvp"];
+const LIVE_ROUTES = ROUTES.filter((r) => r !== "registry");
 const FONT_NOISE = /fonts\.(googleapis|gstatic)\.com|ERR_(INTERNET|NAME|CONNECTION|BLOCKED)|Failed to load resource/i;
 
 function watchConsole(page) {
@@ -21,7 +22,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => { try { sessionStorage.setItem("pa.intro", "1"); } catch {} });
 });
 
-for (const route of ROUTES) {
+for (const route of LIVE_ROUTES) {
   test(`route ${route}: h1, no errors, no overflow, axe clean`, async ({ page }, info) => {
     const errors = watchConsole(page);
     await open(page, `/#${route}`);
@@ -67,12 +68,22 @@ test("stress fixture has 12 events over 4 days", async ({ page }) => {
 
 test("private events hidden by default; only a decrypted guest (dev fixture) adds them, ?all=1 alone cannot", async ({ page }) => {
   await open(page, "/#schedule");
-  await expect(page.locator(".event")).toHaveCount(2);
-  // content.json no longer holds private events, so the ?all=1 dev switch needs a guest fixture to show them
+  await expect(page.locator(".event")).toHaveCount(0);
+  // content.json no longer holds events; they are private. ?all=1 still needs a guest fixture to show any.
   await open(page, "/?all=1#schedule");
-  await expect(page.locator(".event")).toHaveCount(2);
+  await expect(page.locator(".event")).toHaveCount(0);
   await open(page, "/?all=1&guest=tests/fixtures/guest-family.json#schedule");
-  await expect(page.locator(".event")).toHaveCount(5);
+  await expect(page.locator(".event")).toHaveCount(3);
+});
+
+test("registry is off: #registry opens home and the menu omits it", async ({ page }) => {
+  const errors = watchConsole(page);
+  await open(page, "/#registry");
+  await expect(page).toHaveURL(/#home$/);
+  await expect(page.locator('[data-page="home"]')).toBeVisible();
+  await expect(page.locator("#top-nav")).not.toContainText("Registry");
+  await expect(page.locator("#tabbar")).not.toContainText("Registry");
+  expect(errors).toEqual([]);
 });
 
 test("deep link #faq/<id> opens the answer", async ({ page }) => {
@@ -80,18 +91,22 @@ test("deep link #faq/<id> opens the answer", async ({ page }) => {
   await expect(page.locator("#faq-vegetarian")).toHaveAttribute("open", "");
 });
 
-test("intro can be skipped with the Skip button and with Escape", async ({ page }) => {
-  await page.addInitScript(() => { try { sessionStorage.removeItem("pa.intro"); } catch {} });
+test("sealed envelope at / opens onto #home, and back reseals it", async ({ page }) => {
   await open(page, "/");
   await expect(page.locator("#intro")).toBeVisible();
   await page.locator("#intro-skip").click();
   await expect(page.locator("#intro")).toHaveCount(0);
-  await page.evaluate(() => sessionStorage.removeItem("pa.intro"));
+  await expect(page).toHaveURL(/#home$/);
+  await expect(page.locator('[data-page="home"] h1')).toBeVisible();
+  // #home is the opened invitation: a reload stays open.
   await page.reload();
   await page.waitForSelector("html[data-ready]");
+  await expect(page.locator("#intro")).toHaveCount(0);
+  await page.goBack();
   await expect(page.locator("#intro")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator("#intro")).toHaveCount(0);
+  await expect(page).toHaveURL(/#home$/);
 });
 
 test("navigation: top nav on wide screens, tab bar and More sheet on narrow", async ({ page }) => {

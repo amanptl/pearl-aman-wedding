@@ -49,7 +49,12 @@ const travelHasContent = (c) => {
   return !!(c.hotels?.length || t.airports?.length || t.gettingAround?.length || t.shuttles?.length || t.aroundTown?.length || t.international?.text);
 };
 
+// "Up next / Happening now" card. Hidden for now (it repeats the invitation card months out); planned to return
+// for the wedding week. Flip this to bring it back.
+const SHOW_NEXT_UP = false;
+
 function nextUp(ctx) {
+  if (!SHOW_NEXT_UP) return "";
   const { current, next } = nowNext(ctx.events, ctx.now(), ctx.tz);
   const e = current || next;
   if (!e) return "";
@@ -103,17 +108,25 @@ export default {
     root.classList.add("page-home");
     root.innerHTML = html`
       <h1 class="visually-hidden">${site.couple.first} &amp; ${site.couple.second} are getting married on ${site.dateText}</h1>
+      <div class="stage">
       <div class="board" data-allow-clip>
+        <span class="board-seal" aria-hidden="true"></span>
         <div class="env" aria-hidden="true">
-          <div class="env-back"></div>
-          <div class="env-flap"></div>
+          <span class="env-back"></span>
+          <span class="env-flap"><span class="flap-out"><span class="env-seal seal-hi"><span></span></span></span><span class="flap-in"></span></span>
           <div class="env-photo">${imgTag(home.photo, { eager: true, sizes: "(min-width: 641px) 10rem, 28vw", path: "home.photo" })}</div>
-          <div class="env-pocket"></div>
+          <span class="env-pocket"></span>
+          ${ctx.guest?.household ? html`<span class="env-name">${ctx.guest.household}</span>` : ""}
+          <span class="env-shade"></span>
+          <span class="env-seal seal-lo"><span></span></span>
+          <span class="env-sheen"></span>
         </div>
 
         <div class="invite">
           <svg class="invite-shape" viewBox="0 0 300 420" preserveAspectRatio="none" aria-hidden="true">
+            <defs><pattern id="invite-paper" patternContentUnits="objectBoundingBox" width="1" height="1"><image href="assets/img/card-paper.webp" width="1" height="1" preserveAspectRatio="none" /></pattern></defs>
             <path class="fill" d="M40 20 Q115 20 135 8 Q150 -2 165 8 Q185 20 260 20 A20 20 0 0 0 280 40 L280 380 A20 20 0 0 0 260 400 Q185 400 165 412 Q150 422 135 412 Q115 400 40 400 A20 20 0 0 0 20 380 L20 40 A20 20 0 0 0 40 20 Z" />
+            <path class="paper" d="M40 20 Q115 20 135 8 Q150 -2 165 8 Q185 20 260 20 A20 20 0 0 0 280 40 L280 380 A20 20 0 0 0 260 400 Q185 400 165 412 Q150 422 135 412 Q115 400 40 400 A20 20 0 0 0 20 380 L20 40 A20 20 0 0 0 40 20 Z" fill="url(#invite-paper)" />
             <path class="line" transform="translate(150 210) scale(.93 .95) translate(-150 -210)" d="M40 20 Q115 20 135 8 Q150 -2 165 8 Q185 20 260 20 A20 20 0 0 0 280 40 L280 380 A20 20 0 0 0 260 400 Q185 400 165 412 Q150 422 135 412 Q115 400 40 400 A20 20 0 0 0 20 380 L20 40 A20 20 0 0 0 40 20 Z" />
           </svg>
           <div class="invite-text">
@@ -131,6 +144,7 @@ export default {
         <p class="rsvp-word" aria-hidden="true" ${editAttrs("text", "home.board.rsvpWord", { placeholder: "Rsvp" })}>${board.rsvpWord || "Rsvp"}</p>
         <img class="bow" src="assets/img/lace-bow-600.webp" srcset="assets/img/lace-bow-600.webp 600w, assets/img/lace-bow.webp 1024w" sizes="(min-width: 641px) 295px, 46vw" width="600" height="600" alt="" aria-hidden="true" />
         <a class="tag tag-respond" href="#rsvp" ${editAttrs("text", "home.board.respondLabel", { placeholder: "Respond" })}>${board.respondLabel || "Respond"}</a>
+      </div>
       </div>
 
       <div class="section section--ivory welcome">

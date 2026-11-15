@@ -75,7 +75,7 @@ function blockCard(h, i, ctx, groups) {
       <div class="hotel-body">
         <div class="hotel-badges cluster cluster--s">
           ${h.recommended ? html`<span class="badge">Our pick</span>` : ""}
-          <span class="badge badge--outline">Negotiated rate</span>
+          ${h.groupCode || h.rate ? html`<span class="badge badge--outline">Negotiated rate</span>` : ""}
         </div>
         <h3 class="hotel-name" ${editAttrs("text", p("name"), { placeholder: "Add hotel name" })}>${h.name}</h3>
         ${showField(h.rate) ? html`<p class="hotel-rate"><span class="rate" ${editAttrs("text", p("rate"), { placeholder: "Add rate" })}>${h.rate || ""}</span>${showField(h.rateNote) ? html` <span class="muted rate-note" ${editAttrs("text", p("rateNote"), { placeholder: "Add rate note" })}>${h.rateNote || ""}</span>` : ""}</p>` : ""}
@@ -177,7 +177,10 @@ export default {
       around: around.length > 0,
     };
     const segs = SEGMENTS.filter((s) => has[s.id] || edit);
-    const stayIntro = "We've reserved rooms at special rates. Book early. Rates end on the dates shown.";
+    const stayBooked = block.some(({ h }) => h.groupCode || h.bookingUrl);
+    const stayIntro = stayBooked
+      ? "We've reserved rooms at special rates. Book early. Rates end on the dates shown."
+      : "We're arranging a room block near the venues. Rates and booking details are coming soon.";
 
     root.innerHTML = html`
       <div class="section section--paper page-head">

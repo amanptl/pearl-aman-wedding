@@ -51,7 +51,7 @@ test.describe("guest site", () => {
     await page.route("**/content/guests.json", (r) => r.fulfill({ status: 404, body: "" }));
     await page.goto("/?intro=0#schedule");
     await ready(page);
-    await expect(page.locator("[data-page=schedule] .event")).toHaveCount(2);
+    await expect(page.locator("[data-page=schedule] .event")).toHaveCount(0);
     await page.goto("/?i=NVMDUYC3MF&intro=0#home");
     await ready(page);
     await expect(page.locator("[data-page=home] h1")).toBeVisible();
@@ -67,13 +67,13 @@ test.describe("guest site", () => {
     await page.route("**/content/guests.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "<html>not json</html>" }));
     await page.goto("/?i=NVMDUYC3MF&intro=0#schedule");
     await ready(page);
-    await expect(page.locator("[data-page=schedule] .event")).toHaveCount(2);
+    await expect(page.locator("[data-page=schedule] .event")).toHaveCount(0);
   });
 
   test("wrong personal-link code: public view, friendly state", async ({ page }) => {
     await page.goto("/?i=ZZZZZZZZZZ&intro=0#schedule");
     await ready(page);
-    await expect(page.locator("[data-page=schedule] .event")).toHaveCount(2);
+    await expect(page.locator("[data-page=schedule] .event")).toHaveCount(0);
     expect(await page.evaluate(() => localStorage.getItem("pa.guest.v1"))).toBeNull();
   });
 
@@ -98,7 +98,7 @@ test.describe("guest site", () => {
     await context.setOffline(true);
     await page.goto("/?sw=1&intro=0#schedule");
     await ready(page);
-    await expect(page.locator("[data-page=schedule] .event").first()).toBeVisible();
+    await expect(page.locator("[data-page=schedule]")).toContainText("Details are on their way");
     await expect(page.locator("[data-page=schedule] h1")).toBeVisible();
     await context.setOffline(false);
     errors = errors.filter((e) => !/ERR_INTERNET_DISCONNECTED|Failed to fetch|net::/i.test(e));
@@ -112,14 +112,14 @@ test.describe("guest site", () => {
     });
     await page.goto(`/?intro=0&guest=${FAMILY}#home`);
     await ready(page);
-    for (const r of ["home", "schedule", "travel", "story", "faq", "registry", "rsvp"]) {
+    for (const r of ["home", "schedule", "travel", "story", "faq", "rsvp"]) {
       await page.evaluate((h) => { location.hash = h; }, "#" + r);
       await expect(page.locator(`[data-page="${r}"] h1`)).toBeVisible();
     }
-    await page.getByRole("button", { name: "Everyone, all events ✓" }).click();
+    await page.getByRole("button", { name: "All 3 of us, every event ✓" }).click();
     await page.locator("[data-page=rsvp] [data-act=next]").click();
     await expect(page.locator("[data-page=rsvp] [data-step-heading]")).toHaveText("A few details");
-    // the intro (which stores its 'seen' flag in sessionStorage) also tolerates it
+    // the sealed envelope at / also tolerates storage that throws
     await page.goto("/");
     await ready(page);
     await expect(page.locator("#intro")).toBeVisible();
@@ -188,8 +188,8 @@ test.describe("editor", () => {
     other.on("console", (m) => { if (m.type() === "error" && !FONT_NOISE.test(m.text())) errs2.push(m.text()); });
     await open(page);
     await open(other);
-    const rename = async (p, name, field = "hotels.0.name") => {
-      await p.selectOption("#page-select", "travel");
+    const rename = async (p, name, field = "hotels.0.name", pageId = "travel") => {
+      await p.selectOption("#page-select", pageId);
       const el = fr(p).locator(`[data-path="${field}"]`);
       await el.scrollIntoViewIfNeeded();
       await el.click();
@@ -205,7 +205,7 @@ test.describe("editor", () => {
     await page.keyboard.press("Escape");
     const afterOne = repo.commitCount();
     // tab 2 (still on the old base) edits something else and tries to publish
-    await rename(other, "From tab two", "hotels.1.name");
+    await rename(other, "From tab two", "schedule.intro", "schedule");
     await other.click("#publish");
     await other.getByRole("button", { name: "Publish now" }).click();
     await expect(other.locator("dialog.dlg")).toContainText("The site was changed elsewhere since you started");
@@ -213,7 +213,7 @@ test.describe("editor", () => {
     expect(repo.json("content/content.json").hotels[0].name).toBe("From tab one");
     await other.getByRole("button", { name: /Reload latest/ }).click();
     await expect.poll(async () => (await draft(other)).hotels[0].name).toBe("From tab one");
-    expect((await draft(other)).hotels[1].name).not.toBe("From tab two");
+    expect((await draft(other)).schedule.intro).not.toBe("From tab two");
     // "Publish anyway" would overwrite; make sure a deliberate overwrite still works after a fresh conflict
     expect(errs2).toEqual([]);
   });

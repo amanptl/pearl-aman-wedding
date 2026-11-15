@@ -3,7 +3,7 @@
 import { h } from "./ui.js";
 import { ico } from "./icons.js";
 import * as GL from "./guestlib.js";
-import { makeHousehold } from "../src/lib/guestfiles.js";
+import { makeHousehold, seatsOf, MAX_SEATS } from "../src/lib/guestfiles.js";
 import { randomCode } from "../src/lib/crypto.js";
 
 const clone = (x) => structuredClone(x);
@@ -120,7 +120,7 @@ export function mountGuests(el, api) {
   function householdsView() {
     const evs = events();
     const tags = [...new Set(households().flatMap((x) => x.tags || []))].sort();
-    const people = households().reduce((n, x) => n + x.members.length + (x.plusOnes || 0), 0);
+    const people = households().reduce((n, x) => n + seatsOf(x), 0);
 
     const search = h("input.gm-search", { type: "search", placeholder: "Search names, groups…", "aria-label": "Search households", value: S.q, autocomplete: "off" });
     search.addEventListener("input", () => { S.q = search.value; renderTable(); });
@@ -174,7 +174,7 @@ export function mountGuests(el, api) {
     const allOn = rows.every((r) => S.selected.has(r.code));
     const selAll = h("input", { type: "checkbox", checked: allOn, "aria-label": "Select all shown households" });
     selAll.addEventListener("change", () => { rows.forEach((r) => (selAll.checked ? S.selected.add(r.code) : S.selected.delete(r.code))); renderTable(); });
-    const head = h("tr", h("th.c-sel", selAll), h("th.c-name", "Household"), h("th.c-mem", "Guests"), h("th.c-po", { title: "Extra unnamed guests they may bring" }, "+1s"), h("th.c-tags", "Groups"),
+    const head = h("tr", h("th.c-sel", selAll), h("th.c-name", "Household"), h("th.c-mem", { title: "Optional: used for name lookup and as a hint on the RSVP form" }, "Names (optional)"), h("th.c-po", { title: "How many people this household may bring to each event" }, "Guests"), h("th.c-tags", "Groups"),
       ...evs.map((e) => h("th.c-ev", { title: `${e.name || e.id}${e.visibility === "private" ? " (private)" : ""}` }, h("span", e.name || e.id), e.visibility === "private" ? h("small", "private") : null)));
     const table = h("table.gm-table", { "aria-label": "Households" }, h("thead", head), h("tbody", rows.map((hh) => row(hh, evs))));
     tbodyHost.replaceChildren(table);
@@ -203,7 +203,7 @@ export function mountGuests(el, api) {
       act("eye", "Preview as", () => api.previewAs(hh.code)),
       act("trash", "Delete", () => removeHousehold(hh), ".danger"));
     const members = chipEditor({
-      label: "guest", placeholder: hh.members.length ? "Add guest" : "Type a name, press Enter", fieldName: "members",
+      label: "name", placeholder: hh.members.length ? "Add name" : "Optional names", fieldName: "members",
       items: hh.members.map((m) => ({ key: m.id, text: m.name })),
       onChange: (items) => { S.refocus = { code: hh.code, field: ".chip-add" }; editHousehold(hh.code, (x) => { let n = nextMemberId(x); const used = new Set(); x.members = items.map((i) => { const id = i.key && !used.has(i.key) ? i.key : `m${n++}`; used.add(id); return { id, name: i.text }; }); }, "Edit guests"); renderTable(); },
     });
@@ -212,8 +212,8 @@ export function mountGuests(el, api) {
       items: (hh.tags || []).map((t) => ({ key: t, text: t })),
       onChange: (items) => { S.refocus = { code: hh.code, field: '[data-field="tags"] .chip-add' }; editHousehold(hh.code, (x) => { x.tags = [...new Set(items.map((i) => GL.slug(i.text)).filter(Boolean))]; }, "Edit groups"); renderTable(); },
     });
-    const po = h("input.gm-in.num", { type: "number", min: 0, max: 10, value: hh.plusOnes || 0, "aria-label": `Plus-ones for ${label}` });
-    po.addEventListener("change", () => editHousehold(hh.code, (x) => { x.plusOnes = Math.max(0, Math.min(10, Math.round(+po.value) || 0)); }, "Change plus-ones", `hh-${hh.code}-po`));
+    const po = h("input.gm-in.num", { type: "number", min: 1, max: MAX_SEATS, value: seatsOf(hh), "aria-label": `How many guests ${label} may bring` });
+    po.addEventListener("change", () => editHousehold(hh.code, (x) => { x.seats = Math.max(1, Math.min(MAX_SEATS, Math.round(+po.value) || 1)); delete x.plusOnes; po.value = x.seats; }, "Change guests", `hh-${hh.code}-po`));
     const checks = evs.map((e) => {
       const c = h("input", { type: "checkbox", checked: (hh.eventIds || []).includes(e.id), "aria-label": `${label}: invited to ${e.name || e.id}` });
       c.addEventListener("change", () => editHousehold(hh.code, (x) => { const s = new Set(x.eventIds || []); c.checked ? s.add(e.id) : s.delete(e.id); x.eventIds = [...s]; }, "Change invitations"));
@@ -226,7 +226,7 @@ export function mountGuests(el, api) {
   function addHousehold() {
     S.q = ""; S.tag = ""; S.event = "";
     const list = clone(households());
-    const hh = makeHousehold({ id: `hh-${randomCode(6).toLowerCase()}`, household: "New household", members: [], eventIds: [] }, new Set(list.map((x) => x.code)));
+    const hh = makeHousehold({ id: `hh-${randomCode(6).toLowerCase()}`, household: "New household", members: [], seats: 2, eventIds: [] }, new Set(list.map((x) => x.code)));
     hh.household = ""; hh.greeting = "";
     list.push(hh);
     setHouseholds(list, "Add household");
@@ -353,14 +353,14 @@ export function mountGuests(el, api) {
 
   function importCsv() {
     const evs = events();
-    const text = h("textarea", { rows: 5, placeholder: "household,members,tags,events,plusOnes\nSharma Family,Raj Sharma; Priya Sharma,close-family,all,0", "aria-label": "Paste CSV text", spellcheck: false });
+    const text = h("textarea", { rows: 5, placeholder: "household,guests,members,tags,events\nSharma Family,4,Raj Sharma; Priya Sharma,close-family,all", "aria-label": "Paste CSV text", spellcheck: false });
     const file = h("input", { type: "file", accept: ".csv,text/csv,text/plain", "aria-label": "Choose a CSV file" });
     const out = h("div.gm-prev", { "aria-live": "polite" });
     let parsed = null;
     let applyBtn;
     const refresh = () => {
       parsed = null;
-      if (!text.value.trim()) { out.replaceChildren(h("p.muted", "Columns: household, members (separate names with ;), tags, events (event ids separated by ; or a group name like Friends), plusOnes.")); return; }
+      if (!text.value.trim()) { out.replaceChildren(h("p.muted", "Columns: household, guests (how many may come), members (optional names, separated with ;), tags, events (event ids separated by ; or a group name like Friends).")); return; }
       parsed = GL.importRows(GL.parseCsv(text.value), { events: evs, presets: presets(), existing: households() });
       if (parsed.headerErrors.length) { out.replaceChildren(h("p.dlg-note.err", parsed.headerErrors.join(" "))); parsed = null; return; }
       const ok = parsed.rows.filter((r) => r.action !== "error");
@@ -369,7 +369,7 @@ export function mountGuests(el, api) {
         h("p.gm-sum", `${plural(ok.filter((r) => r.action === "add").length, "household")} to add, ${ok.filter((r) => r.action === "update").length} to update${bad ? `, ` : ""}`, bad ? h("strong.err", `${plural(bad, "row")} with problems (skipped)`) : null),
         h("div.gm-tablewrap.short", h("table.gm-table.prev", h("thead", h("tr", ...["Row", "Household", "Guests", "Events", "Result"].map((t) => h("th", t)))),
           h("tbody", parsed.rows.map((r) => h("tr", { "data-action": r.action },
-            h("td", String(r.line)), h("td", r.data.household || "—"), h("td", r.data.members.join(", ")), h("td", r.data.eventIds.join(", ") || "none"),
+            h("td", String(r.line)), h("td", r.data.household || "—"), h("td", [String(r.data.seats), r.data.members.length ? h("small.muted", ` ${r.data.members.join(", ")}`) : null]), h("td", r.data.eventIds.join(", ") || "none"),
             h("td", r.action === "error" ? h("span.err", r.errors.join("; ")) : [h("span.pill", r.action === "add" ? "New" : "Update"), ...r.warnings.map((w) => h("span.warnt", ` ${w}`))])))))));
       applyBtn.textContent = ok.length ? `Import ${plural(ok.length, "household")}` : "Nothing to import";
       applyBtn.disabled = !ok.length;
@@ -378,7 +378,7 @@ export function mountGuests(el, api) {
     file.addEventListener("change", async () => { const f = file.files[0]; if (f) { text.value = await f.text(); refresh(); } });
     api.dialog({
       title: "Import households from CSV", wide: true,
-      body: h("div.gm-imp", h("div.row", file, h("button.link", { type: "button", onclick: () => download("households-template.csv", GL.toCsv([["household", "members", "tags", "events", "plusOnes"], ["Sharma Family", "Raj Sharma; Priya Sharma", "close-family", "all", "0"], ["Maria Garcia", "Maria Garcia", "friends", "Friends", "1"]])) }, "Download a template")), text, out),
+      body: h("div.gm-imp", h("div.row", file, h("button.link", { type: "button", onclick: () => download("households-template.csv", GL.toCsv([["household", "guests", "members", "tags", "events"], ["Sharma Family", "4", "Raj Sharma; Priya Sharma", "close-family", "all"], ["Maria Garcia", "2", "", "friends", "Friends"]])) }, "Download a template")), text, out),
       actions: [{ label: "Cancel", value: false }, { label: "Import", primary: true, keepOpen: true, onClick: (close) => {
         if (!parsed) return;
         const good = parsed.rows.filter((r) => r.action !== "error");
@@ -460,20 +460,23 @@ export function mountGuests(el, api) {
     view.append(h("div.gm-tiles",
       tile(`${a.replied} of ${a.total}`, "households replied"),
       tile(String(a.notReplied.length), "still to reply"),
-      tile(String(a.attending), "guests saying yes")));
+      tile(String(a.attending), "guests at the biggest event")));
     view.append(section("Attendance by event", h("table.gm-table.sum", { "aria-label": "Attendance by event" },
-      h("thead", h("tr", ...["Event", "Yes", "No", "Pending", ""].map((t) => h("th", t)))),
+      h("thead", h("tr", ...["Event", "Coming", "Not coming", "Awaiting reply", "Invited", ""].map((t) => h("th", t)))),
       h("tbody", evs.map((e) => {
         const c = a.byEvent[e.id];
-        const tot = Math.max(1, c.yes + c.no + c.pending);
-        return h("tr", { "data-event": e.id }, h("th", { scope: "row" }, e.name || e.id, e.visibility === "private" ? h("small.muted", " private") : null), h("td.n.yes", String(c.yes)), h("td.n", String(c.no)), h("td.n.pend", String(c.pending)),
-          h("td.bar", h("span.stack", { "aria-hidden": "true" }, h("i.s-y", { style: `width:${(c.yes / tot) * 100}%` }), h("i.s-n", { style: `width:${(c.no / tot) * 100}%` }), h("i.s-p", { style: `width:${(c.pending / tot) * 100}%` }))));
+        const tot = Math.max(1, c.invited);
+        return h("tr", { "data-event": e.id }, h("th", { scope: "row" }, e.name || e.id, e.visibility === "private" ? h("small.muted", " private") : null), h("td.n.yes", String(c.coming)), h("td.n", String(c.declined)), h("td.n.pend", String(c.pending)), h("td.n", String(c.invited)),
+          h("td.bar", h("span.stack", { "aria-hidden": "true" }, h("i.s-y", { style: `width:${(c.coming / tot) * 100}%` }), h("i.s-n", { style: `width:${(c.declined / tot) * 100}%` }), h("i.s-p", { style: `width:${(c.pending / tot) * 100}%` }))));
       })))));
+    const notes = a.extras.filter((x) => x.dietNote);
     view.append(h("div.gm-two",
-      section("Meals", countList(a.meals, "No meal choices yet")),
-      section("Dietary needs", countList(a.dietary, "None reported"))));
+      section("Food preferences", countList(a.dietary, "None reported")),
+      section("Allergies and food notes", notes.length ? h("ul.gm-list", notes.map((x) => h("li", h("span", h("strong", x.household), h("small.muted", ` ${x.dietNote}`))))) : h("p.muted", "None yet"))));
+    const named = a.extras.filter((x) => x.names);
+    if (named.length) view.append(section(`Names given (${named.length})`, h("ul.gm-list", named.map((x) => h("li", h("span", h("strong", x.household), h("small.muted", ` ${x.names}`)))))));
     view.append(section(`Not replied yet (${a.notReplied.length})`, a.notReplied.length
-      ? h("ul.gm-list", a.notReplied.map((hh) => h("li", h("span", h("strong", hh.household), h("small.muted", ` ${hh.members.map((m) => m.name).join(", ")}`)),
+      ? h("ul.gm-list", a.notReplied.map((hh) => h("li", h("span", h("strong", hh.household), h("small.muted", ` ${plural(seatsOf(hh), "guest")}`)),
         h("button.btn.small", { type: "button", "aria-label": `Copy WhatsApp reminder for ${hh.household}`, onclick: () => copy(message(hh, "reminder"), `Reminder for ${hh.household} copied`) }, withIcon("chat", "Copy reminder")))))
       : h("p.muted", "Everyone has replied.")));
     view.append(section(`Hotel (${a.hotel.need.length} need a room)`, h("div",

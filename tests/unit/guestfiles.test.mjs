@@ -80,3 +80,20 @@ test("guests.json leaks no plaintext names or private event strings", async () =
   }
   assert.deepEqual(Object.keys(guestsJson).sort(), ["kdf", "names", "records", "v"]);
 });
+
+test("nameLookup: false publishes no name index (a known name can't be turned into a code)", async () => {
+  const { guestsJson } = await build(hh(), { nameLookup: false });
+  assert.deepEqual(guestsJson.names, {});
+  assert.ok(Object.keys(guestsJson.records).length > 0);
+});
+
+test("seats: explicit seats win; older records count names + plus-ones; always 1..MAX_SEATS", async () => {
+  const { seatsOf, makeHousehold, MAX_SEATS } = await import("../../src/lib/guestfiles.js");
+  assert.equal(seatsOf({ seats: 6, members: [{ name: "a" }] }), 6);
+  assert.equal(seatsOf({ members: [{ name: "a" }, { name: "b" }, { name: "" }], plusOnes: 1 }), 3);
+  assert.equal(seatsOf({ members: [] }), 1);
+  assert.equal(seatsOf({ seats: 999 }), MAX_SEATS);
+  assert.equal(makeHousehold({ household: "No names", seats: 4 }).seats, 4);
+  assert.equal(makeHousehold({ household: "Old", members: ["a", "b"], plusOnes: 2 }).seats, 4);
+  assert.equal(makeHousehold({ household: "Old" }).plusOnes, undefined);
+});

@@ -4,6 +4,7 @@ import fs from "node:fs";
 
 const FAMILY = "guest=tests/fixtures/guest-family.json";
 const FRIEND = "guest=tests/fixtures/guest-friend.json";
+const TRAVEL_DEMO = "content=tests/fixtures/content-travel-demo.json";
 
 async function open(page, url) {
   await page.goto(url);
@@ -20,7 +21,7 @@ test("travel: copy group code puts it on the clipboard", async ({ page, context,
     window.__copied = null;
     Object.defineProperty(navigator, "clipboard", { value: { writeText: async (t) => { window.__copied = t; } }, configurable: true });
   });
-  await open(page, `/?${FAMILY}#travel`);
+  await open(page, `/?${TRAVEL_DEMO}&${FAMILY}#travel`);
   const btn = page.locator('[data-page="travel"] .code-copy').first();
   const code = await page.locator('[data-page="travel"] .code').first().innerText();
   await btn.click();
@@ -30,7 +31,7 @@ test("travel: copy group code puts it on the clipboard", async ({ page, context,
 });
 
 test("travel: Book now opens in a new tab safely", async ({ page }) => {
-  await open(page, `/?${FAMILY}#travel`);
+  await open(page, `/?${TRAVEL_DEMO}&${FAMILY}#travel`);
   const a = page.locator('[data-page="travel"] .hotel-actions a.btn--primary').first();
   await expect(a).toHaveText(/Book now/);
   await expect(a).toHaveAttribute("target", "_blank");
@@ -39,7 +40,7 @@ test("travel: Book now opens in a new tab safely", async ({ page }) => {
 });
 
 test("travel: hotel cards show drive times and align actions at the bottom", async ({ page }) => {
-  await open(page, `/?${FAMILY}#travel`);
+  await open(page, `/?${TRAVEL_DEMO}&${FAMILY}#travel`);
   await expect(page.locator('[data-page="travel"] .hotel').first().locator(".drives-list li").first()).toContainText(/~\d+ min to/);
   if (page.viewportSize().width >= 1000) {
     const bottoms = await page.locator('[data-page="travel"] .hotel-actions').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().bottom)));
@@ -47,19 +48,19 @@ test("travel: hotel cards show drive times and align actions at the bottom", asy
   }
 });
 
-test("travel: shuttle table shows only the viewer's events", async ({ page }) => {
+test("travel: shuttle table stays hidden unless the viewer can see that event", async ({ page }) => {
+  await open(page, `/?${TRAVEL_DEMO}#travel`);
+  await expect(page.locator('[data-page="travel"] .shuttle-table')).toHaveCount(0);
+  await open(page, `/?${TRAVEL_DEMO}&${FRIEND}#travel`);
+  await expect(page.locator('[data-page="travel"] .shuttle-table')).toHaveCount(0);
+});
+
+test("travel: placeholder hotel has no negotiated rate and shows coming-soon intro", async ({ page }) => {
   await open(page, "/#travel");
-  const pub = await page.locator('[data-page="travel"] .shuttle-table tbody tr').allInnerTexts();
-  expect(pub.join(" ")).not.toMatch(/Sangeet/i);
-  await open(page, `/?${FRIEND}#travel`);
-  const rows = page.locator('[data-page="travel"] .shuttle-table tbody tr');
-  expect(await rows.count()).toBeGreaterThan(pub.length);
-  const txt = (await rows.allInnerTexts()).join(" ");
-  expect(txt).toMatch(/Sangeet/i);
-  expect(txt).not.toMatch(/Mehndi|Haldi/i);
-  await expect(page.locator('[data-page="travel"] .shuttle-table')).toHaveCount(1);
-  await expect(page.locator('[data-page="travel"] .shuttle-table caption')).toHaveCount(1);
-  await expect(page.locator('[data-page="travel"] .shuttle-table thead th[scope="col"]')).toHaveCount(4);
+  const card = page.locator("#hotel-hotel-ehcc");
+  await expect(card).toBeVisible();
+  await expect(card.locator(".badge--outline")).toHaveCount(0);
+  await expect(page.locator("#stay .sec-intro")).toContainText(/coming soon/i);
 });
 
 test("travel: segmented control scrolls and deep links work", async ({ page }) => {

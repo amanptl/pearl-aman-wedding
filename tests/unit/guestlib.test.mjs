@@ -17,7 +17,7 @@ test("importRows: presets by name, unknown events, existing households update an
   const existing = [hh({ code: "SHARMAXXXX", household: "Sharma", members: [{ id: "m1", name: "Raj" }] })];
   const r = importRows(rows, { events, presets: DEFAULT_PRESETS, existing });
   assert.deepEqual(r.rows.map((x) => x.action), ["add", "error", "update", "error"]);
-  assert.deepEqual(r.rows[0].data.eventIds, ["sangeet", "wedding", "reception"]);
+  assert.deepEqual(r.rows[0].data.eventIds, ["wedding"]);
   assert.ok(r.rows[0].data.tags.includes("friends"));
   assert.match(r.rows[1].errors.join(), /Unknown event "nope"/);
   assert.match(r.rows[3].errors.join(), /Plus-ones/);
@@ -53,24 +53,40 @@ test("makeGuestFor copies only the private events the household is invited to", 
   assert.equal(g.id, undefined);
 });
 
-test("analyseSummary: pending = invited members without an answer, replied households, meals once per person", () => {
-  const hs = [hh({ code: "C1", household: "One", members: [{ id: "m1", name: "a" }, { id: "m2", name: "b" }], eventIds: ["wedding", "reception"] }), hh({ code: "C2", household: "Two", eventIds: ["wedding"] })];
+test("analyseSummary: headcounts per event against invited seats, awaiting = seats with no reply, food from households", () => {
+  const hs = [
+    hh({ code: "C1", household: "One", seats: 4, eventIds: ["wedding", "reception"] }),
+    hh({ code: "C2", household: "Two", seats: 2, eventIds: ["wedding"] }),
+    hh({ code: "C3", household: "Three", members: [{ id: "m1", name: "a" }, { id: "m2", name: "b" }], plusOnes: 1, eventIds: ["wedding"] }), // older record: 3 seats
+  ];
   const s = {
-    households: [{ code: "C1", hotel: "need", arrival: "2027-07-22", flight: "AC1", shuttle: "{}" }],
+    households: [
+      { code: "C1", hotel: "need", arrival: "2027-07-22", flight: "AC1", shuttle: "{}", names: "A, B, C", dietary: "Vegetarian: 3; Jain: 1", dietNote: "one nut allergy" },
+      { code: "C3", hotel: "", shuttle: "{}", dietary: "Vegetarian: 2" },
+    ],
     responses: [
-      { code: "C1", memberId: "m1", eventId: "wedding", attending: "yes", meal: "Veg", dietary: "Nut; Gluten" },
-      { code: "C1", memberId: "m1", eventId: "reception", attending: "yes", meal: "Veg", dietary: "Nut; Gluten" },
-      { code: "C1", memberId: "m2", eventId: "wedding", attending: "no", meal: "", dietary: "" },
+      { code: "C1", eventId: "wedding", invited: "4", attending: "3" },
+      { code: "C1", eventId: "reception", invited: "4", attending: "0" },
+      { code: "C3", eventId: "wedding", invited: "3", attending: "9" }, // never more than the seats
     ],
   };
   const a = analyseSummary(s, hs, events);
-  assert.deepEqual(a.byEvent.wedding, { yes: 1, no: 1, pending: 1, invited: 3 });
-  assert.deepEqual(a.byEvent.reception, { yes: 1, no: 0, pending: 1, invited: 2 });
-  assert.deepEqual(a.meals, { Veg: 1 });
-  assert.deepEqual(a.dietary, { Nut: 1, Gluten: 1 });
+  assert.deepEqual(a.byEvent.wedding, { coming: 6, declined: 1, pending: 2, invited: 9, households: 2 });
+  assert.deepEqual(a.byEvent.reception, { coming: 0, declined: 4, pending: 0, invited: 4, households: 1 });
+  assert.deepEqual(a.dietary, { Vegetarian: 5, Jain: 1 });
   assert.deepEqual(a.notReplied.map((h) => h.code), ["C2"]);
   assert.equal(a.hotel.need.length, 1);
-  assert.equal(a.attending, 1);
+  assert.equal(a.attending, 6, "the biggest event's headcount");
+});
+
+test("importRows: a guests column sets seats; names are optional; plusOnes files still work", () => {
+  const r = importRows(parseCsv("household,guests,members,events\nPatel Family,5,,all\nKim,0,,all\nLee,x,,all"), { events, presets: [], existing: [] });
+  assert.deepEqual(r.rows.map((x) => x.action), ["add", "error", "error"]);
+  assert.equal(r.rows[0].data.seats, 5);
+  assert.match(r.rows[1].errors.join(), /Guests must be/);
+  const old = importRows(parseCsv("household,members,events,plusOnes\nShah,Ravi Shah; Mina Shah,all,1"), { events, presets: [], existing: [] });
+  assert.equal(old.rows[0].data.seats, 3);
+  assert.equal(applyImport([], r.rows)[0].seats, 5);
 });
 
 test("admin bundle carries presets and message templates, and old bundles still open", async () => {

@@ -38,7 +38,7 @@ async function open(w, { qs = "?intro=0", hash = "home", reduced = false, keepIn
 for (const w of widths) {
   // Intro (envelope visible)
   {
-    const { ctx, page } = await open(w, { qs: "", hash: "home", keepIntro: true });
+    const { ctx, page } = await open(w, { qs: "", hash: "", keepIntro: true });
     await page.waitForSelector("#intro:not([hidden])", { timeout: 8000 }).catch(() => {});
     await shot(`intro-${w}`, page);
     await ctx.close();
@@ -51,7 +51,7 @@ for (const w of widths) {
   }
   // Reduced motion: intro + home
   {
-    const { ctx, page } = await open(w, { qs: "", hash: "home", keepIntro: true, reduced: true });
+    const { ctx, page } = await open(w, { qs: "", hash: "", keepIntro: true, reduced: true });
     await page.waitForSelector("#intro:not([hidden])", { timeout: 8000 }).catch(() => {});
     await shot(`intro-rm-${w}`, page);
     await ctx.close();

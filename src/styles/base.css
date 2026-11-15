@@ -15,6 +15,10 @@ body {
   overflow-x: hidden;
 }
 body.locked { overflow: hidden; }
+/* No visible page scrollbar (wheel, touch, keyboard and trackpad scrolling all still work). Its gutter also never
+   appears or disappears, so the layout keeps one width when the envelope's scroll lock is released. */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
 img, svg, video { display: block; max-width: 100%; }
 img { height: auto; }
 h1, h2, h3, h4, p, ul, ol, figure, dl, dd { margin: 0; }
@@ -304,53 +308,34 @@ main { view-transition-name: main; }
   .site-header, #top-nav, #tabbar, .nav-ink, main { view-transition-name: none; }
 }
 
-/* ---------- Intro envelope ---------- */
-.intro {
-  position: fixed; inset: 0; z-index: var(--z-intro);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-l);
-  padding: var(--space-m);
-  background: linear-gradient(rgba(22, 27, 12, 0.55), rgba(22, 27, 12, 0.55)), url("../../assets/img/paper-olive-600.webp") center / 512px;
-  color: var(--ivory); --focus: var(--gold-light);
-  transition: opacity var(--dur-slow) ease;
-}
-.intro-line { font-family: var(--font-script); font-size: max(2rem, var(--step-3)); text-align: center; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); transition: opacity var(--dur-slow); }
+/* ---------- Intro: the lens over the opening film ----------
+   The film itself plays on the home board (src/lib/film.js). This layer is only what a camera adds: a fade up from
+   black, a vignette and moving grain, the hint, Skip, and one full-screen "open" button. */
+.intro { position: fixed; inset: 0; z-index: var(--z-intro); color: var(--ivory); --focus: var(--gold-light); transition: opacity 600ms ease; }
+.intro-veil { position: absolute; inset: 0; background: #141509; transition: opacity 1s cubic-bezier(.3, 0, .3, 1); }
+.intro.is-ready .intro-veil { opacity: 0; }
+.intro-lens { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  background: radial-gradient(ellipse 80% 72% at 50% 46%, transparent 42%, rgba(8, 9, 3, 0.72) 100%); }
+.intro-lens::after { content: ""; position: absolute; inset: -40%; opacity: 0.1; mix-blend-mode: overlay; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px;
+  animation: grain 0.9s steps(6) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 20% { transform: translate(-6%, 4%); } 40% { transform: translate(5%, -7%); } 60% { transform: translate(-3%, 8%); } 80% { transform: translate(7%, 2%); } 100% { transform: translate(-5%, -4%); } }
+.intro-open { position: absolute; inset: 0; width: 100%; height: 100%; background: none; border: 0; padding: 0; cursor: pointer; border-radius: 0; }
+.intro-open:focus-visible { outline-offset: -10px; }
 .intro-hint {
-  font-family: var(--font-body); font-size: var(--step-0); letter-spacing: 0.04em;
-  opacity: 0; animation: hint-in var(--dur) var(--ease-out-soft) 0.7s both;
+  position: absolute; left: 0; right: 0; bottom: calc(var(--space-xl) + var(--safe-b)); margin: 0; text-align: center; pointer-events: none;
+  font-family: var(--font-display); font-size: var(--step--1); letter-spacing: 0.24em; text-transform: uppercase; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+  opacity: 0; transition: opacity 500ms ease;
 }
+.intro.is-ready .intro-hint { opacity: 0.85; animation: hint-in 900ms ease 1.1s backwards, hint-pulse 3.2s ease-in-out 2s infinite; }
 @keyframes hint-in { from { opacity: 0; } to { opacity: 0.85; } }
-@keyframes breathe { 50% { opacity: 0.6; } }
-.intro-open {
-  background: none; border: 0; padding: var(--space-m); cursor: pointer; border-radius: var(--radius-m);
-  transition: transform var(--dur-fast) var(--ease-out-soft);
-}
-.intro-open:active { transform: scale(0.98); }
-.intro-env {
-  position: relative; display: block;
-  width: min(62vw, 290px); aspect-ratio: 1.38; perspective: 900px;
-  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.45));
-  transition: transform var(--dur-slow) cubic-bezier(0.6, 0, 0.3, 1), opacity var(--dur-slow);
-}
-.ienv-body { position: absolute; inset: 0; border-radius: 2px;
-  background:
-    linear-gradient(to top right, transparent 49.6%, rgba(0, 0, 0, 0.18) 50%, transparent 50.6%),
-    linear-gradient(to top left, transparent 49.6%, rgba(0, 0, 0, 0.18) 50%, transparent 50.6%),
-    linear-gradient(160deg, #46503a, #353d2b); }
-.ienv-flap { position: absolute; inset: 0 0 auto 0; height: 64%; background: linear-gradient(180deg, #4b553e, #3b4430); clip-path: polygon(0 0, 100% 0, 50% 100%); transform-origin: top; transition: transform var(--dur-slow) cubic-bezier(0.6, 0, 0.3, 1); z-index: 1; }
-.ienv-seal { position: absolute; left: 50%; top: 60%; width: 26%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: url("../../assets/img/wax-seal-600.webp") center / 205%; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45); z-index: 2; transition: opacity var(--dur), transform var(--dur); }
-.ienv-flowers { position: absolute; width: 76%; left: -32%; bottom: -14%; transform: rotate(-58deg); z-index: 3; -webkit-mask-image: radial-gradient(ellipse 46% 40% at 50% 52%, #000 60%, transparent 100%); mask-image: radial-gradient(ellipse 46% 40% at 50% 52%, #000 60%, transparent 100%); }
-.intro.opening .intro-line { opacity: 0; }
-.intro.opening .ienv-seal { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
-.intro.opening .ienv-flap { transform: rotateX(180deg); z-index: 0; }
-.intro.opening .intro-env { transform: translateY(-6vh) scale(1.08); }
+@keyframes hint-pulse { 50% { opacity: 0.45; } }
+.intro.opening .intro-hint { animation: none; opacity: 0; }
+.intro.opening .intro-open { cursor: default; }
 .intro.gone { opacity: 0; pointer-events: none; }
-.intro-skip { position: absolute; right: var(--space-s); top: calc(var(--space-s) + var(--safe-t)); }
+.intro-skip { position: absolute; z-index: 1; right: var(--space-s); top: calc(var(--space-s) + var(--safe-t)); }
 @media (prefers-reduced-motion: reduce) {
-  .intro-hint { animation: none; opacity: 0.85; }
-  .intro-open:active { transform: none; }
-  .intro.opening .intro-env, .intro.opening .ienv-flap, .intro.opening .ienv-seal { transform: none; transition: none; }
-  .intro.opening .ienv-seal { transform: translate(-50%, -50%); }
-  .intro.opening { opacity: 0; }
+  .intro.is-ready .intro-hint { animation: none; opacity: 0.85; }
+  .intro-lens::after { animation: none; }
 }
 
 /* ---------- Toast ---------- */
@@ -430,9 +415,10 @@ html[data-mode="edit"] .btn [data-edit]:empty::before { white-space: nowrap; }
   transition: opacity var(--dur) ease;
 }
 .boot p { margin: 0; animation: breathe 2.6s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: 0.6; } }
 .boot.is-done { opacity: 0; pointer-events: none; }
 /* index.html shows the intro at first paint when it will be shown anyway (see the inline script). */
-html.intro-early #intro[hidden] { display: flex; }
+html.intro-early #intro[hidden] { display: block; }
 html.intro-early .boot { display: none; }
 @media (prefers-reduced-motion: reduce) { .boot p { animation: none; } }
 /* Edit mode: sub-navs scroll away instead of sticking, so they never cover the editor's floating toolbar */
