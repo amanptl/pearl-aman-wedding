@@ -103,24 +103,24 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   await page.getByRole("button", { name: /^Friends/ }).click();
   const added = (await draft(page))._admin.households.at(-1);
   expect(added.household).toBe("Okonkwo Friends");
-  expect([...added.eventIds].sort()).toEqual(["reception", "sangeet", "wedding"]);
+  expect([...added.eventIds].sort()).toEqual(["haldi-vidhi", "wedding"]);
   const NEW_CODE = added.code;
 
-  /* 8. Sangeet public, then private again */
+  /* 8. Mehendi public, then private again */
   await page.click('[data-tab="edit"]');
   await page.selectOption("#page-select", "schedule");
-  const sIdx = (await draft(page)).events.findIndex((e) => e.id === "sangeet");
-  const sCard = frame(page).locator(`[data-item="events.${sIdx}"], [data-event="sangeet"]`).first();
+  const sIdx = (await draft(page)).events.findIndex((e) => e.id === "mehendi");
+  const sCard = frame(page).locator(`[data-item="events.${sIdx}"], [data-event="mehendi"]`).first();
   await sCard.scrollIntoViewIfNeeded();
   await sCard.click({ position: { x: 6, y: 6 } });
   const vis = page.locator(`[data-field="events.${sIdx}.visibility"]`);
   await expect(vis).toBeVisible();
   await vis.selectOption("public");
   expect((await draft(page)).events[sIdx].visibility).toBe("public");
-  expect((await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id))).includes("sangeet")).toBe(false);
+  expect((await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id))).includes("mehendi")).toBe(false);
   await vis.selectOption("private");
   expect((await draft(page)).events[sIdx].visibility).toBe("private");
-  expect((await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id))).includes("sangeet")).toBe(true);
+  expect((await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id))).includes("mehendi")).toBe(true);
 
   /* 9. publish */
   await page.click("#publish");
@@ -137,8 +137,7 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   expect(uploads).toHaveLength(2);
   expect(head.changed.filter((p) => !uploads.includes(p)).sort()).toEqual(["content/admin.enc.json", "content/content.json", "content/guests.json"]);
   const content = repo.json("content/content.json");
-  expect(content.events.find((e) => e.id === "wedding").name).toBe(NEW_TITLE);
-  expect(content.events.map((e) => e.id)).toEqual(["wedding", "reception"]); // sangeet is private again
+  expect(content.events).toEqual([]); // every event is private, including the renamed ceremony
   expect(content.hotels[0].bookingUrl).toBe(NEW_URL);
   expect(content.hotels[0].bookingUrl).not.toBe(origHotelUrl);
   expect(content.faq.map((f) => f.id).slice(0, 2)).toEqual([origFaqIds[1], origFaqIds[0]]);
@@ -161,15 +160,14 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   await expect(guest.locator("[data-guest-badge]")).toContainText("Okonkwo Friends");
   const eventNames = await guest.locator("[data-page=schedule] .event h3, [data-page=schedule] [data-event] h3").allTextContents();
   expect(eventNames.join("|")).toContain(NEW_TITLE);
-  await expect(guest.locator("[data-page=schedule] .event")).toHaveCount(3); // sangeet (private, invited) + wedding + reception
-  expect(await guest.locator("[data-page=schedule] .event").evaluateAll((els) => els.map((e) => e.getAttribute("data-event") || e.id))).toEqual(expect.arrayContaining([expect.stringMatching(/sangeet/), expect.stringMatching(/wedding/), expect.stringMatching(/reception/)]));
-  await expect(guest.locator("[data-page=schedule]")).not.toContainText("Mehndi");
+  await expect(guest.locator("[data-page=schedule] .event")).toHaveCount(2); // Haldi and Vidhi + the wedding
+  expect(await guest.locator("[data-page=schedule] .event").evaluateAll((els) => els.map((e) => e.getAttribute("data-event") || e.id))).toEqual(expect.arrayContaining([expect.stringMatching(/haldi-vidhi/), expect.stringMatching(/wedding/)]));
   // a public visitor does not get the private Sangeet
   const pub = await gctx.newPage();
   await pub.addInitScript(() => { try { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem("pa.intro", "1"); } catch {} });
   await pub.goto("/?intro=0#schedule");
   await pub.waitForSelector("html[data-ready]");
-  await expect(pub.locator("[data-page=schedule] .event")).toHaveCount(2);
+  await expect(pub.locator("[data-page=schedule] .event")).toHaveCount(0);
   await pub.close();
 
   await guest.goto("/?intro=0#travel");

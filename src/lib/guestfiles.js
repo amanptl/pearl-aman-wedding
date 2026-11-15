@@ -30,10 +30,12 @@ export function nameVariants(name) {
 
 /**
  * Build a household (a Guest without privateEvents). Generates a code and member ids unless supplied.
- * @param {{household:string, members:(string|{id?:string,name:string})[], eventIds?:string[], tags?:string[], plusOnes?:number, code?:string, greeting?:string, id?:string}} h
+ * `seats` is how many people the household may bring to each event (the RSVP asks for a count up to it); `members` are
+ * optional names. Older lists without `seats` get names + plus-ones.
+ * @param {{household:string, members?:(string|{id?:string,name:string})[], seats?:number, eventIds?:string[], tags?:string[], plusOnes?:number, code?:string, greeting?:string, id?:string}} h
  * @param {Set<string>} [taken] codes already in use (the new code is added)
  */
-export function makeHousehold({ household, members = [], eventIds = [], tags = [], plusOnes = 0, code, greeting, id }, taken = new Set()) {
+export function makeHousehold({ household, members = [], seats, eventIds = [], tags = [], plusOnes = 0, code, greeting, id }, taken = new Set()) {
   if (!household || !String(household).trim()) throw new Error("Household name is required");
   let c = code;
   if (!c) { do c = randomCode(10); while (taken.has(c)); }
@@ -43,9 +45,17 @@ export function makeHousehold({ household, members = [], eventIds = [], tags = [
     return { id: o.id || `m${i + 1}`, name: String(o.name ?? "").trim() };
   });
   const name = String(household).trim();
-  const hh = { code: c, household: name, greeting: greeting || `Dear ${name}`, members: ms, plusOnes: Number(plusOnes) || 0, eventIds: [...eventIds], tags: [...tags] };
+  const hh = { code: c, household: name, greeting: greeting || `Dear ${name}`, members: ms, seats: seatsOf({ seats, members: ms, plusOnes }), eventIds: [...eventIds], tags: [...tags] };
   if (id) hh.id = id;
   return hh;
+}
+
+/** How many people a household may bring: `seats`, or (older lists) named members + plus-ones; 1 to MAX_SEATS. */
+export const MAX_SEATS = 20;
+export function seatsOf(h) {
+  const n = Number.isFinite(+h?.seats) && +h.seats > 0 ? Math.round(+h.seats)
+    : (h?.members || []).filter((m) => String(m?.name ?? m ?? "").trim()).length + (Number(h?.plusOnes) || 0);
+  return Math.max(1, Math.min(MAX_SEATS, n || 1));
 }
 
 /**
@@ -66,7 +76,7 @@ export function reuseCodes(households, existing = []) {
  * @param {{households:object[], privateEvents:object[], passphrase:string, rsvpAdminKey?:string, iter?:number, presets?:object[], waTemplate?:string, waReminder?:string}} opts
  * @returns {Promise<{guestsJson:object, adminJson:object}>}
  */
-export async function buildGuestFiles({ households, privateEvents = [], passphrase, rsvpAdminKey, iter = 150000, presets, waTemplate, waReminder }) {
+export async function buildGuestFiles({ households, privateEvents = [], passphrase, nameLookup = true, rsvpAdminKey, iter = 150000, presets, waTemplate, waReminder }) {
   if (!passphrase) throw new Error("A passphrase is required");
   const taken = new Set(households.map((h) => h.code).filter(Boolean));
   const hhs = households.map((h) => makeHousehold(h, taken));
@@ -84,9 +94,10 @@ export async function buildGuestFiles({ households, privateEvents = [], passphra
     records[await sha256Hex(h.code)] = await encryptJSON(key, guest);
   }));
 
-  // Name index: normName -> Set(codes)
+  // Name index: normName -> Set(codes). Left empty when name lookup is off (site.nameLookup), so a known name can't be
+  // turned into a household's code, even by reading guests.json directly.
   const byName = new Map();
-  for (const h of hhs) for (const m of h.members) for (const v of nameVariants(m.name)) {
+  if (nameLookup) for (const h of hhs) for (const m of h.members) for (const v of nameVariants(m.name)) {
     if (!byName.has(v)) byName.set(v, new Set());
     byName.get(v).add(h.code);
   }

@@ -1,5 +1,5 @@
 // Pure helpers for the guest manager (no DOM, so they can be unit-tested in Node).
-import { makeHousehold } from "../src/lib/guestfiles.js";
+import { makeHousehold, seatsOf, MAX_SEATS } from "../src/lib/guestfiles.js";
 
 export const isPrivate = (e) => e?.visibility === "private";
 const clone = (x) => structuredClone(x);
@@ -7,8 +7,8 @@ const clone = (x) => structuredClone(x);
 /** Presets are stored in the admin bundle. "*" in eventIds means "every event" (so new events are included automatically). */
 export const DEFAULT_PRESETS = [
   { id: "close-family", name: "Close family", tag: "close-family", eventIds: ["*"] },
-  { id: "friends", name: "Friends", tag: "friends", eventIds: ["sangeet", "wedding", "reception"] },
-  { id: "colleagues", name: "Colleagues", tag: "colleagues", eventIds: ["wedding", "reception"] },
+  { id: "friends", name: "Friends", tag: "friends", eventIds: ["haldi-vidhi", "wedding"] },
+  { id: "colleagues", name: "Colleagues", tag: "colleagues", eventIds: ["wedding"] },
 ];
 
 export const DEFAULT_WA_TEMPLATE =
@@ -91,7 +91,8 @@ export function toCsv(rows) {
 const splitList = (s) => String(s || "").split(/[;|]/).map((x) => x.trim()).filter(Boolean);
 
 /**
- * Turn parsed CSV into import rows. Columns: household, members (; separated), tags, events (ids or a preset name), plusOnes.
+ * Turn parsed CSV into import rows. Columns: household, guests (how many may come), members (optional names, ; separated),
+ * tags, events (ids or a preset name). Older files with plusOnes instead of guests get names + plus-ones.
  * @returns {{headerErrors:string[], rows:{line:number, action:"add"|"update"|"error", errors:string[], warnings:string[], data:object}[]}}
  */
 export function importRows(csvRows, { events, presets, existing }) {
@@ -99,9 +100,9 @@ export function importRows(csvRows, { events, presets, existing }) {
   if (!csvRows.length) { out.headerErrors.push("The file is empty."); return out; }
   const head = csvRows[0].map((h) => h.trim().toLowerCase().replace(/[\s_-]+/g, ""));
   const col = (...names) => head.findIndex((h) => names.includes(h));
-  const ci = { household: col("household", "name", "family"), members: col("members", "guests", "people"), tags: col("tags", "tag", "group"), events: col("events", "event", "invitedto"), plusOnes: col("plusones", "plusone", "plus1") };
+  const ci = { household: col("household", "name", "family"), members: col("members", "names", "people"), seats: col("guests", "seats", "count", "invited"), tags: col("tags", "tag", "group"), events: col("events", "event", "invitedto"), plusOnes: col("plusones", "plusone", "plus1") };
   if (ci.household < 0) out.headerErrors.push('Missing a "household" column.');
-  if (ci.members < 0) out.headerErrors.push('Missing a "members" column.');
+  if (ci.seats < 0 && ci.members < 0) out.headerErrors.push('Missing a "guests" column (how many people the household may bring).');
   if (out.headerErrors.length) return out;
   const ids = new Set(events.map((e) => e.id));
   const byName = new Map(existing.map((h) => [h.household.trim().toLowerCase(), h]));
@@ -120,14 +121,16 @@ export function importRows(csvRows, { events, presets, existing }) {
     else for (const id of splitList(evRaw)) { if (ids.has(id)) eventIds.push(id); else errors.push(`Unknown event "${id}"`); }
     const po = get("plusOnes");
     const plusOnes = po === "" ? 0 : Number(po);
+    const sv = get("seats");
+    const seats = sv === "" ? members.length + (Number.isInteger(plusOnes) ? plusOnes : 0) : Number(sv);
     if (!household) errors.push("Household name is missing");
-    if (!members.length) errors.push("No members");
     if (!Number.isInteger(plusOnes) || plusOnes < 0 || plusOnes > 10) errors.push("Plus-ones must be a number from 0 to 10");
+    else if (!Number.isInteger(seats) || seats < 1 || seats > MAX_SEATS) errors.push(sv === "" ? "Add how many guests (a guests column), or their names" : `Guests must be a number from 1 to ${MAX_SEATS}`);
     if (household && seen.has(household.toLowerCase())) errors.push("Appears twice in this file");
     seen.add(household.toLowerCase());
     if (!eventIds.length && !errors.length) warnings.push("Not invited to any event");
     const prev = byName.get(household.toLowerCase());
-    out.rows.push({ line: i + 2, action: errors.length ? "error" : prev ? "update" : "add", errors, warnings, data: { household, members, tags, eventIds, plusOnes: errors.length ? 0 : plusOnes }, existingCode: prev?.code });
+    out.rows.push({ line: i + 2, action: errors.length ? "error" : prev ? "update" : "add", errors, warnings, data: { household, members, tags, eventIds, seats: Number.isInteger(seats) && seats > 0 ? Math.min(seats, MAX_SEATS) : 1 }, existingCode: prev?.code });
   });
   return out;
 }
@@ -145,9 +148,9 @@ export function applyImport(households, rows) {
       const keep = new Map(h.members.map((m) => [m.name.toLowerCase(), m]));
       let n = h.members.reduce((a, m) => Math.max(a, +String(m.id).replace(/\D/g, "") || 0), 0);
       h.members = d.members.map((name) => keep.get(name.toLowerCase()) || { id: `m${++n}`, name });
-      h.tags = d.tags; h.eventIds = d.eventIds; h.plusOnes = d.plusOnes;
+      h.tags = d.tags; h.eventIds = d.eventIds; h.seats = d.seats; delete h.plusOnes;
     } else {
-      list.push(makeHousehold({ id: slug(d.household) + "-" + Math.random().toString(36).slice(2, 6), household: d.household, members: d.members, tags: d.tags, eventIds: d.eventIds, plusOnes: d.plusOnes }, taken));
+      list.push(makeHousehold({ id: slug(d.household) + "-" + Math.random().toString(36).slice(2, 6), household: d.household, members: d.members, tags: d.tags, eventIds: d.eventIds, seats: d.seats }, taken));
     }
   }
   return list;
@@ -156,8 +159,8 @@ export function applyImport(households, rows) {
 export function exportHouseholdsCsv(households, events, linkFor) {
   const evName = (id) => id;
   return toCsv([
-    ["household", "members", "tags", "events", "plusOnes", "code", "link"],
-    ...households.map((h) => [h.household, h.members.map((m) => m.name).join("; "), (h.tags || []).join("; "), (h.eventIds || []).filter((id) => events.some((e) => e.id === id)).map(evName).join("; "), h.plusOnes || 0, h.code, linkFor(h)]),
+    ["household", "guests", "members", "tags", "events", "code", "link"],
+    ...households.map((h) => [h.household, seatsOf(h), h.members.map((m) => m.name).join("; "), (h.tags || []).join("; "), (h.eventIds || []).filter((id) => events.some((e) => e.id === id)).map(evName).join("; "), h.code, linkFor(h)]),
   ]);
 }
 
@@ -165,63 +168,52 @@ export function exportHouseholdsCsv(households, events, linkFor) {
 const j = (s) => { try { return JSON.parse(s); } catch { return {}; } };
 
 /**
- * Turn the Apps Script summary into dashboard numbers.
- * pending = invited named members who have no response for that event.
+ * Turn the Apps Script summary (one Responses row per household and event: invited, attending) into dashboard numbers.
+ * Per event: coming (people), declined (seats of replies that aren't coming), pending (seats of invited households
+ * with no reply), invited (all seats invited). Dietary counts come from the Households rows.
  */
 export function analyseSummary(summary, households, events) {
   const responses = summary.responses || [];
   const hsheet = summary.households || [];
   const byEvent = {};
-  for (const e of events) byEvent[e.id] = { yes: 0, no: 0, pending: 0, invited: 0 };
-  const answered = new Set(responses.map((r) => `${r.code}|${r.memberId}|${r.eventId}`));
-  for (const r of responses) {
-    const c = byEvent[r.eventId];
-    if (!c) continue;
-    if (r.attending === "yes") c.yes++; else if (r.attending === "no") c.no++;
-  }
+  for (const e of events) byEvent[e.id] = { coming: 0, declined: 0, pending: 0, invited: 0, households: 0 };
+  const reply = new Map(responses.map((r) => [`${r.code}|${r.eventId}`, r]));
   for (const h of households) for (const id of h.eventIds || []) {
     const c = byEvent[id];
     if (!c) continue;
-    for (const m of h.members) { c.invited++; if (!answered.has(`${h.code}|${m.id}|${id}`)) c.pending++; }
+    const s = seatsOf(h);
+    c.invited += s;
+    const r = reply.get(`${h.code}|${id}`);
+    if (!r) { c.pending += s; continue; }
+    const n = Math.min(s, Math.max(0, Number(r.attending) || 0));
+    c.households++;
+    c.coming += n;
+    c.declined += s - n;
   }
-  // Meals and dietary: each person once, if they said yes to anything.
-  const people = new Map();
-  for (const r of responses) {
-    const k = `${r.code}|${r.memberId}`;
-    const p = people.get(k) || { yes: false, meal: "", dietary: "" };
-    if (r.attending === "yes") p.yes = true;
-    if (r.meal) p.meal = r.meal;
-    if (r.dietary) p.dietary = r.dietary;
-    people.set(k, p);
+  const dietary = {};
+  for (const x of hsheet) for (const part of String(x.dietary || "").split(";")) {
+    const m = /^\s*(.+?):\s*(\d+)\s*$/.exec(part);
+    if (m) dietary[m[1]] = (dietary[m[1]] || 0) + Number(m[2]);
   }
-  const meals = {}, dietary = {};
-  let attending = 0;
-  for (const p of people.values()) {
-    if (!p.yes) continue;
-    attending++;
-    if (p.meal) meals[p.meal] = (meals[p.meal] || 0) + 1;
-    for (const d of String(p.dietary).split(/[;,]/).map((x) => x.trim()).filter(Boolean)) dietary[d] = (dietary[d] || 0) + 1;
-  }
+  const attending = Math.max(0, ...Object.values(byEvent).map((c) => c.coming));
   const repliedCodes = new Set([...responses.map((r) => r.code), ...hsheet.map((h) => h.code)]);
   const notReplied = households.filter((h) => !repliedCodes.has(h.code));
   const extras = hsheet.map((h) => ({ ...h, household: h.household || households.find((x) => x.code === h.code)?.household || h.code, shuttleSeats: j(h.shuttle) }));
   const hotel = { need: [], booked: [], local: [] };
   for (const x of extras) if (hotel[x.hotel]) hotel[x.hotel].push(x);
   const travel = extras.filter((x) => x.arrival || x.departure || x.flight || x.flightTime).sort((a, b) => String(a.arrival).localeCompare(String(b.arrival)));
-  return { attending, byEvent, meals, dietary, notReplied, hotel, travel, extras, replied: repliedCodes.size, total: households.length };
+  return { attending, byEvent, dietary, notReplied, hotel, travel, extras, replied: repliedCodes.size, total: households.length };
 }
 
 export function exportResponsesCsv(summary, households, events) {
   const a = analyseSummary(summary, households, events);
   const resp = summary.responses || [];
-  const head = ["household", "replied", ...events.map((e) => e.id), "meals", "dietary", "hotel", "arrival", "departure", "flight", "flightTime", "phone", "song", "message"];
+  const head = ["household", "guests", "replied", ...events.map((e) => e.id), "names", "dietary", "dietNote", "hotel", "arrival", "departure", "flight", "flightTime", "phone", "song", "message"];
   const rows = households.map((h) => {
     const rs = resp.filter((r) => r.code === h.code);
     const x = a.extras.find((e) => e.code === h.code) || {};
-    const yes = (id) => { const mine = rs.filter((r) => r.eventId === id); return mine.length ? `${mine.filter((r) => r.attending === "yes").length}/${mine.length}` : ""; };
-    const meals = [...new Set(rs.filter((r) => r.attending === "yes" && r.meal).map((r) => `${r.name}: ${r.meal}`))].join("; ");
-    const diet = [...new Set(rs.filter((r) => r.dietary).map((r) => `${r.name}: ${r.dietary}`))].join("; ");
-    return [h.household, rs.length || x.code ? "yes" : "no", ...events.map((e) => yes(e.id)), meals, diet, x.hotel || "", x.arrival || "", x.departure || "", x.flight || "", x.flightTime || "", x.phone || "", x.song || "", x.message || ""];
+    const count = (id) => { const r = rs.find((q) => q.eventId === id); return r ? String(Number(r.attending) || 0) : (h.eventIds || []).includes(id) ? "" : "-"; };
+    return [h.household, seatsOf(h), rs.length || x.code ? "yes" : "no", ...events.map((e) => count(e.id)), x.names || "", x.dietary || "", x.dietNote || "", x.hotel || "", x.arrival || "", x.departure || "", x.flight || "", x.flightTime || "", x.phone || "", x.song || "", x.message || ""];
   });
   return toCsv([head, ...rows]);
 }

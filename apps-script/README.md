@@ -22,9 +22,9 @@ Edit the code, then **Deploy -> Manage deployments -> pencil icon -> Version: Ne
 
 ## API
 
-- `POST` body `payload=<JSON>` (see CONTRACTS.md section 7). Re-submitting replaces that household's rows (keyed by code + memberId + eventId); members removed from the payload have their rows deleted. Codes must match `^[A-Z2-9]{10}$`.
+- `POST` body `payload=<JSON>` (see CONTRACTS.md section 7). Responses has one row per household and event (`invited` seats, `attending` count); re-submitting replaces that household's rows (keyed by code + eventId). Households holds names, food counts and travel details. **Upgrading from the per-person version:** clear or rename the old Responses and Households tabs before deploying the new code, since the columns changed. Codes must match `^[A-Z2-9]{10}$`.
 - `GET ?action=get&code=CODE` returns `{ ok, P }` with the household's latest submission.
-- `GET ?action=summary&key=ADMIN_KEY` returns households, responses, per-event counts, meal and dietary tallies.
+- `GET ?action=summary&key=ADMIN_KEY` returns households, responses, per-event headcounts and food tallies.
 - Anything else returns `ok`.
 
 ## Tests

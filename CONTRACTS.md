@@ -43,13 +43,16 @@ tests/                  Playwright specs, tests/fixtures/*.json, tests/helpers/l
 ```
 
 ## 2. Routing
-- Hash routes: `#home` (default), `#schedule`, `#travel`, `#story`, `#faq`, `#registry`, `#rsvp`. Deep link into Q&A: `#faq/<faqId>`. Into an event: `#schedule/<eventId>`.
+- `/` (empty hash) is the sealed envelope. Tapping it, Skip, or Escape pushes `#home`. Back returns to the seal.
+- `#home` is the opened invitation. A direct visit, or any other hash, skips the envelope. The home board reveal runs only when the envelope opens, not on a direct `#home` visit.
+- Hash routes: `#home`, `#schedule`, `#travel`, `#story`, `#faq`, `#registry`, `#rsvp`. Deep link into Q&A: `#faq/<faqId>`. Into an event: `#schedule/<eventId>`.
+- `?intro=0` and edit mode (`?edit=1`) never show the envelope. An empty hash in those modes is the opened home page.
 - Personal link: `/?i=<CODE>`. The code is case-insensitive, 10 chars from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`. After it resolves, the guest is remembered (§6) and `?i=` is removed with `history.replaceState`.
 - A page is hidden from navigation when `page.isEmpty(ctx)` is true or `content.pages[id].enabled === false`.
 - Navigation:
   - **≥ 768px:** a horizontal nav under the banner.
   - **< 768px:** a sticky bottom tab bar with Home · Schedule · Travel · Q&A · RSVP, plus a "More" button that opens a sheet listing the remaining pages. Respect `env(safe-area-inset-bottom)`.
-- Page changes move focus to the page `<h1>` and scroll to the top, instantly when motion is reduced. Page changes use the View Transitions API when available (falling back to a short opacity fade); the home board reveal runs only after the intro opens.
+- Page changes move focus to the page `<h1>` and scroll to the top, instantly when motion is reduced. Page changes use the View Transitions API when available (falling back to a short opacity fade).
 
 ## 3. ctx (passed to every page)
 ```js
@@ -105,8 +108,8 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
 **Guest (decrypted household record):**
 ```js
 { code, household: "Sharma Family", greeting: "Dear Sharma Family",
-  members: [{ id: "m1", name: "Raj Sharma" }, { id: "m2", name: "Priya Sharma" }],
-  plusOnes: 0,                       // extra unnamed guests allowed
+  seats: 4,                          // how many people may come to each event (the RSVP asks for a count up to this)
+  members: [{ id: "m1", name: "Raj Sharma" }, { id: "m2", name: "Priya Sharma" }],  // optional names (lookup, hints)
   eventIds: ["mehndi","sangeet","wedding","reception"],
   privateEvents: [Event, ...],       // full copies of the private events this household is invited to
   tags: ["close-family"] }
@@ -119,7 +122,7 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
   "names":   { "<sha256hex(normName)>": { "iv": "<b64>", "ct": "<b64>" } } }
 ```
 - **records:** AES-GCM-256. The key is `PBKDF2-SHA256(CODE, salt, iter)`. The plaintext is the Guest object.
-- **names:** one entry per member. `normName` = lowercased, NFD with diacritics stripped, non-letters removed, whitespace collapsed, in the form `"first last"`. Also add a `"last first"` variant. The key is `PBKDF2(normName, salt, iter)`. The plaintext is `{ code }`.
+- **names:** one entry per member, and empty when `site.nameLookup` is off (the default). `normName` = lowercased, NFD with diacritics stripped, non-letters removed, whitespace collapsed, in the form `"first last"`. Also add a `"last first"` variant. The key is `PBKDF2(normName, salt, iter)`. The plaintext is `{ code }`.
 
 **content/admin.enc.json:** `{ v, kdf, iv, ct }`. The key comes from PBKDF2 of the couple's passphrase. The plaintext is:
 ```js
@@ -135,15 +138,17 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
 ## 7. RSVP backend contract (Apps Script web app)
 **POST** (`mode: "no-cors"`), body `URLSearchParams({ payload: JSON.stringify(P) })`:
 ```js
-P = { code, household, submittedAt,
-      members: [{ id, name, meal, dietary }],           // includes named plus-ones as id "p1".. with entered name
-      responses: [{ memberId, eventId, attending: "yes"|"no" }],
-      extras: { hotel: "need"|"booked"|"local"|"", arrival, departure, flight, address, shuttle: { [eventId]: seats }, phone, message } }
+P = { v: 2, code, household, seats, submittedAt,
+      counts: { [eventId]: n },                         // how many of the household are coming, 0..seats, every RSVP event
+      names: "Raj Sharma, Priya Sharma",                // optional, free text
+      diet: { Vegetarian: 3, Jain: 1 },                 // food counts (meal + dietary options), each <= the biggest count
+      dietNote: "one peanut allergy",
+      extras: { hotel: "need"|"booked"|"local"|"", arrival, departure, flight, flightTime, address, shuttle: { [eventId]: seats }, phone, song, message } }
 ```
-The backend upserts rows keyed by (code, memberId, eventId) in the **Responses** sheet, and one row per code in the **Households** sheet (with extras). Re-submitting replaces rather than duplicates.
+The backend upserts one row per (code, eventId) in the **Responses** sheet (`invited` = seats, `attending` = count), and one row per code in the **Households** sheet (names, `dietary` as "Jain: 1; Vegetarian: 3", dietNote, extras). Re-submitting replaces rather than duplicates. Older per-person replies (v1, with members/responses) are still read back by the form.
 
 - **GET `?action=get&code=CODE`:** returns `{ ok, P | null }`, the household's latest submission, used to pre-fill the form.
-- **GET `?action=summary&key=ADMIN_KEY`:** returns `{ ok, households:[…], responses:[…] }` for the editor dashboard.
+- **GET `?action=summary&key=ADMIN_KEY`:** returns `{ ok, households:[…], responses:[…], counts: { [eventId]: { coming, invited, households, declined } }, dietary: { label: n } }` for the editor dashboard.
 - The endpoint URL lives in `content.site.rsvpEndpoint`. If it's empty, the site runs in demo mode: it logs to the console and stores the submission in localStorage under `pa.rsvp.v1.<code>`.
 
 ## 8. content.json shape (summary; schema.json is authoritative)

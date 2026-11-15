@@ -31,6 +31,18 @@ function contactsHtml(ctx) {
 export function renderLookup(container, ctx, { heading = "Find your invitation", intro = "Type your name as it appears on your invitation and we will show you your events." } = {}) {
   const id = `lookup-${++uid}`;
   const bad = safe(() => sessionStorage.getItem(BADCODE_KEY)) === "1";
+  // Name lookup is off unless site.nameLookup is true: a name is easy to know, and whoever finds a household can change
+  // its RSVP. With it off, the personal link (an unguessable code) is the only way in, and the editor publishes no name index.
+  if (!ctx?.content?.site?.nameLookup) {
+    container.innerHTML = html`
+      <div class="lookup" data-lookup-root data-link-only>
+        <h2 class="lookup__title" id="${id}-h">${heading}</h2>
+        ${bad ? html`<p class="lookup__notice" role="status" data-badcode>That link didn't work. Please check you copied all of it, or message us for a new one.</p>` : ""}
+        <p class="lookup__intro">Please open the personal link we sent you on WhatsApp. It takes you straight to your invitation, your events and your RSVP.</p>
+        <div class="lookup__msg" data-msg>${contactsHtml(ctx) ? html`<p>Can't find your link? Message us and we'll send it again.</p>${contactsHtml(ctx)}` : ""}</div>
+      </div>`.toString();
+    return;
+  }
   container.innerHTML = html`
     <div class="lookup" data-lookup-root>
       <h2 class="lookup__title" id="${id}-h">${heading}</h2>

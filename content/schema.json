@@ -59,6 +59,7 @@
         "rsvpEndpoint": { "type": "string", "format": "uri", "title": "RSVP endpoint", "description": "Google Apps Script web app URL. Leave empty for demo mode." },
         "siteUrl": { "type": "string", "format": "uri", "title": "Website address", "description": "Public address of this site; used by the QR code and share links." },
         "ogImage": { "$ref": "#/$defs/image", "title": "Share preview image", "description": "Image shown when the link is shared in messages." },
+        "nameLookup": { "type": "boolean", "default": false, "title": "Find invitation by name", "description": "Let guests find their invitation by typing their name. Off: only the personal link opens a household, so nobody who merely knows a name can change that household's RSVP." },
         "contacts": {
           "type": "array", "title": "Contacts", "description": "People guests can message for help.",
           "items": {
@@ -121,7 +122,7 @@
         "required": ["id", "name", "start", "visibility"],
         "properties": {
           "id": { "$ref": "#/$defs/id" },
-          "name": { "type": "string", "title": "Event name", "description": "For example Sangeet." },
+          "name": { "type": "string", "title": "Event name", "description": "For example Mehendi." },
           "subtitle": { "type": "string", "title": "Tagline", "description": "One short line under the name." },
           "start": { "type": "string", "format": "date-time-local", "title": "Starts", "description": "Local start date and time at the venue." },
           "end": { "type": "string", "format": "date-time-local", "title": "Ends", "description": "Local end date and time at the venue." },

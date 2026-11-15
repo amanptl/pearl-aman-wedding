@@ -12,8 +12,8 @@
   <meta property="og:description" content="You're cordially invited." />
   <meta property="og:image" content="assets/img/og.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
-  <!-- Show the envelope intro at first paint (before JS boots) when main.js would show it anyway: first visit this session, on home. -->
-  <script>try{if(!sessionStorage.getItem("pa.intro")&&/^(#|#home(\/.*)?)?$/.test(location.hash)&&!/[?&](edit=1|intro=0)/.test(location.search))document.documentElement.classList.add("intro-early")}catch(e){}</script>
+  <!-- Show the sealed envelope at first paint when the URL is / (no hash). #home and other hashes open straight onto the invitation. -->
+  <script>try{var h=location.hash;if((h===""||h==="#"||h==="#/")&&!/[?&](edit=1|intro=0)/.test(location.search))document.documentElement.classList.add("intro-early")}catch(e){}</script>
   <script>if(!/[?&](content|edit)=/.test(location.search))window.__content=fetch("content/content.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw 0;return r.json()});</script>
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/gilda-display-latin.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/bodoni-moda-latin.woff2" crossorigin />
@@ -48,17 +48,11 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <div id="intro" class="intro" role="dialog" aria-modal="true" aria-label="Invitation" hidden>
+    <span class="intro-veil" aria-hidden="true"></span>
+    <span class="intro-lens" aria-hidden="true"></span>
     <button type="button" class="btn btn--light btn--small intro-skip" id="intro-skip">Skip</button>
-    <p class="intro-line">You're cordially invited&hellip;</p>
-    <button type="button" class="intro-open" id="intro-open" aria-label="Open the invitation">
-      <span class="intro-env" aria-hidden="true">
-        <span class="ienv-body"></span>
-        <span class="ienv-flap"></span>
-        <span class="ienv-seal"></span>
-        <img class="ienv-flowers" src="assets/img/floral-divider-600.webp" alt="" width="600" height="338" decoding="async" />
-      </span>
-    </button>
-    <p class="intro-line intro-hint" aria-hidden="true">Tap the envelope to open&hellip;</p>
+    <button type="button" class="intro-open" id="intro-open" aria-label="Open the invitation"></button>
+    <p class="intro-hint" aria-hidden="true">Tap to open</p>
   </div>
 
   <div id="app" hidden>

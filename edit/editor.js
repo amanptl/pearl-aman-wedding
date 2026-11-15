@@ -22,7 +22,7 @@ const $ = (s) => document.querySelector(s);
 const safe = (fn, fb = null) => { try { return fn(); } catch { return fb; } };
 const clone = (x) => structuredClone(x);
 const PAGE_OF = { schedule: "schedule", events: "schedule", hotels: "travel", travel: "travel", story: "story", people: "story", faq: "faq", faqCategories: "faq", registry: "registry", rsvp: "rsvp", home: "home", site: "home" };
-const PUBLIC_GUEST = { code: "", household: "", greeting: "", members: [], plusOnes: 0, eventIds: [], privateEvents: [], tags: [], _preview: true };
+const PUBLIC_GUEST = { code: "", household: "", greeting: "", members: [], seats: 1, eventIds: [], privateEvents: [], tags: [], _preview: true };
 
 async function boot() {
   const app = { selection: null, errors: [], warnings: [], currentPage: "home", lastSource: "ui", previewGuest: null, dirty: false, liveState: "", savedAt: 0 };
@@ -71,7 +71,8 @@ async function boot() {
   const dirtyNow = () => JSON.stringify(cleanContent(draft)) !== JSON.stringify(cleanContent(app.base)) || adminDirty();
   /** The draft's private events, in a stable order (what goes into the encrypted bundle). */
   app.privateEvents = () => GL.sortEvents(cleanContent(draft).events.filter(GL.isPrivate));
-  app.guestsChanged = () => !!app.unlocked && (app.adminIsNew || adminDirty() || JSON.stringify(app.privateEvents()) !== JSON.stringify(app.adminBase?.privateEvents || []));
+  app.guestsChanged = () => !!app.unlocked && (app.adminIsNew || adminDirty() || JSON.stringify(app.privateEvents()) !== JSON.stringify(app.adminBase?.privateEvents || [])
+    || (draft?.site?.nameLookup === true) !== (app.base?.site?.nameLookup === true)); // switching name lookup rebuilds (or drops) the name index
   let saveTimer = 0;
   function saveNow() {
     clearTimeout(saveTimer);
@@ -96,7 +97,6 @@ async function boot() {
       const hhs = draft._admin.households || [];
       hhs.forEach((hh, i) => {
         if (!String(hh.household || "").trim()) app.errors.push({ path: `_admin.households.${i}.household`, message: "A household needs a name" });
-        else if (!(hh.members || []).some((m) => String(m.name || "").trim())) app.errors.push({ path: `_admin.households.${i}.members`, message: `${hh.household} has no guest names` });
       });
       for (const e of draft.events.filter(GL.isPrivate)) if (!hhs.some((hh) => (hh.eventIds || []).includes(e.id))) warn.push({ path: "_admin.households", message: `Nobody is invited to the private event "${e.name || e.id}" yet` });
     }
