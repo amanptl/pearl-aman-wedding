@@ -296,6 +296,7 @@ export default {
       const setActive = (id) => btns.forEach((b) => (id === b.dataset.seg ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current")));
       const update = () => {
         if (root.hidden) return;
+        if (root._segLock) { setActive(root._segLock); return; } // a tab was just tapped: keep it while the page scrolls there
         const line = (parseFloat(getComputedStyle(root).getPropertyValue("--stick-top")) || 0) + 120;
         let active = secs[0];
         for (const s of secs) if (s.getBoundingClientRect().top <= line) active = s;
@@ -305,7 +306,12 @@ export default {
       const io = new IntersectionObserver(update, { rootMargin: "-120px 0px -40% 0px", threshold: [0, 0.01, 0.5, 1] });
       secs.forEach((s) => io.observe(s));
       root._io = io;
-      root._ioScroll = null;
+      // The observer only fires when a section crosses a threshold, so reaching the very bottom of the page (where a
+      // short last section can never reach the line) would go unnoticed; re-check on scroll as well, once per frame.
+      let queued = false;
+      root._ioScroll = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; update(); }); } };
+      window.addEventListener("scroll", root._ioScroll, { passive: true });
+      root._segUpdate = update;
       update();
     }
 
@@ -324,6 +330,13 @@ export default {
       if (s && scrollTo(s.dataset.seg)) {
         root.querySelectorAll(".seg-btn").forEach((x) => (x === s ? x.setAttribute("aria-current", "true") : x.removeAttribute("aria-current")));
         history.replaceState(null, "", `#travel/${s.dataset.seg}`);
+        // Hold the tapped tab until the smooth scroll settles, so sections passed on the way don't flash and a short
+        // last section stays selected; then hand back to the scroll position.
+        root._segLock = s.dataset.seg;
+        clearTimeout(root._segLockTimer);
+        const release = () => { clearTimeout(root._segLockTimer); window.removeEventListener("scrollend", release); root._segLock = null; root._segUpdate?.(); };
+        window.addEventListener("scrollend", release);
+        root._segLockTimer = setTimeout(release, 1200);
       }
     });
     root.addEventListener("subroute", (ev) => { scrollTo(ev.detail.sub); });

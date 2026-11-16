@@ -123,7 +123,7 @@ test.describe("guest site", () => {
     await page.goto("/");
     await ready(page);
     await expect(page.locator("#intro")).toBeVisible();
-    await page.locator("#intro-skip").click();
+    await page.keyboard.press("Escape"); // Skip is hidden for guests; Escape skips the same way
     await expect(page.locator("#intro")).toHaveCount(0);
     await expect(page.locator("[data-page=home] h1")).toBeVisible();
   });

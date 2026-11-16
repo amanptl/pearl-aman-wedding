@@ -16,7 +16,8 @@ test("ICS download has valid, CRLF, UTC content", async ({ page }) => {
     page.waitForEvent("download"),
     page.evaluate(async () => {
       const { downloadIcs } = await import("/src/lib/calendar.js");
-      const content = await (await fetch("/content/content.json")).json();
+      // A fixture with two public events: the published site may keep every event private (guest links only).
+      const content = await (await fetch("/tests/fixtures/content-board.json")).json();
       downloadIcs(content.events.slice(0, 2), content.site, "my weddin?g.ics");
     }),
   ]);
@@ -141,7 +142,12 @@ test("service worker is not registered under automation by default", async ({ pa
   expect(regs).toBe(0);
 });
 
-test("?sw=1: SW caches content.json and the schedule loads offline", async ({ page, context }) => {
+test("?sw=1: SW caches content.json and the schedule loads offline", async ({ page, context, browserName }) => {
+  // The published content may hold no public events, so serve a fixture with two in its place. Only Chromium routes
+  // a service worker's own requests through context.route, so the other engines skip this (the SW code is shared).
+  test.skip(browserName !== "chromium", "service-worker requests can only be routed in Chromium");
+  const board = fs.readFileSync("tests/fixtures/content-board.json", "utf8");
+  await context.route("**/content/content.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: board }));
   await open(page, "/?sw=1#schedule");
   await page.evaluate(() => navigator.serviceWorker.ready);
   // Wait until the SW controls the page and has precached the shell.

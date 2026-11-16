@@ -162,7 +162,7 @@ The backend upserts one row per (code, eventId) in the **Responses** sheet (`inv
   home: { photo: Image, invitationLines: { small, venueLines: [] }, welcome },
   events: [{ id, name, subtitle, start: "2027-07-23T18:00", end, timezone?,
              venue: { name, address, lat, lng, mapsQuery, parking, notes },
-             description, dressCode: { title, text, swatches: ["#hex"], tips: [] },
+             description, dressCode: { title, text, swatches: ["#hex"], showSwatches?: true|false /* omit or true = show dots */, tips: [] },
              notes: [] /* e.g. "Phone-free ceremony" */, photo: Image|null,
              visibility: "public"|"private", rsvp: true|false, shuttle: true|false }],
   hotels: [{ id, name, type: "block"|"nearby", recommended, photo: Image|null, rate, rateNote,

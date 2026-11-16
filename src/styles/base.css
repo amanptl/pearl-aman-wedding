@@ -9,6 +9,11 @@ body {
   background: var(--olive-deep);
   color: var(--text);
   font-family: var(--font-body);
+  /* Bodoni Moda thins its hairlines as text gets bigger (optical size = font size by default), so large headings
+     lose their thin strokes against the paper. Hold every size at the sturdier opsz-18 drawing. Gilda and the
+     scripts have no optical-size axis and are unaffected. */
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 18;
   font-size: var(--step-0);
   line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
@@ -332,7 +337,8 @@ main { view-transition-name: main; }
 .intro.opening .intro-hint { animation: none; opacity: 0; }
 .intro.opening .intro-open { cursor: default; }
 .intro.gone { opacity: 0; pointer-events: none; }
-.intro-skip { position: absolute; z-index: 1; right: var(--space-s); top: calc(var(--space-s) + var(--safe-t)); }
+/* display:none hides Skip for guests; delete that declaration to show it again. */
+.intro-skip { display: none; position: absolute; z-index: 1; right: var(--space-s); top: calc(var(--space-s) + var(--safe-t)); }
 @media (prefers-reduced-motion: reduce) {
   .intro.is-ready .intro-hint { animation: none; opacity: 0.85; }
   .intro-lens::after { animation: none; }

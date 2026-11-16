@@ -32,7 +32,7 @@ export function createFilm(board, { chrome = [], vignette = null } = {}) {
   const env = $(".env"), card = $(".invite"), photo = $(".env-photo");
   const flap = $(".env-flap"), flapOut = $(".flap-out"), flapIn = $(".flap-in");
   const sealHi = $(".seal-hi"), sealLo = $(".seal-lo"), shade = $(".env-shade");
-  const late = [$(".tag-details"), $(".kindly"), $(".rsvp-word"), $(".tag-respond")];
+  const late = [$(".kindly"), $(".rsvp-word"), $(".tag-respond"), document.querySelector(".scroll-hint")].filter(Boolean);
   const root = document.documentElement;
   const anims = [];
   let camera = null, blur = null, state = "idle";

@@ -59,8 +59,9 @@ function eventCard(e, ctx, flags) {
   const v = e.venue || {};
   const dress = e.dressCode || {};
   const swatches = dress.swatches || [];
+  const showSwatches = dress.showSwatches !== false && swatches.length > 0;
   const tips = dress.tips || [];
-  const hasDress = showField(dress.title) || showField(dress.text) || swatches.length || tips.length;
+  const hasDress = showField(dress.title) || showField(dress.text) || showSwatches || tips.length;
   const hasVenue = v.name || v.address || isEdit();
   const canDirect = v.name || v.address || v.mapsQuery || typeof v.lat === "number";
   return html`
@@ -83,7 +84,7 @@ function eventCard(e, ctx, flags) {
         ${hasDress ? html`
           <div class="dress">
             <p class="dress-head">${icon.hanger()}<span><span class="dress-label">Dress code</span> <strong ${editAttrs("text", p("dressCode.title"), { placeholder: "Add dress code" })}>${dress.title || ""}</strong></span></p>
-            ${swatches.length ? html`<ul class="swatches" aria-label="Suggested colours: ${swatches.map(colourName).join(", ")}">${swatches.map((c) => html`<li class="swatch" style="background:${c}" title="${colourName(c)}"><span class="visually-hidden">${colourName(c)}</span></li>`)}</ul>` : ""}
+            ${showSwatches ? html`<ul class="swatches" aria-label="Suggested colours: ${swatches.map(colourName).join(", ")}">${swatches.map((c) => html`<li class="swatch" style="background:${c}" title="${colourName(c)}"><span class="visually-hidden">${colourName(c)}</span></li>`)}</ul>` : ""}
             ${showField(dress.text) || tips.length ? html`
               <details class="wear">
                 <summary><span>What to wear</span>${icon.chevron()}</summary>

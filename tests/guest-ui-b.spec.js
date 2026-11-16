@@ -151,7 +151,8 @@ for (const route of ["travel", "faq"]) {
     if (route === "faq") {
       await page.locator('[data-page="faq"] .faq-item summary').first().click();
       // The answer fades in (260 ms); check contrast once it is fully opaque, not mid-animation.
-      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+      // Ignore endless loops (the home scroll hint's bob), which never finish.
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
     }
     const bad = (await runAxe(page)).filter((v) => ["serious", "critical"].includes(v.impact));
     expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(" | ")}`)).toEqual([]);

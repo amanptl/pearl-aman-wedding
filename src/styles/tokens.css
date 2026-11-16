@@ -9,11 +9,11 @@
   --ivory-2: #f4f1ea;
   --card: #e9e2d5;
   --ink: #1f1c17;
-  --ink-muted: #4f4b42;      /* >= 7:1 on ivory */
+  --ink-muted: #3d3a33;      /* >= 9:1 on ivory; darker than strictly needed so Gilda's thin strokes hold up */
   --burgundy: #5c1a24;
   --burgundy-2: #7a3238;
   --gold: #b89a5e;
-  --gold-text: #7a5e22;      /* gold readable on ivory (>= 4.5:1) */
+  --gold-text: #684d17;      /* gold readable on ivory (>= 6:1), deep enough for Gilda's thin strokes */
   --gold-light: #e6cf94;     /* gold readable on olive */
   --line: rgba(31, 28, 23, 0.2);
   --line-light: rgba(236, 232, 223, 0.4);

@@ -55,7 +55,7 @@
         "timezone": { "type": "string", "title": "Time zone", "description": "IANA time zone of the venues, for example America/Toronto.", "default": "America/Toronto" },
         "weddingDate": { "type": "string", "format": "date-time-local", "title": "Wedding ceremony start", "description": "Local date and time of the ceremony. The home countdown counts down to this moment." },
         "dateText": { "type": "string", "title": "Date as written", "description": "How the date appears on the invitation, for example July 25th, 2027." },
-        "city": { "type": "string", "title": "City", "description": "Where the wedding takes place." },
+        "city": { "type": "string", "title": "City", "description": "Shown on the home page under the dates, e.g. Edmonton, Canada." },
         "rsvpEndpoint": { "type": "string", "format": "uri", "title": "RSVP endpoint", "description": "Google Apps Script web app URL. Leave empty for demo mode." },
         "siteUrl": { "type": "string", "format": "uri", "title": "Website address", "description": "Public address of this site; used by the QR code and share links." },
         "ogImage": { "$ref": "#/$defs/image", "title": "Share preview image", "description": "Image shown when the link is shared in messages." },
@@ -94,14 +94,14 @@
           "type": "object", "title": "Invitation text", "description": "Wording on the invitation card.",
           "properties": {
             "small": { "type": "string", "title": "Opening line", "description": "Text above the names. A new line starts a new row.", "x-widget": "textarea" },
-            "venueLines": { "type": "array", "title": "Venue lines", "description": "Venue address lines shown at the bottom of the card.", "items": { "type": "string", "title": "Line", "description": "One line of the venue address." } }
+            "celebrationSmall": { "type": "string", "title": "Opening line (not invited to the wedding)", "description": "Text above the names for guests who are not invited to the wedding itself, e.g. \"Please join us for the wedding celebrations of\". A new line starts a new row.", "x-widget": "textarea" },
+            "venueLines": { "type": "array", "title": "Venue lines", "description": "Not shown on the card any more: the card shows the City instead, since not every guest is invited to the wedding.", "items": { "type": "string", "title": "Line", "description": "One line of the venue address." } }
           }
         },
         "welcome": { "type": "string", "title": "Welcome message", "description": "A short greeting shown on the home page.", "x-widget": "textarea" },
         "board": {
-          "type": "object", "title": "Invitation board labels", "description": "The small words on the flat-lay: two tags and a handwritten note.",
+          "type": "object", "title": "Invitation board labels", "description": "The small words on the flat-lay: the Respond tag and a handwritten note.",
           "properties": {
-            "detailsLabel": { "type": "string", "title": "Details tag", "description": "Text on the tag that opens the schedule. Default: Details." },
             "respondLabel": { "type": "string", "title": "Respond tag", "description": "Text on the tag that opens the RSVP page. Default: Respond." },
             "kindly": { "type": "string", "title": "Handwritten word above RSVP", "description": "Decorative script word. Default: Kindly." },
             "rsvpWord": { "type": "string", "title": "Handwritten RSVP word", "description": "Decorative script word. Default: Rsvp." }
@@ -148,6 +148,12 @@
               "swatches": {
                 "type": "array", "title": "Colour palette", "description": "Suggested colours.", "x-widget": "swatches",
                 "items": { "type": "string", "format": "color", "title": "Colour", "description": "A hex colour such as #7a3238." }
+              },
+              "showSwatches": {
+                "type": "boolean",
+                "title": "Show colours on the schedule",
+                "description": "Turn off to hide the colour dots while keeping the palette for later.",
+                "default": true
               },
               "tips": { "type": "array", "title": "Tips", "description": "Short practical tips.", "items": { "type": "string", "title": "Tip", "description": "One tip." } }
             }
