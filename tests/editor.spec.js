@@ -1,10 +1,13 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { editorContentText } from "./helpers/content.js";
 
 const FONT_NOISE = /fonts\.(googleapis|gstatic)\.com|ERR_(INTERNET|NAME|CONNECTION|BLOCKED)|Failed to load resource/i;
 const PHOTO = path.resolve("tests/fixtures/editor-photo.png");
 const SHOTS = process.env.SHOTS || process.env.EDITOR_SHOTS;
+// The editor starts from content with five hotels (the published site may have fewer); see helpers/content.js.
+const CONTENT = editorContentText();
 
 // The editor is a desktop tool (phones get a "works best on a computer" note), so these specs always run in a desktop-sized, non-touch
 // context. The browser engine still follows the project (webkit/chromium).
@@ -16,6 +19,7 @@ test.beforeEach(async ({ page }) => {
   page.on("console", (m) => { if (m.type() === "error" && !FONT_NOISE.test(m.text())) errors.push(m.text()); });
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.addInitScript(() => { try { localStorage.setItem("pa.editor.coach.v1", "1"); sessionStorage.setItem("pa.intro", "1"); } catch {} });
+  await page.route("**/content/content.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: CONTENT }));
 });
 
 async function openEditor(page, pageId = "travel") {
@@ -232,7 +236,7 @@ test("device switcher widths", async ({ page }) => {
 /* ---------- publish ---------- */
 async function mockGitHub(page, { remote, conflict = false, fail } = {}) {
   const calls = [];
-  const content = fs.readFileSync("content/content.json", "utf8");
+  const content = CONTENT;
   await page.route("https://api.github.com/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());

@@ -478,7 +478,6 @@ test("content fields: board labels and schedule intro come from content; hotels 
   await page.addInitScript(() => sessionStorage.setItem("pa.intro", "1"));
   await page.goto("/?content=tests/fixtures/content-board.json#home");
   await page.waitForSelector("html[data-ready='1']", { state: "attached" });
-  await expect(page.locator(".tag-details")).toHaveText("Plans");
   await expect(page.locator(".tag-respond")).toHaveText("Reply");
   await expect(page.locator(".kindly")).toHaveText("Please");
   await expect(page.locator(".rsvp-word")).toHaveText("Reply");

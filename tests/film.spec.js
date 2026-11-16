@@ -3,7 +3,7 @@
 import { test, expect } from "@playwright/test";
 
 const GUEST = "guest=tests/fixtures/guest-family.json";
-const PIECES = [".env", ".env-photo", ".invite", ".tag-details", ".rsvp-word", ".tag-respond"];
+const PIECES = [".env", ".env-photo", ".invite", ".rsvp-word", ".tag-respond"];
 
 const rects = (page) => page.evaluate((sel) => Object.fromEntries(sel.map((s) => {
   const r = document.querySelector(`[data-page="home"] ${s}`).getBoundingClientRect();
@@ -41,15 +41,14 @@ test("plays through and ends on the home page exactly", async ({ page }) => {
   await expect(page.locator('[data-page="home"] h1')).toBeFocused();
 });
 
-test("Skip mid-shot lands on the same last frame", async ({ page }) => {
+test("Skip (Escape) mid-shot lands on the same last frame", async ({ page }) => {
   const rest = await restingLayout(page);
   await sealed(page);
   await page.locator("#intro-open").click();
   await page.waitForTimeout(1200);
-  // Skip while the shot is still playing. force: slow software renderers (WebKit in CI) take seconds to report the
-  // button "stable" over the moving board, by which time the 3.5s shot would already be over.
+  // Skip (Escape; the Skip button is hidden for guests) while the shot is still playing.
   await expect(page.locator("html")).toHaveAttribute("data-film", "play");
-  await page.locator("#intro-skip").click({ force: true });
+  await page.keyboard.press("Escape");
   await expect(page.locator("#intro")).toHaveCount(0, { timeout: 3000 });
   expectSame(await rects(page), rest);
 });

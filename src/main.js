@@ -9,7 +9,7 @@ import * as icon from "./lib/icons.js";
 import { renderGuestBadge } from "./pages/_lookup.js";
 import { createFilm } from "./lib/film.js";
 
-import home from "./pages/home.js";
+import home, { homeDate } from "./pages/home.js";
 import schedule from "./pages/schedule.js";
 import travel from "./pages/travel.js";
 import story from "./pages/story.js";
@@ -150,7 +150,7 @@ function applyRoute(id, sub, { animate = false, focus = true } = {}) {
   document.documentElement.dataset.route = id;
   $$("[data-page]").forEach((s) => { s.hidden = s.dataset.page !== id; });
   const root = sectionFor(id);
-  document.title = id === "home" ? `${ctx.content.site.title} · ${ctx.content.site.dateText}` : `${byId[id].title(ctx)} · ${ctx.content.site.title}`;
+  document.title = id === "home" ? `${ctx.content.site.title} · ${homeDate(ctx)}` : `${byId[id].title(ctx)} · ${ctx.content.site.title}`;
   renderNav();
   window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   if (animate) {
@@ -333,9 +333,9 @@ async function boot() {
 
   // Meta
   const s = content.site;
-  const title = `${s.title} · ${s.dateText}`;
-  document.title = title;
-  $('meta[property="og:title"]').content = title;
+  // Not every guest is invited to the wedding itself, so the title names only their own dates; the link preview stays
+  // general (chat apps read it before any invite is unlocked).
+  document.title = `${s.title} · ${homeDate(ctx)}`;
   if (s.ogImage?.src) $('meta[property="og:image"]').content = new URL(s.ogImage.src, document.baseURI).href;
   $(".banner .script").textContent = s.title;
 

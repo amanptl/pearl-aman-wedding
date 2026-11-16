@@ -55,7 +55,8 @@ export function createPanel(app, body) {
       return group(s, path, { title });
     }
     if (s.type === "boolean") {
-      const cb = h("input", { type: "checkbox", role: "switch", checked: !!val, id: `f-${path}`, "data-field": path, onchange: () => set(cb.checked, { coalesce: null }) });
+      const on = val !== undefined ? !!val : !!s.default;
+      const cb = h("input", { type: "checkbox", role: "switch", checked: on, id: `f-${path}`, "data-field": path, onchange: () => set(cb.checked, { coalesce: null }) });
       return shell(s, path, h("label.switch", cb, h("span.knob")), { title, inline: true });
     }
     if (s.type === "number" || s.type === "integer") {

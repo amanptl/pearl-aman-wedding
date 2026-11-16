@@ -4,7 +4,7 @@
  * (tests/unit/sw.test.mjs fails if src/**\/*.js|css and SHELL drift apart). Bump VERSION on any release
  * whose cached files must be refreshed; old caches are deleted on activate.
  */
-const VERSION = "v11";
+const VERSION = "v12";
 const SHELL_CACHE = `pa-shell-${VERSION}`;
 const RUNTIME_CACHE = `pa-runtime-${VERSION}`;
 

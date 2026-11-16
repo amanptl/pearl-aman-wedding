@@ -41,11 +41,8 @@ test("RSVP card shows replied state from localStorage", async ({ page }) => {
   await expect(page.locator(".quick-card", { hasText: "RSVP" })).toContainText("replied");
 });
 
-test("board tags navigate", async ({ page }) => {
+test("board Respond tag navigates", async ({ page }) => {
   await open(page, "/#home");
-  await page.locator(".tag-details").click();
-  await expect(page.locator('[data-page="schedule"]')).toBeVisible();
-  await page.goBack();
   await page.locator(".tag-respond").click();
   await expect(page.locator('[data-page="rsvp"]')).toBeVisible();
 });

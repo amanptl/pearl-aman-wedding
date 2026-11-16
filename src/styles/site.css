@@ -106,11 +106,11 @@
   --ivory-2: #f4f1ea;
   --card: #e9e2d5;
   --ink: #1f1c17;
-  --ink-muted: #4f4b42;      /* >= 7:1 on ivory */
+  --ink-muted: #3d3a33;      /* >= 9:1 on ivory; darker than strictly needed so Gilda's thin strokes hold up */
   --burgundy: #5c1a24;
   --burgundy-2: #7a3238;
   --gold: #b89a5e;
-  --gold-text: #7a5e22;      /* gold readable on ivory (>= 4.5:1) */
+  --gold-text: #684d17;      /* gold readable on ivory (>= 6:1), deep enough for Gilda's thin strokes */
   --gold-light: #e6cf94;     /* gold readable on olive */
   --line: rgba(31, 28, 23, 0.2);
   --line-light: rgba(236, 232, 223, 0.4);
@@ -235,6 +235,11 @@ body {
   background: var(--olive-deep);
   color: var(--text);
   font-family: var(--font-body);
+  /* Bodoni Moda thins its hairlines as text gets bigger (optical size = font size by default), so large headings
+     lose their thin strokes against the paper. Hold every size at the sturdier opsz-18 drawing. Gilda and the
+     scripts have no optical-size axis and are unaffected. */
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 18;
   font-size: var(--step-0);
   line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
@@ -558,7 +563,8 @@ main { view-transition-name: main; }
 .intro.opening .intro-hint { animation: none; opacity: 0; }
 .intro.opening .intro-open { cursor: default; }
 .intro.gone { opacity: 0; pointer-events: none; }
-.intro-skip { position: absolute; z-index: 1; right: var(--space-s); top: calc(var(--space-s) + var(--safe-t)); }
+/* display:none hides Skip for guests; delete that declaration to show it again. */
+.intro-skip { display: none; position: absolute; z-index: 1; right: var(--space-s); top: calc(var(--space-s) + var(--safe-t)); }
 @media (prefers-reduced-motion: reduce) {
   .intro.is-ready .intro-hint { animation: none; opacity: 0.85; }
   .intro-lens::after { animation: none; }
@@ -652,7 +658,7 @@ html[data-mode="edit"] .top-nav, html[data-mode="edit"] [data-page] .seg-bar, ht
 
 /* ===== pages/home.css ===== */
 /* Home: invitation flat-lay board (fixed-aspect artwork, the one allowed absolute layout) + countdown */
-.page-home { background: var(--olive-soft); }
+.page-home { background: #2e2916; }
 .board {
   container-type: inline-size;
   position: relative;
@@ -729,8 +735,9 @@ html[data-film] .page-home .stage::before {
 }
 html[data-film="idle"] .invite { visibility: hidden; }
 html[data-film] .invite { scale: none; transform-origin: 50% 50%; }
-html[data-film] .tag, html[data-film] .kindly, html[data-film] .rsvp-word,
+html[data-film] .tag, html[data-film] .kindly, html[data-film] .rsvp-word, html[data-film] .scroll-hint,
 html[data-film] .site-header, html[data-film] .top-nav, html[data-film] .tabbar, html[data-film] #help, html[data-film] #guest-badge { opacity: 0; }
+html:not([data-route="home"]) .scroll-hint { opacity: 0; visibility: hidden; pointer-events: none; }
 html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-bezier(.45, 0, .55, 1) 0.8s infinite; }
 @media (prefers-reduced-motion: reduce) { html[data-film="idle"] .env-sheen { animation: none; opacity: 0; } }
 .invite { position: absolute; left: 24cqw; width: 52cqw; top: 58cqw; aspect-ratio: 300 / 420; }
@@ -766,41 +773,78 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 }
 .tag:hover { transform: translateY(-0.4cqw); background: #f3eee4; }
 .tag:focus-visible { outline-offset: -4px; }
-.tag-details { top: 131cqw; }
-.tag-respond { top: 162cqw; }
+.tag-respond { top: 150cqw; }
 .kindly, .rsvp-word {
   position: absolute; left: 0; right: 0; margin: 0; text-align: center;
   font-family: var(--font-script); color: #ddd3c2; text-shadow: 0 0.4cqw 1cqw rgba(0, 0, 0, 0.35); pointer-events: none;
 }
-.kindly { top: 143.5cqw; font-size: 8cqw; }
-.rsvp-word { top: 150cqw; font-size: 14.5cqw; line-height: 1.2; }
+.kindly { top: 131.5cqw; font-size: 8cqw; }
+.rsvp-word { top: 138cqw; font-size: 14.5cqw; line-height: 1.2; }
 .bow {
-  position: absolute; left: 27cqw; width: 46cqw; top: 153cqw; pointer-events: none;
+  position: absolute; left: 27cqw; width: 46cqw; top: 141cqw; pointer-events: none;
   -webkit-mask-image: radial-gradient(circle at 50% 52%, #000 30%, transparent 40%);
   mask-image: radial-gradient(circle at 50% 52%, #000 30%, transparent 40%);
 }
 
+/* Scroll cue: fixed ivory chevron above the tab bar; hides once the welcome block is on screen.
+   Soft dark disc keeps contrast over both the olive felt and the white lace in the artwork. */
+.scroll-hint {
+  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--space-s));
+  z-index: 5; transform: translateX(-50%);
+  display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0;
+  border: 0; border-radius: 50%;
+  background: rgba(20, 18, 10, 0.42); color: var(--ivory-2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: opacity 280ms ease, visibility 280ms ease;
+}
+.scroll-hint .icon { width: 1.5rem; height: 1.5rem; }
+.scroll-hint:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.scroll-hint.is-gone { opacity: 0; visibility: hidden; pointer-events: none; }
+@keyframes scroll-hint-bob {
+  from, to { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-hint:not(.is-gone) { animation: scroll-hint-bob 1.8s ease-in-out infinite; }
+}
+@media (min-width: 880px) {
+  .scroll-hint { bottom: var(--space-l); }
+}
+
 /* ---------- Phones & tablets (<1024px): the tall phone flat lay ----------
    assets/img/flatlay-phone.webp (see tools/make-phone-home.mjs) fills the board width; its own felt fills the page.
-   Board pieces sit in the open centre in the template's order: envelope, card, Details, "Kindly Rsvp",
-   Respond just under the script; the rings and lace bow (in the artwork) sit underneath as the scroll cue.
+   The photo is lit brighter at the top, so the stage felt darkens toward the bottom to stay with it.
+   When the board is narrower than the window, its sides fade into that felt (full-bleed phones stay sharp).
+   Board pieces sit in the open centre in the template's order: envelope, card, "Kindly Rsvp",
+   Respond just under the script. A fixed chevron below the board cues the scroll to the welcome block.
    Positions are in cqw (artwork height = 211.8cqw). */
 @media (max-width: 1023px) {
-  .page-home .stage { background: #2e2c17 url("../../assets/img/flatlay-phone-felt.webp") center top / 320px repeat; }
-  .board { aspect-ratio: 100 / 220; background: none; }
+  .page-home .stage {
+    background:
+      linear-gradient(180deg, transparent 42%, rgba(0, 0, 0, 0.28) 100%),
+      #2e2916 url("../../assets/img/flatlay-phone-felt.webp") center top / 320px repeat;
+  }
+  .board {
+    aspect-ratio: 100 / 220; background: none;
+    /* Any real side gutter (past a scrollbar) fades the artwork 14% into the felt. Full-bleed stays sharp. */
+    --bleed: max(0px, calc(100vw - 100% - 16px));
+    --side: min(14%, calc(var(--bleed) * 40));
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--side), #000 calc(100% - var(--side)), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--side), #000 calc(100% - var(--side)), transparent);
+  }
   .board::before {
     content: ""; position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 720 / 1525; pointer-events: none;
     background: url("../../assets/img/flatlay-phone.webp") 0 0 / 100% 100% no-repeat;
-    -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--film-fade), #000 96%, transparent);
-    mask-image: linear-gradient(180deg, transparent, #000 var(--film-fade), #000 96%, transparent);
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--film-fade), #000 90%, transparent);
+    mask-image: linear-gradient(180deg, transparent, #000 var(--film-fade), #000 90%, transparent);
   }
   .env { top: 21cqw; }
   .invite { top: 50cqw; }
-  .tag-details { top: 125cqw; }
-  .kindly { top: 137.5cqw; font-size: 7cqw; }
-  .rsvp-word { top: 145cqw; font-size: 12.5cqw; line-height: 1.2; }
+  .kindly { top: 125.5cqw; font-size: 7cqw; }
+  .rsvp-word { top: 133cqw; font-size: 12.5cqw; line-height: 1.2; }
   .bow { display: none; } /* the rings and lace bow are part of the artwork */
-  .tag-respond { top: 162cqw; }
+  .tag-respond { top: 150cqw; }
   .board-seal {
     display: block; position: absolute; left: 2cqw; top: 75.8cqw; width: 9cqw; height: 9cqw; border-radius: 50%; pointer-events: none;
     background: url("../../assets/img/wax-seal-600.webp") center / 205%; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
@@ -810,19 +854,8 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 @media (max-width: 767px) {
   .board { width: min(100%, calc((100svh - var(--tabbar-h) - 3.5rem) / 1.62)); }
 }
-/* Tablets: the board stays phone-shaped (max 640px), so feather its sides into the matching felt.
-   Cap width from viewport height so Respond clears the fold under the top nav. */
-@media (min-width: 641px) and (max-width: 1023px) {
-  .page-home .stage {
-    background:
-      linear-gradient(90deg, rgba(6, 7, 3, 0.5), rgba(6, 7, 3, 0.18) 30%, rgba(6, 7, 3, 0.18) 70%, rgba(6, 7, 3, 0.5)),
-      #2e2c17 url("../../assets/img/flatlay-phone-felt.webp") center top / 320px repeat;
-  }
-  .board {
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-  }
-}
+/* Tablets: the board stays phone-shaped (max 640px). Cap width from viewport height so Respond
+   clears the fold under the top nav. Side gutters fade with the phone rule above. */
 @media (min-width: 768px) and (max-width: 1023px) {
   .board { width: min(100%, 640px, calc((100svh - 53px - 3.5rem) / 1.62)); }
 }
@@ -876,17 +909,19 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 
 /* ---------- Desktop (≥1024px): full-screen flat lay, laid out like the Etsy template ----------
    The artwork (assets/img/flatlay-desktop.webp, see tools/make-desktop-home.mjs) is a 3:4 flat lay with a clear
-   centre. Felt cut from its own plain centre fills the rest of the window, and the image's edges feather into it.
-   Everything sits on one centre line (--axis), in the template's order: photo envelope, invitation card, Details,
-   "Kindly Rsvp", Respond just under the script; the lace bow (part of the image) sits underneath as the scroll cue.
+   centre. Felt cut from its own plain centre fills the rest of the window. The photo's edges are a wide
+   feather into that felt, so the panel does not read as a cut-out.
+   Everything sits on one centre line (--axis), in the template's order: photo envelope, invitation card,
+   "Kindly Rsvp", Respond just under the script. A fixed chevron cues the scroll to the welcome block.
    Units: 1u = 1/864 of the board width (the reference image is 864 wide). Board pieces keep their phone styling and
    are resized with the independent `scale` property, so the entrance animations (which use `transform`) still work. */
 @media (min-width: 1024px) {
+  .page-home { background: #2b2815; }
   .page-home .stage {
+    /* The tile is the photo's bright centre. A light veil brings the gutters down to the shadowed edge. */
     background:
-      radial-gradient(ellipse 60% 50% at 50% 30%, rgba(255, 240, 210, 0.05), transparent 70%),
-      radial-gradient(ellipse 120% 100% at 50% 45%, transparent 55%, rgba(6, 7, 3, 0.45)),
-      #2e2c17 url("../../assets/img/flatlay-desktop-felt.webp") center top / 440px repeat;
+      linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
+      #34311a url("../../assets/img/flatlay-desktop-felt.webp") center top / 440px repeat;
   }
   .board {
     --u: calc(100cqw / 864);
@@ -899,22 +934,21 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
   .board::before {
     content: ""; position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 864 / 1152; pointer-events: none;
     background: url("../../assets/img/flatlay-desktop.webp") 0 0 / 100% 100% no-repeat;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--edge, 1.5%), #000 calc(100% - var(--edge, 1.5%)), transparent), linear-gradient(180deg, transparent, #000 calc(1.5% + var(--film-fade)), #000 95%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--edge, 12%), #000 calc(100% - var(--edge, 12%)), transparent), linear-gradient(180deg, transparent, #000 calc(2% + var(--film-fade)), #000 90%, transparent);
     -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(90deg, transparent, #000 var(--edge, 1.5%), #000 calc(100% - var(--edge, 1.5%)), transparent), linear-gradient(180deg, transparent, #000 calc(1.5% + var(--film-fade)), #000 95%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--edge, 12%), #000 calc(100% - var(--edge, 12%)), transparent), linear-gradient(180deg, transparent, #000 calc(2% + var(--film-fade)), #000 90%, transparent);
     mask-composite: intersect;
   }
   /* Photo envelope: 190u wide, centred on the axis */
   .env { --e: calc(var(--u) * 1.9); left: calc(var(--u) * (var(--axis) - 95)); top: calc(var(--u) * 128); width: calc(var(--u) * 190); }
   /* Invitation card: 212u wide */
   .invite { left: calc(var(--u) * (var(--axis) - 106)); top: calc(var(--u) * 290); scale: 0.4719; transform-origin: 0 0; }
-  /* Tags: 112u × 48u, Details under the card, Respond under the script */
+  /* Tag: 112u × 48u, Respond under the script */
   .tag { left: calc(var(--u) * (var(--axis) - 56)); scale: 0.463; transform-origin: 0 0; }
-  .tag-details { top: calc(var(--u) * 612); }
-  .tag-respond { top: calc(var(--u) * 804); }
+  .tag-respond { top: calc(var(--u) * 756); }
   .kindly, .rsvp-word { right: auto; left: calc(var(--u) * (var(--axis) - 300)); width: calc(var(--u) * 600); }
-  .kindly { top: calc(var(--u) * 676); font-size: calc(var(--u) * 34); }
-  .rsvp-word { top: calc(var(--u) * 700); font-size: calc(var(--u) * 72); }
+  .kindly { top: calc(var(--u) * 628); font-size: calc(var(--u) * 34); }
+  .rsvp-word { top: calc(var(--u) * 652); font-size: calc(var(--u) * 72); }
   .bow { display: none; } /* the lace bow is part of the artwork */
   /* Our P&A seal, laid over the plain wax seal in the artwork */
   .board-seal {

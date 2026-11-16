@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
 import { MockRepo } from "./helpers/mockrepo.js";
+import { editorContentText } from "./helpers/content.js";
+
+const settle = (page) => page.evaluate(() => window.__editor.flushRender());
 
 // The couple's real workflow, end to end, against a stateful in-memory GitHub. Desktop only.
 const PASS = "dev-passphrase";
@@ -29,7 +32,8 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   watch(page);
   await page.addInitScript(() => { try { localStorage.setItem("pa.editor.coach.v1", "1"); sessionStorage.setItem("pa.intro", "1"); } catch {} });
 
-  const repo = new MockRepo();
+  // Start from content with several hotels (one with a photo): the journey reorders, edits and re-photographs them.
+  const repo = new MockRepo({ overrides: { "content/content.json": editorContentText() } });
   await repo.install(page);
   await repo.serveSite(page);
   const commitsBefore = repo.commitCount();
@@ -66,6 +70,9 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
 
   /* 4. hotel booking URL in the panel */
   await page.selectOption("#page-select", "travel");
+  // Edits and page switches schedule a deferred re-render that replaces the frame's nodes; run it now so the next
+  // locator doesn't grab a node that is about to be detached (it happens on a busy machine).
+  await settle(page);
   const card = frame(page).locator('[data-item="hotels.0"]');
   await card.scrollIntoViewIfNeeded();
   await card.click({ position: { x: 8, y: 260 } });
@@ -73,16 +80,18 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   expect((await draft(page)).hotels[0].bookingUrl).toBe(NEW_URL);
 
   /* 6 (done here while on the travel page). upload a photo */
+  await settle(page);
   const img = frame(page).locator('img[data-path="hotels.0.photo"]');
   await img.scrollIntoViewIfNeeded();
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), img.click({ position: { x: 20, y: 120 } })]);
   await chooser.setFiles(PHOTO);
   await expect.poll(async () => (await draft(page)).hotels[0].photo?._pending).toBe(true);
   await page.locator('[data-field="hotels.0.photo.alt"]').fill("The hotel lobby, newly photographed");
-  await page.evaluate(() => window.__editor.flushRender());
+  await settle(page);
 
   /* 5. reorder the FAQ (move the first question down) */
   await page.selectOption("#page-select", "faq");
+  await settle(page);
   const q0 = frame(page).locator('[data-item="faq.0"]');
   await q0.scrollIntoViewIfNeeded();
   await q0.hover();

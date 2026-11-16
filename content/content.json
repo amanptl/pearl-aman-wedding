@@ -7,7 +7,7 @@
     "timezone": "America/Edmonton",
     "weddingDate": "2027-07-25T16:00",
     "dateText": "July 25th, 2027",
-    "city": "Edmonton, Alberta",
+    "city": "Edmonton, Canada",
     "rsvpEndpoint": "",
     "siteUrl": "",
     "ogImage": { "src": "assets/img/og.jpg", "alt": "A wax seal on an olive-green envelope", "focal": [50, 50] },
@@ -29,6 +29,7 @@
     "photo": { "src": "assets/img/couple-1.webp", "srcSmall": "assets/img/couple-1-600.webp", "alt": "Pearl and Aman together", "focal": [50, 40] },
     "invitationLines": {
       "small": "Please join us\nfor the wedding of",
+      "celebrationSmall": "Please join us\nfor the wedding celebrations of",
       "venueLines": ["The Grand Imperial,", "Edmonton,", "Alberta"]
     },
     "welcome": "We are so happy you are here. Thank you for celebrating with us.",
@@ -58,13 +59,13 @@
     }
   ],
   "travel": {
-    "intro": "Most guests fly into Edmonton International (YEG). The venues are in south-east Edmonton and Sherwood Park, about 30 minutes from the airport.",
+    "intro": "Most guests fly into Edmonton International (YEG). The venues are in south Edmonton, about 30 minutes from the airport.",
     "airports": [
       { "id": "yeg", "code": "YEG", "name": "Edmonton International", "primary": true, "driveMinutes": 30, "tips": "Direct flights from major Canadian hubs. Connections from India typically through Toronto or Vancouver." }
     ],
     "gettingAround": [
       { "id": "rideshare", "title": "Rideshare and taxis", "text": "Uber and taxis are available throughout the area. Expect about [$40 to $60] from YEG to the hotels and venues." },
-      { "id": "rental", "title": "Car rental", "text": "A rental car is recommended. The venues are spread out, and Sherwood Park is a short drive from south-east Edmonton. Parking at every event is free or inexpensive." },
+      { "id": "rental", "title": "Car rental", "text": "A rental car is recommended. The venues are a short drive apart in south Edmonton. Parking at every event is free or inexpensive." },
       { "id": "transit", "title": "Transit", "text": "ETS buses and the LRT do not conveniently reach every venue, so plan on a car or rideshare." }
     ],
     "shuttles": [],
@@ -115,10 +116,10 @@
     { "id": "gifts", "title": "Gifts" }
   ],
   "faq": [
-    { "id": "what-mehndi", "category": "events", "q": "What are Mehendi, Haldi and Vidhi, and the wedding?", "a": "Mehendi is henna at home. Haldi and Vidhi is the blessing at CISE. The wedding ceremony is at the Grand Imperial. Each invitation lists the events you are invited to." },
+    { "id": "what-mehndi", "category": "events", "q": "What are Mehendi, Haldi and Vidhi, and the wedding?", "a": "Mehendi is henna at CISE. Haldi and Vidhi is the blessing at CISE. The wedding ceremony is at the Grand Imperial. Each invitation lists the events you are invited to." },
     { "id": "what-baraat", "category": "events", "q": "What is the Baraat?", "a": "The Baraat is the groom's joyful procession to the ceremony, with drums, dancing and family. It begins at 3:30 PM on the wedding day." },
     { "id": "join-baraat", "category": "events", "q": "Can I join the Baraat?", "a": "Yes, everyone is welcome. Wear shoes you can dance in, bring water, and follow the dhol. No experience required." },
-    { "id": "wear-events", "category": "before", "q": "What should I wear to each event?", "a": "Mehendi: colourful and comfortable. Haldi and Vidhi: old yellow or white clothes you can stain. Wedding: traditional Indian or formal. See each event on the Schedule page for swatches." },
+    { "id": "wear-events", "category": "before", "q": "What should I wear to each event?", "a": "Mehendi: colourful and comfortable. Haldi and Vidhi: old yellow or white clothes you can stain. Wedding: colourful and comfortable — wear whatever you feel comfortable in. Rich, elegant colours are welcome; it is better to avoid black." },
     { "id": "wear-new", "category": "before", "q": "I have never worn Indian clothes. Where can I get some?", "a": "Message a coordinator and we will point you to shops in Edmonton, or to rentals. You are also welcome in formal Western attire." },
     { "id": "vegetarian", "category": "food", "q": "Is the food vegetarian?", "a": "The wedding menu is fully vegetarian, with vegan and Jain options. Please note any allergies on your RSVP." },
     { "id": "alcohol", "category": "food", "q": "Will there be alcohol?", "a": "The ceremony is alcohol-free." },

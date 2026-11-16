@@ -1,24 +1,55 @@
-import { html, editAttrs, multiline, imgTag, showField, isEdit } from "../lib/dom.js";
-import { formatTime, formatRange, formatDate, toInstant, nowNext } from "../lib/time.js";
+import { html, editAttrs, multiline, imgTag, isEdit } from "../lib/dom.js";
+import { formatRange, formatDate, toInstant, nowNext } from "../lib/time.js";
 import { renderLookup } from "./_lookup.js";
 import * as icon from "../lib/icons.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-/** "July 23–25, 2027" from the first and last event day. Falls back to the site's own date text. */
-function dateRange(events, site) {
-  if (!events.length) return site.dateText || "";
-  const a = events[0].start.slice(0, 10).split("-").map(Number);
-  const last = events[events.length - 1];
-  const b = (last.end || last.start).slice(0, 10).split("-").map(Number);
-  if (a.some(Number.isNaN) || b.some(Number.isNaN)) return site.dateText || "";
-  const [ay, am, ad] = a, [by, bm, bd] = b;
-  if (ay === by && am === bm && ad === bd) return `${MONTHS[am - 1]} ${ad}, ${ay}`;
-  if (ay === by && am === bm) return `${MONTHS[am - 1]} ${ad}–${bd}, ${ay}`;
-  if (ay === by) return `${MONTHS[am - 1]} ${ad} – ${MONTHS[bm - 1]} ${bd}, ${ay}`;
-  return `${MONTHS[am - 1]} ${ad}, ${ay} – ${MONTHS[bm - 1]} ${bd}, ${by}`;
+/** "July 2027" from the wedding date, for a visitor with no events (the plain link before a name lookup). */
+function monthYear(site) {
+  const [y, m] = String(site.weddingDate || "").slice(0, 7).split("-").map(Number);
+  return y && m ? `${MONTHS[m - 1]} ${y}` : "";
 }
+
+/**
+ * The days a guest is invited to, as one line: "July 23, 2027", "July 24–25, 2027" (consecutive days), "July 23 & 25, 2027"
+ * (a gap), "July 21, 23 & 25, 2027", "July 23–24 & 26, 2027". Only start days count, so a reception running past midnight adds no day. With no
+ * events (the plain link before a name lookup), only the month and year.
+ */
+export function inviteDates(events, site) {
+  const days = [...new Set(events.map((e) => String(e.start || "").slice(0, 10)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)))].sort();
+  if (!days.length) return monthYear(site) || site.dateText || "";
+  const ymd = days.map((d) => d.split("-").map(Number));
+  // Runs of consecutive days; Date.UTC handles month ends (July 31 → August 1).
+  const runs = [];
+  for (const [y, m, d] of ymd) {
+    const t = Date.UTC(y, m - 1, d), last = runs[runs.length - 1];
+    if (last && t - last.endT === 864e5) { last.end = [y, m, d]; last.endT = t; } else runs.push({ start: [y, m, d], end: [y, m, d], endT: t });
+  }
+  // "a", "a & b", "a, b & c": the way printed invitations list dates.
+  const list = (xs) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} & ${xs[xs.length - 1]}`;
+  const years = new Set(ymd.map(([y]) => y)), months = new Set(ymd.map(([y, m]) => `${y}-${m}`));
+  if (months.size === 1) {
+    const [y, m] = ymd[0];
+    return `${MONTHS[m - 1]} ${list(runs.map((r) => r.start[2] === r.end[2] ? r.start[2] : `${r.start[2]}–${r.end[2]}`))}, ${y}`;
+  }
+  const day = ([y, m, d]) => `${MONTHS[m - 1]} ${d}${years.size > 1 ? `, ${y}` : ""}`;
+  const text = list(runs.map((r) => r.endT === Date.UTC(r.start[0], r.start[1] - 1, r.start[2]) ? day(r.start) : `${day(r.start)} – ${day(r.end)}`));
+  return years.size > 1 ? text : `${text}, ${ymd[0][0]}`;
+}
+
+/**
+ * Is the wedding itself among these events? Picks the card's opening line ("the wedding of" vs "the wedding celebrations
+ * of"). The wedding is the event with id "wedding" (in the events or the invite) or the one that starts at site.weddingDate.
+ */
+function hasWedding(events, site, guest) {
+  const at = String(site.weddingDate || "").slice(0, 16);
+  return (guest?.eventIds || []).includes("wedding") || events.some((e) => e.id === "wedding" || (at && String(e.start || "").slice(0, 16) === at));
+}
+
+/** The home card, page heading and tab title show only the days this guest is invited to. */
+export const homeDate = (ctx) => inviteDates(ctx.events, ctx.content.site);
 
 function countdownHtml(ms) {
   const units = [["Days", Math.floor(ms / 864e5)], ["Hours", Math.floor(ms / 36e5) % 24], ["Minutes", Math.floor(ms / 6e4) % 60], ["Seconds", Math.floor(ms / 1e3) % 60]];
@@ -100,14 +131,16 @@ export default {
   render(root, ctx) {
     const { site, home } = ctx.content;
     const lines = home.invitationLines || {};
-    const venue = lines.venueLines || [];
     const board = home.board || {};
-    const timeText = site.weddingDate ? `at ${formatTime(site.weddingDate, ctx.tz)}` : "";
-    const range = dateRange(ctx.events, site);
+    // Every guest sees only the days they are invited to, and the city: not every guest is invited to the wedding.
+    const range = homeDate(ctx);
+    const wedding = hasWedding(ctx.events, site, ctx.guest);
+    const smallPath = wedding ? "home.invitationLines.small" : "home.invitationLines.celebrationSmall";
+    const small = (wedding ? lines.small : lines.celebrationSmall) || lines.small || "";
     const edit = isEdit();
     root.classList.add("page-home");
     root.innerHTML = html`
-      <h1 class="visually-hidden">${site.couple.first} &amp; ${site.couple.second} are getting married on ${site.dateText}</h1>
+      <h1 class="visually-hidden">${site.couple.first} &amp; ${site.couple.second} are getting married in ${site.city || ""}, ${range}</h1>
       <div class="stage">
       <div class="board" data-allow-clip>
         <span class="board-seal" aria-hidden="true"></span>
@@ -130,16 +163,15 @@ export default {
             <path class="line" transform="translate(150 210) scale(.93 .95) translate(-150 -210)" d="M40 20 Q115 20 135 8 Q150 -2 165 8 Q185 20 260 20 A20 20 0 0 0 280 40 L280 380 A20 20 0 0 0 260 400 Q185 400 165 412 Q150 422 135 412 Q115 400 40 400 A20 20 0 0 0 20 380 L20 40 A20 20 0 0 0 40 20 Z" />
           </svg>
           <div class="invite-text">
-            <p class="inv-small" ${editAttrs("multiline", "home.invitationLines.small", { placeholder: "Add invitation wording" })}>${multiline(lines.small || "")}</p>
+            <p class="inv-small" ${editAttrs("multiline", smallPath, { placeholder: "Add invitation wording" })}>${multiline(small)}</p>
             <p class="inv-name" ${editAttrs("text", "site.couple.first", { placeholder: "First name" })}>${site.couple.first}</p>
             <p class="inv-and" aria-hidden="true">and</p>
             <p class="inv-name" ${editAttrs("text", "site.couple.second", { placeholder: "Second name" })}>${site.couple.second}</p>
-            <p class="inv-date"><span ${editAttrs("text", "site.dateText", { placeholder: "Add the date" })}>${site.dateText}</span><br />${timeText}</p>
-            ${showField(venue) ? html`<p class="inv-venue">${venue.map((l, i) => html`<span ${editAttrs("text", `home.invitationLines.venueLines.${i}`, { placeholder: "Venue line" })}>${l}</span><br />`)}</p>` : ""}
+            <p class="inv-date">${range}</p>
+            ${site.city || edit ? html`<p class="inv-venue"><span ${editAttrs("text", "site.city", { placeholder: "City, country" })}>${site.city || ""}</span></p>` : ""}
           </div>
         </div>
 
-        <a class="tag tag-details" href="#schedule" ${editAttrs("text", "home.board.detailsLabel", { placeholder: "Details" })}>${board.detailsLabel || "Details"}</a>
         <p class="kindly" aria-hidden="true" ${editAttrs("text", "home.board.kindly", { placeholder: "Kindly" })}>${board.kindly || "Kindly"}</p>
         <p class="rsvp-word" aria-hidden="true" ${editAttrs("text", "home.board.rsvpWord", { placeholder: "Rsvp" })}>${board.rsvpWord || "Rsvp"}</p>
         <img class="bow" src="assets/img/lace-bow-600.webp" srcset="assets/img/lace-bow-600.webp 600w, assets/img/lace-bow.webp 1024w" sizes="(min-width: 641px) 295px, 46vw" width="600" height="600" alt="" aria-hidden="true" />
@@ -176,6 +208,23 @@ export default {
 
     fitInvite(root);
     document.fonts?.ready.then(() => fitInvite(root));
+
+    // Mounted on #app so position:fixed is not trapped by the page-enter transform on [data-page].
+    const welcome = root.querySelector(".welcome");
+    document.querySelectorAll(".scroll-hint").forEach((el) => el.remove());
+    root._scrollHintObs?.disconnect();
+    if (welcome) {
+      const hint = document.createElement("button");
+      hint.type = "button";
+      hint.className = "scroll-hint";
+      hint.setAttribute("aria-label", "Scroll for more");
+      hint.innerHTML = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+      (document.getElementById("app") || document.body).appendChild(hint);
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      hint.addEventListener("click", () => welcome.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }));
+      root._scrollHintObs = new IntersectionObserver(([e]) => hint.classList.toggle("is-gone", e.isIntersecting), { threshold: 0.15 });
+      root._scrollHintObs.observe(welcome);
+    }
 
     // Countdown to the wedding ceremony. One interval per root; cleared on re-render.
     clearInterval(root._cd);

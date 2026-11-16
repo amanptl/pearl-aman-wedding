@@ -5,11 +5,12 @@ import crypto from "node:crypto";
  * Stateful in-memory GitHub: refs, commits, trees, blobs and contents for one repo (o/r, branch main).
  * `install(context)` routes api.github.com and o.github.io; `serveSite(context)` serves committed files in place of the
  * working-tree ones (content/*.json and assets/uploads/*) so a page can be loaded "as deployed".
+ * `overrides` maps a path to the text its first commit should hold instead of the working-tree file.
  */
 const sha = (s) => crypto.createHash("sha1").update(s).digest("hex");
 
 export class MockRepo {
-  constructor({ files = ["content/content.json", "content/guests.json", "content/admin.enc.json"], owner = "o", repo = "r", branch = "main" } = {}) {
+  constructor({ files = ["content/content.json", "content/guests.json", "content/admin.enc.json"], overrides = {}, owner = "o", repo = "r", branch = "main" } = {}) {
     this.owner = owner; this.repo = repo; this.branch = branch;
     this.blobs = new Map();   // sha -> Buffer
     this.trees = new Map();   // sha -> { path: blobSha }
@@ -18,7 +19,7 @@ export class MockRepo {
     this.failNext = null;     // (method, path) => status | falsy
     this.delay = 0;
     const entries = {};
-    for (const f of files) entries[f] = this.putBlob(fs.readFileSync(f));
+    for (const f of files) entries[f] = this.putBlob(f in overrides ? Buffer.from(overrides[f]) : fs.readFileSync(f));
     const tree = this.putTree(entries);
     this.head = this.addCommit({ message: "Initial site", tree, parents: [], changed: files });
   }
