@@ -268,12 +268,12 @@ html[data-route="home"] .banner { display: none; }
 .tabbar [aria-current="page"] { color: var(--gold-light); }
 .tabbar .tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Footer clearance: the floating Help button lives in this strip, never over content. */
-#app { padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--tap) + var(--space-m)); }
+/* Footer clearance for the tab bar. Extra Help-button space is off while SHOW_HELP is false. */
+#app { padding-bottom: calc(var(--tabbar-h) + var(--safe-b)); }
 @media (min-width: 768px) {
   .top-nav { display: block; }
   .tabbar { display: none; }
-  #app { padding-bottom: calc(var(--tap) + var(--space-l)); }
+  #app { padding-bottom: 0; }
 }
 
 .help-fab {

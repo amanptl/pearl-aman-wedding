@@ -69,6 +69,17 @@ function fitInvite(root) {
   }
 }
 
+/**
+ * Desktop: the invitation stack is sized by the board's height (u = height / 880), but the card and tags are styled in
+ * board-width units, so their `scale` needs u relative to the width. CSS can't divide one length by another in every
+ * browser yet, so the ratio is set here as --k (the CSS falls back to the photo's natural proportions).
+ */
+function scaleStack(root) {
+  const board = root.querySelector(".board");
+  if (!board?.clientWidth) return;
+  board.style.setProperty("--k", ((board.clientHeight / 880) * 864 / board.clientWidth).toFixed(4));
+}
+
 const hasReplied = (guest) => {
   if (!guest?.code) return false;
   try { return localStorage.getItem(`pa.rsvp.v1.${guest.code}`) != null; } catch { return false; }
@@ -150,6 +161,7 @@ export default {
           <div class="env-photo">${imgTag(home.photo, { eager: true, sizes: "(min-width: 641px) 10rem, 28vw", path: "home.photo" })}</div>
           <span class="env-pocket"></span>
           ${ctx.guest?.household ? html`<span class="env-name">${ctx.guest.household}</span>` : ""}
+          <span class="env-sprig" aria-hidden="true"></span>
           <span class="env-shade"></span>
           <span class="env-seal seal-lo"><span></span></span>
           <span class="env-sheen"></span>
@@ -206,8 +218,16 @@ export default {
     const lookup = root.querySelector("[data-lookup]");
     if (lookup) renderLookup(lookup, ctx, { heading: "Find your invitation" });
 
+    scaleStack(root);
     fitInvite(root);
     document.fonts?.ready.then(() => fitInvite(root));
+    // The page may render while hidden (0 × 0), so re-measure whenever the board gets or changes its size.
+    root._stackObserver?.disconnect();
+    const boardEl = root.querySelector(".board");
+    if (boardEl && "ResizeObserver" in window) {
+      root._stackObserver = new ResizeObserver(() => scaleStack(root));
+      root._stackObserver.observe(boardEl);
+    }
 
     // Mounted on #app so position:fixed is not trapped by the page-enter transform on [data-page].
     const welcome = root.querySelector(".welcome");

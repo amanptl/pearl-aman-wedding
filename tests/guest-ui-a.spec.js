@@ -56,6 +56,12 @@ test("Up next badge goes to the next event", async ({ page }) => {
   await expect(page.locator(".nextup")).toHaveCount(0); // home card hidden for now (SHOW_NEXT_UP in src/pages/home.js)
 });
 
+test("Up next badge waits until the week before the event", async ({ page }) => {
+  await freezeTime(page, "2027-07-10T10:00:00-04:00");
+  await open(page, `/?guest=${FAMILY}#schedule`);
+  await expect(page.locator(".event .badge")).toHaveCount(0);
+});
+
 test("Add all to calendar yields an .ics with one VEVENT per event", async ({ page }) => {
   await open(page, `/?guest=${FAMILY}#schedule`);
   await page.locator("[data-cal-all]").click();

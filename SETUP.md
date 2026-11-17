@@ -45,7 +45,7 @@ A household's personal link never changes once created, so links already sent ke
 ### Sending links
 1. Publish, then open the Guests tab.
 2. Press the speech-bubble button next to a household, open WhatsApp, and paste. Or export the CSV and use a mail merge.
-3. When guests open their link they see their own events and a "Viewing as ..." line. Guests without a link can type their name on the home page to find their invitation.
+3. When guests open their link they see their own events and greeting. Guests without a link can type their name on the home page to find their invitation.
 
 ### Responses dashboard
 **Guests, then Responses** shows who has replied (it reads your Google Sheet), attendance per event (yes, no and pending, where pending means invited guests who haven't answered), meal and dietary totals, households that haven't replied yet (each with a *Copy reminder* button), hotel needs, arrivals and flights, and an *Export CSV*.

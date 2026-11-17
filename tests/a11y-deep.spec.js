@@ -70,9 +70,10 @@ test.describe("tab order and focus visibility", () => {
 });
 
 test.describe("dialogs and sheets", () => {
-  test("More / Help sheet: focus moves inside, stays inside, Esc closes and focus returns to the opener", async ({ page, browserName }) => {
+  test("More sheet: focus moves inside, stays inside, Esc closes and focus returns to the opener", async ({ page, browserName }) => {
+    test.skip(page.viewportSize().width >= 768, "More sheet is phone-only; Help is hidden for now");
     await open(page, `${FAMILY}#faq`);
-    const opener = page.viewportSize().width < 768 ? page.locator("#tabbar [data-more]") : page.locator("#help");
+    const opener = page.locator("#tabbar [data-more]");
     await opener.focus();
     await page.keyboard.press("Enter");
     const dlg = page.locator("dialog.sheet");
@@ -84,15 +85,9 @@ test.describe("dialogs and sheets", () => {
     await expect(opener).toBeFocused();
   });
 
-  test("Help button sheet: Esc closes, focus returns to Help", async ({ page }) => {
+  test("Help button stays hidden for now", async ({ page }) => {
     await open(page, `${FAMILY}#faq`);
-    const help = page.locator("#help");
-    await help.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.locator("dialog.sheet")).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(page.locator("dialog.sheet")).toHaveCount(0);
-    await expect(help).toBeFocused();
+    await expect(page.locator("#help")).toBeHidden(); // SHOW_HELP in src/main.js
   });
 
   test("calendar sheet: keyboard open, Esc, focus returns", async ({ page }) => {

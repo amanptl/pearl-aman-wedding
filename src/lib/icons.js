@@ -19,6 +19,9 @@ export const phone = () => svg(`<path d="M5 4h3.5l1.7 4.3-2.2 1.4a11 11 0 0 0 5.
 export const whatsapp = () => svg(`<path d="M3.5 20.5l1.3-4.4A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 8.5c0 3.2 2.800 6 6 6l1.300-1.500-2-1-.9.800c-.9-.4-1.700-1.200-2.100-2.100l.8-.9-1-2z"/>`);
 export const external = () => svg(`<path d="M14 4h6v6M20 4l-9 9M18 14v4.500a1.500 1.500 0 0 1-1.500 1.500h-11A1.500 1.500 0 0 1 4 18.500v-11A1.500 1.500 0 0 1 5.500 6H10"/>`);
 export const clock = () => svg(`<circle cx="12" cy="12" r="8.5"/><path d="M12 7.500V12l3 2"/>`);
+export const sunrise = () => svg(`<path d="M4 17.5h16"/><circle cx="12" cy="14" r="3"/><path d="M12 7.5v1.5M7.5 10l1.1 1.1M16.5 10l-1.1 1.1"/>`);
+export const sun = () => svg(`<circle cx="12" cy="12" r="3.2"/><path d="M12 5.5v1.5M12 17v1.5M5.5 12h1.5M17 12h1.5"/>`);
+export const moon = () => svg(`<path d="M15.5 4.8A7.5 7.5 0 1 0 19.2 15.5 6 6 0 0 1 15.5 4.8z"/>`);
 export const hanger = () => svg(`<path d="M12 8.500a2 2 0 1 0-2-2M12 8.500v1.500L3.500 16a1.500 1.500 0 0 0 1 2.700h15a1.500 1.500 0 0 0 1-2.700L12 10"/>`);
 export const car = () => svg(`<path d="M5 16.500V17a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-.5M16 16.500V17a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-.5"/><path d="M3.500 16.500v-4l2-5a1.500 1.500 0 0 1 1.400-1h10.200a1.500 1.500 0 0 1 1.400 1l2 5v4z"/><path d="M3.500 12.500h17"/><circle cx="7.500" cy="14.500" r=".6" fill="currentColor"/><circle cx="16.500" cy="14.500" r=".6" fill="currentColor"/>`);
 export const plane = () => svg(`<path d="M10.500 13.500L4 12.500l-1-1.500 6-1.500L6.500 4h2l5.500 4.500 4-1a2 2 0 0 1 1 3.800l-4 1.200L13 19.500l-1.500-.5.500-5.500z"/>`);
@@ -36,4 +39,4 @@ export const heart = () => svg(`<path d="M12 20s-8-4.800-8-10.700A4.600 4.600 0 
 export const question = () => svg(`<circle cx="12" cy="12" r="8.500"/><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.400-1 .9-1 1.700"/><circle cx="12" cy="16.800" r=".6" fill="currentColor"/>`);
 export const x = () => svg(`<path d="M6 6l12 12M18 6L6 18"/>`);
 
-export default { mapPin, directions, calendarPlus, copy, phone, whatsapp, external, clock, hanger, car, plane, bus, bed, info, chevron, check, search, share, home, menuDots, gift, heart, question, x };
+export default { mapPin, directions, calendarPlus, copy, phone, whatsapp, external, clock, sunrise, sun, moon, hanger, car, plane, bus, bed, info, chevron, check, search, share, home, menuDots, gift, heart, question, x };

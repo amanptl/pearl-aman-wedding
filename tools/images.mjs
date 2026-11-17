@@ -31,16 +31,23 @@ for (const f of files) {
   console.log(`${f.padEnd(22)} ${kb(inSize)} -> ${kb(o)} (-${(100 - (o / inSize) * 100).toFixed(0)}%)  600w ${kb(s)}`);
 }
 
-// Open Graph image from the banner.
+// Open Graph image from the banner. Set caption to burn a line into the JPEG; leave empty for the photo alone
+// (og:title already carries the names and date). Escape & < > in the caption for the SVG.
 const W = 1200, H = 630;
-const overlay = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+const caption = "";
+const og = path.join(dest, "og.jpg");
+let ogPipe = sharp(path.join(src, "banner.jpg")).rotate().resize(W, H, { fit: "cover", position: "attention" });
+if (caption) {
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const overlay = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
   <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0.45" stop-color="#232a1a" stop-opacity="0"/><stop offset="1" stop-color="#232a1a" stop-opacity="0.82"/></linearGradient></defs>
   <rect width="${W}" height="${H}" fill="url(#g)"/>
-  <text x="${W / 2}" y="${H - 70}" text-anchor="middle" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="58" fill="#ece8df" letter-spacing="3">Pearl &amp; Aman · July 2027</text>
+  <text x="${W / 2}" y="${H - 70}" text-anchor="middle" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="58" fill="#ece8df" letter-spacing="3">${esc(caption)}</text>
 </svg>`);
-const og = path.join(dest, "og.jpg");
-await sharp(path.join(src, "banner.jpg")).rotate().resize(W, H, { fit: "cover", position: "centre" }).composite([{ input: overlay }]).jpeg({ quality: 82, mozjpeg: true }).toFile(og);
-console.log(`og.jpg ${kb(fs.statSync(og).size)}`);
+  ogPipe = ogPipe.composite([{ input: overlay }]);
+}
+await ogPipe.jpeg({ quality: 82, mozjpeg: true }).toFile(og);
+console.log(`og.jpg ${kb(fs.statSync(og).size)}${caption ? ` ("${caption}")` : ""}`);
 
 console.log(`\nTotal (full-size only): ${kb(totalIn)} -> ${kb(totalOut)} (saved ${((1 - totalOut / totalIn) * 100).toFixed(0)}%)`);
 console.log("\nPath mapping:\n" + JSON.stringify(mapping, null, 2));

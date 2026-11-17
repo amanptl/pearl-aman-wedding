@@ -1,11 +1,12 @@
 import { html, editAttrs, listAttrs, itemAttrs, imgTag, multiline, showField, isEdit } from "../lib/dom.js";
-import { formatRange, formatDate, groupByDay, nowNext, guestTzDiffers, toInstant } from "../lib/time.js";
+import { formatRange, formatDate, groupByDay, nowNext, guestTzDiffers, toInstant, dayPart } from "../lib/time.js";
 import { directionsUrl } from "../lib/maps.js";
 import { downloadIcs, googleCalUrl } from "../lib/calendar.js";
 import { openSheet, copyText } from "../lib/ui.js";
 import * as icon from "../lib/icons.js";
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const UP_NEXT_WINDOW = 7 * 864e5;
 
 /** Rough human name for a hex colour, so swatches have an accessible name. */
 function colourName(hex) {
@@ -52,6 +53,19 @@ function whenLabel(e, tz) {
   return formatRange(e.start, e.end, tz);
 }
 
+const PERIOD = {
+  morning: { label: "Morning", icon: icon.sunrise },
+  afternoon: { label: "Afternoon", icon: icon.sun },
+  evening: { label: "Evening", icon: icon.moon },
+};
+
+function periodTag(e) {
+  const part = dayPart(e.start, e.end, e.dayPart);
+  const p = PERIOD[part];
+  if (!p) return "";
+  return html`<span class="period">${p.icon()}<span>${p.label}</span></span>`;
+}
+
 function eventCard(e, ctx, flags) {
   const i = ctx.content.events.findIndex((x) => x.id === e.id);
   const p = (f) => (i >= 0 ? `events.${i}.${f}` : `events.x.${f}`);
@@ -66,10 +80,11 @@ function eventCard(e, ctx, flags) {
   const canDirect = v.name || v.address || v.mapsQuery || typeof v.lat === "number";
   return html`
     <article class="event card" id="event-${e.id}" data-event="${e.id}" ${i >= 0 ? itemAttrs("events", i) : ""}>
-      ${e.photo ? html`<div class="event-photo">${imgTag(e.photo, { path: p("photo"), sizes: "(min-width: 768px) 40rem, 100vw" })}</div>` : ""}
+      ${e.photo && !flags.samePhoto ? html`<div class="event-photo">${imgTag(e.photo, { path: p("photo"), sizes: "(min-width: 768px) 40rem, 100vw" })}</div>` : ""}
       <div class="event-body stack stack--s">
         <div class="event-top cluster cluster--s">
           <span class="event-time eyebrow">${icon.clock()}<span>${whenLabel(e, tz)}</span></span>
+          ${periodTag(e)}
           ${flags.current ? html`<span class="badge">Happening now</span>` : flags.next ? html`<span class="badge badge--gold">Up next</span>` : ""}
         </div>
         <div class="stack stack--s event-title">
@@ -138,7 +153,13 @@ export default {
     root._ctx = ctx;
     root._io?.disconnect();
     const days = groupByDay(ctx.events, ctx.tz);
-    const { current, next } = nowNext(ctx.events, ctx.now(), ctx.tz);
+    const { current, next: upcoming } = nowNext(ctx.events, ctx.now(), ctx.tz);
+    const next = upcoming && toInstant(upcoming.start, upcoming.timezone || ctx.tz) - ctx.now() <= UP_NEXT_WINDOW ? upcoming : null;
+    // The photo is still shown in the editor so it stays editable in place.
+    const samePhoto = new Set();
+    if (!isEdit()) days.flatMap((d) => d.events).forEach((e, k, all) => {
+      if (k && e.photo?.src && e.photo.src === all[k - 1].photo?.src) samePhoto.add(e.id);
+    });
     const tzNote = guestTzDiffers(ctx.tz);
     const intro = ctx.content.schedule?.intro ?? (ctx.events.length === 1 ? "Here are the details for the day." : "Open an event for what to wear, directions and more.");
     let tzLabel = "";
@@ -173,7 +194,7 @@ export default {
           ${days.length ? days.map((d) => html`
             <section class="day stack" id="day-${d.key}" data-day-section="${d.key}" aria-labelledby="day-h-${d.key}">
               <h2 class="display display--l day-title" id="day-h-${d.key}">${d.label}</h2>
-              ${d.events.map((e) => eventCard(e, ctx, { current: current?.id === e.id, next: next?.id === e.id }))}
+              ${d.events.map((e) => eventCard(e, ctx, { current: current?.id === e.id, next: next?.id === e.id, samePhoto: samePhoto.has(e.id) }))}
             </section>`) : html`
             <div class="card empty center stack stack--s">
               <p class="display display--m">Details are on their way</p>

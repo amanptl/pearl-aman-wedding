@@ -126,6 +126,12 @@
           "subtitle": { "type": "string", "title": "Tagline", "description": "One short line under the name." },
           "start": { "type": "string", "format": "date-time-local", "title": "Starts", "description": "Local start date and time at the venue." },
           "end": { "type": "string", "format": "date-time-local", "title": "Ends", "description": "Local end date and time at the venue." },
+          "dayPart": {
+            "type": "string",
+            "enum": ["morning", "afternoon", "evening"],
+            "title": "Time of day",
+            "description": "Morning, afternoon or evening. Shown as a label on the schedule even when the exact clock time is still to be confirmed."
+          },
           "timezone": { "type": "string", "title": "Time zone override", "description": "Only if this event is in a different time zone from the site." },
           "venue": {
             "type": "object", "title": "Venue", "description": "Where the event takes place.",

@@ -43,6 +43,14 @@
 [data-page="schedule"] .event-top { justify-content: flex-start; }
 [data-page="schedule"] .event-time { display: inline-flex; align-items: center; gap: var(--space-2xs); }
 [data-page="schedule"] .event-time svg { width: 1.1em; height: 1.1em; }
+[data-page="schedule"] .period {
+  display: inline-flex; align-items: center; gap: var(--space-3xs);
+  padding: var(--space-4xs) calc(var(--space-2xs) + var(--space-4xs));
+  border: 1px solid var(--line); border-radius: var(--radius-pill); background: transparent;
+  font-size: var(--step--1); line-height: 1.2; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold-text); white-space: nowrap;
+}
+[data-page="schedule"] .period svg { width: 1em; height: 1em; color: var(--burgundy); flex: none; }
 [data-page="schedule"] .event-title { --stack-gap: var(--space-2xs); }
 [data-page="schedule"] .event .badge { vertical-align: middle; }
 [data-page="schedule"] .event-venue,
