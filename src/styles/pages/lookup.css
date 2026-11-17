@@ -1,4 +1,4 @@
-/* Name lookup + guest badge. Scoped to .lookup and .guest-badge. */
+/* Name lookup. Scoped to .lookup. */
 .lookup { max-width: var(--container-text); margin-inline: auto; padding: var(--space-l) var(--gutter); display: flex; flex-direction: column; gap: var(--space-s); text-align: center; }
 .lookup__title { margin: 0; font-family: var(--font-display); font-size: clamp(1.6rem, 5vw, 2.2rem); line-height: var(--lh-tight); }
 .lookup__intro { margin: 0; font-size: 1.0625rem; color: var(--text-muted); }
@@ -16,14 +16,3 @@
 .lookup__contacts { list-style: none; margin: var(--space-xs) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-xs); color: var(--ink); }
 .lookup__contacts li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2xs); text-align: left; }
 .lookup__contact-name { flex: 1 1 12rem; }
-
-.guest-badge { margin: 0; display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3xs) var(--space-2xs); font-size: 1.0625rem; color: var(--text-muted); }
-.guest-badge strong { color: var(--ink); }
-.guest-badge__btn { min-height: var(--tap); min-width: var(--tap); padding: 0 var(--space-2xs); background: none; border: 0; font: inherit; color: var(--gold-text); text-decoration: underline; text-underline-offset: 0.25em; cursor: pointer; }
-.guest-badge__btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-s); }
-
-/* Slim "Viewing as" strip under the navigation. */
-.guest-strip { text-align: center; background: var(--ivory, #f6f1e8); border-bottom: 1px solid rgba(35, 42, 26, 0.12); padding: 0 var(--gutter); }
-.guest-strip:empty, [data-mode="edit"] .guest-strip { display: none; }
-.guest-strip .guest-badge { font-size: 1rem; }
-@media (max-width: 30rem) { .guest-badge > [aria-hidden="true"] { display: none; } .guest-badge { column-gap: var(--space-xs); row-gap: 0; padding-block: var(--space-4xs); } }

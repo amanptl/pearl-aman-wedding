@@ -128,10 +128,7 @@ test("navigation: top nav on wide screens, tab bar and More sheet on narrow", as
   }
 });
 
-test("help button opens contacts sheet on inner pages", async ({ page }) => {
+test("help button stays hidden for now", async ({ page }) => {
   await open(page, "/#faq");
-  await page.locator("#help").click();
-  await expect(page.locator("dialog.sheet")).toContainText("Priya");
-  await page.keyboard.press("Escape");
-  await expect(page.locator("dialog.sheet")).toHaveCount(0);
+  await expect(page.locator("#help")).toBeHidden(); // SHOW_HELP in src/main.js
 });

@@ -6,7 +6,6 @@ import { registerSW } from "./lib/pwa.js";
 import { toast, openSheet } from "./lib/ui.js";
 import { telUrl, whatsappUrl } from "./lib/maps.js";
 import * as icon from "./lib/icons.js";
-import { renderGuestBadge } from "./pages/_lookup.js";
 import { createFilm } from "./lib/film.js";
 
 import home, { homeDate } from "./pages/home.js";
@@ -115,8 +114,12 @@ function openMore() {
 }
 
 /* ---------- Help sheet ---------- */
+// Floating Help button. Hidden for now; flip this to bring it back.
+const SHOW_HELP = false;
+
 function setupHelp() {
   const b = $("#help");
+  if (!SHOW_HELP) { b.hidden = true; return; }
   const contacts = ctx.content.site.contacts || [];
   b.hidden = contacts.length === 0;
   b.innerHTML = html`${icon.question()}<span>Help</span>`.toString();
@@ -251,8 +254,8 @@ function queueFilm() {
     const board = sectionFor("home")?.querySelector(".board");
     if (!board) { introEl.classList.add("is-ready"); return; }
     film?.finish();
-    film = createFilm(board, { chrome: [$("#site-header"), $("#top-nav"), $("#tabbar"), $("#help"), $("#guest-badge")], vignette: introEl.querySelector(".intro-lens") });
-    const art = ["env-back", "env-pocket", "env-flap-out"].map((n) => { const i = new Image(); i.src = `assets/img/${n}.webp`; return i.decode().catch(() => {}); });
+    film = createFilm(board, { chrome: [$("#site-header"), $("#top-nav"), $("#tabbar"), $("#help")], vignette: introEl.querySelector(".intro-lens") });
+    const art = ["env-back", "env-pocket", "env-flap-out", "env-sprig"].map((n) => { const i = new Image(); i.src = `assets/img/${n}.webp`; return i.decode().catch(() => {}); });
     await Promise.race([Promise.all(art), new Promise((r) => setTimeout(r, 1500))]);
     if (gen === envelopeGen && introEl?.isConnected) introEl.classList.add("is-ready");
   });
@@ -344,7 +347,6 @@ async function boot() {
   const first = parseHash().id || "home";
   if (EDIT || !byId[first] || !pageVisible(byId[first])) PAGES.forEach(renderPage); else renderPage(byId[first]);
   setupHelp();
-  if (!EDIT) renderGuestBadge($("#guest-badge"), ctx);
   $("#app").hidden = false;
   const boot_ = $("#boot");
   if (boot_) { boot_.classList.add("is-done"); setTimeout(() => boot_.remove(), 400); }

@@ -37,3 +37,10 @@ await sharp({ create: { width: n * 2, height: n * 2, channels: 3, background: "#
   .composite([{ input: patch, left: 0, top: 0 }, { input: fx, left: n, top: 0 }, { input: fy, left: 0, top: n }, { input: fxy, left: n, top: n }])
   .resize({ width: 320 }).webp({ quality: 82 }).toFile(out("flatlay-phone-felt.webp"));
 console.log(`phone flat lay ${W}x${H} → ${W}x${OH} (column moved ${D}px) → assets/img/flatlay-phone*.webp`);
+
+// Phone artwork (the current phone home): a full-bleed 853 × 1844 flat lay with an open centre column.
+// Source: assets/source/flatlay-phone-v2.png.
+const v2 = path.join(root, "assets/source/flatlay-phone-v2.png");
+await sharp(v2).removeAlpha().webp({ quality: 88 }).toFile(out("flatlay-phone-v2.webp"));
+const vm = await sharp(v2).metadata();
+console.log(`phone flat lay v2 ${vm.width}x${vm.height} → assets/img/flatlay-phone-v2.webp`);

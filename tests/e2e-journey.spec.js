@@ -166,7 +166,7 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   watch(guest);
   await guest.goto(`/?i=${NEW_CODE}&intro=0#schedule`);
   await guest.waitForSelector("html[data-ready]");
-  await expect(guest.locator("[data-guest-badge]")).toContainText("Okonkwo Friends");
+  expect(await guest.evaluate(() => JSON.parse(sessionStorage.getItem("pa.guest.session") || "null")?.household)).toBe("Okonkwo Friends");
   const eventNames = await guest.locator("[data-page=schedule] .event h3, [data-page=schedule] [data-event] h3").allTextContents();
   expect(eventNames.join("|")).toContain(NEW_TITLE);
   await expect(guest.locator("[data-page=schedule] .event")).toHaveCount(2); // Haldi and Vidhi + the wedding

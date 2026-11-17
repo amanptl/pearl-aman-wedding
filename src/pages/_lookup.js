@@ -1,6 +1,6 @@
-// "Find your invitation" name lookup + "Viewing as" badge. Never logs codes or guest data.
+// "Find your invitation" name lookup. Never logs codes or guest data.
 import { html } from "../lib/dom.js";
-import { lookupByName, rememberGuest, forgetGuest, BADCODE_KEY } from "../lib/guest.js";
+import { lookupByName, rememberGuest, BADCODE_KEY } from "../lib/guest.js";
 import { telUrl, whatsappUrl } from "../lib/maps.js";
 import * as icon from "../lib/icons.js";
 
@@ -114,26 +114,6 @@ export function renderLookup(container, ctx, { heading = "Find your invitation",
     const extra = contactsHtml(ctx);
     if (extra.toString()) msg.insertAdjacentHTML("beforeend", extra.toString());
     input.focus();
-  });
-}
-
-/**
- * Small "Viewing as Sharma Family · Not you?" control.
- * @param {HTMLElement} container @param {object} ctx
- */
-export function renderGuestBadge(container, ctx) {
-  const g = ctx?.guest;
-  if (!g) { container.innerHTML = ""; container.removeAttribute("role"); container.removeAttribute("aria-label"); return; }
-  container.setAttribute("role", "region");
-  container.setAttribute("aria-label", "Your invitation");
-  container.innerHTML = html`<p class="guest-badge" data-guest-badge>
-    <span>Viewing as <strong>${g.household}</strong></span>
-    <span aria-hidden="true">·</span>
-    <button type="button" class="guest-badge__btn" data-not-you>Not you?</button>
-  </p>`.toString();
-  container.querySelector("[data-not-you]").addEventListener("click", () => {
-    forgetGuest();
-    location.replace(location.pathname + location.hash);
   });
 }
 

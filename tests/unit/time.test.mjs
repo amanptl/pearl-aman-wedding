@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { toInstant, formatTime, formatRange, formatDate, nowNext, tzLabel, daysUntil } from "../../src/lib/time.js";
+import { toInstant, formatTime, formatRange, formatDate, nowNext, tzLabel, daysUntil, dayPart } from "../../src/lib/time.js";
 
 const iso = (d) => d.toISOString();
 const cwd = new URL("../..", import.meta.url);
@@ -59,6 +59,22 @@ test("nowNext", () => {
 });
 test("daysUntil", () => {
   assert.equal(daysUntil("2027-07-25", toInstant("2027-07-20T12:00"), "America/Toronto"), 4);
+});
+test("dayPart boundaries and TBD", () => {
+  assert.equal(dayPart("2027-07-24T11:59"), "morning");
+  assert.equal(dayPart("2027-07-24T12:00"), "afternoon");
+  assert.equal(dayPart("2027-07-23T17:00"), "afternoon");
+  assert.equal(dayPart("2027-07-24T17:59"), "afternoon");
+  assert.equal(dayPart("2027-07-24T18:00"), "evening");
+  assert.equal(dayPart("2027-07-24T10:30", "2027-07-24T13:00"), "morning");
+  assert.equal(dayPart("2027-07-23T00:00"), null);
+  assert.equal(dayPart("2027-07-23T00:00", null), null);
+  assert.equal(dayPart("2027-07-23T00:00", "2027-07-23T02:00"), "morning");
+  assert.equal(dayPart("2027-07-23"), null);
+  assert.equal(dayPart(""), null);
+  assert.equal(dayPart("2027-07-23T00:00", null, "afternoon"), "afternoon");
+  assert.equal(dayPart("2027-07-23T00:00", undefined, "evening"), "evening");
+  assert.equal(dayPart("2027-07-24T10:30", null, "evening"), "evening");
 });
 
 // groupByDay must not depend on the device time zone.

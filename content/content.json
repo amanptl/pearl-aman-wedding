@@ -10,7 +10,7 @@
     "city": "Edmonton, Canada",
     "rsvpEndpoint": "",
     "siteUrl": "",
-    "ogImage": { "src": "assets/img/og.jpg", "alt": "A wax seal on an olive-green envelope", "focal": [50, 50] },
+    "ogImage": { "src": "assets/img/og.jpg", "alt": "Dahlias, a calla lily, lace ribbon and wedding rings on olive felt", "focal": [50, 50] },
     "contacts": [
       { "name": "[Priya Sharma]", "role": "Guest coordinator (Pearl's side)", "phone": "+1 416 555 0142", "whatsapp": true },
       { "name": "[Rohan Mehta]", "role": "Guest coordinator (Aman's side)", "phone": "+1 647 555 0178", "whatsapp": true }
@@ -29,7 +29,7 @@
     "photo": { "src": "assets/img/couple-1.webp", "srcSmall": "assets/img/couple-1-600.webp", "alt": "Pearl and Aman together", "focal": [50, 40] },
     "invitationLines": {
       "small": "Please join us\nfor the wedding of",
-      "celebrationSmall": "Please join us\nfor the wedding celebrations of",
+      "celebrationSmall": "Please join us\nfor the wedding\ncelebrations of",
       "venueLines": ["The Grand Imperial,", "Edmonton,", "Alberta"]
     },
     "welcome": "We are so happy you are here. Thank you for celebrating with us.",
@@ -61,7 +61,8 @@
   "travel": {
     "intro": "Most guests fly into Edmonton International (YEG). The venues are in south Edmonton, about 30 minutes from the airport.",
     "airports": [
-      { "id": "yeg", "code": "YEG", "name": "Edmonton International", "primary": true, "driveMinutes": 30, "tips": "Direct flights from major Canadian hubs. Connections from India typically through Toronto or Vancouver." }
+      { "id": "yeg", "code": "YEG", "name": "Edmonton International", "primary": true, "driveMinutes": 30, "tips": "Direct flights from major Canadian hubs. Connections from India typically through Toronto or Vancouver." },
+      { "id": "yyc", "code": "YYC", "name": "Calgary International", "driveMinutes": 180, "tips": "Calgary works if that is where you land, but it is about a 3 hour drive and not a quick trip. Fly into YEG when you can." }
     ],
     "gettingAround": [
       { "id": "rideshare", "title": "Rideshare and taxis", "text": "Uber and taxis are available throughout the area. Expect about [$40 to $60] from YEG to the hotels and venues." },
@@ -117,7 +118,7 @@
   ],
   "faq": [
     { "id": "what-mehndi", "category": "events", "q": "What are Mehendi, Haldi and Vidhi, and the wedding?", "a": "Mehendi is henna at CISE. Haldi and Vidhi is the blessing at CISE. The wedding ceremony is at the Grand Imperial. Each invitation lists the events you are invited to." },
-    { "id": "what-baraat", "category": "events", "q": "What is the Baraat?", "a": "The Baraat is the groom's joyful procession to the ceremony, with drums, dancing and family. It begins at 3:30 PM on the wedding day." },
+    { "id": "what-baraat", "category": "events", "q": "What is the Baraat?", "a": "The Baraat is the groom's joyful procession to the ceremony, with drums, dancing and family." },
     { "id": "join-baraat", "category": "events", "q": "Can I join the Baraat?", "a": "Yes, everyone is welcome. Wear shoes you can dance in, bring water, and follow the dhol. No experience required." },
     { "id": "wear-events", "category": "before", "q": "What should I wear to each event?", "a": "Mehendi: colourful and comfortable. Haldi and Vidhi: old yellow or white clothes you can stain. Wedding: colourful and comfortable — wear whatever you feel comfortable in. Rich, elegant colours are welcome; it is better to avoid black." },
     { "id": "wear-new", "category": "before", "q": "I have never worn Indian clothes. Where can I get some?", "a": "Message a coordinator and we will point you to shops in Edmonton, or to rentals. You are also welcome in formal Western attire." },

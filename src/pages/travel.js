@@ -111,7 +111,11 @@ function nearbyItem(h, i, groups) {
     </li>`;
 }
 
+const SHOW_STAY_HELP = false;
+const SHOW_INTL_NOTE = false;
+
 function stayHelp(c) {
+  if (!SHOW_STAY_HELP) return "";
   const co = (c.site?.contacts || []).find((x) => x.phone && x.whatsapp) || (c.site?.contacts || []).find((x) => x.phone);
   if (!co) return "";
   const link = co.whatsapp
@@ -128,6 +132,16 @@ function fromAirportUrl(a, dest) {
   const origin = `${a.name || ""} ${a.code || ""} airport`.trim();
   const d = typeof dest.lat === "number" && typeof dest.lng === "number" ? `${dest.lat},${dest.lng}` : dest.address || dest.mapsQuery || dest.name || "";
   return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(d)}`;
+}
+
+/** Airport drives of 90+ minutes read better as hours (e.g. ~3 hours). */
+function airportDriveLabel(min) {
+  const m = +min;
+  if (!Number.isFinite(m) || m <= 0) return "";
+  if (m < 90) return `~${m} min drive to the hotels and venues`;
+  const halfHours = Math.round(m / 30) / 2;
+  const label = Number.isInteger(halfHours) ? String(halfHours) : halfHours.toFixed(1);
+  return `~${label} hour${halfHours === 1 ? "" : "s"} drive to the hotels and venues`;
 }
 
 function shuttleTime(v, tz) {
@@ -152,7 +166,7 @@ export default {
   title: () => "Travel & Stay",
   isEmpty: (ctx) => {
     const c = ctx.content, t = c.travel || {};
-    return !(c.hotels?.length || t.airports?.length || t.gettingAround?.length || t.shuttles?.length || t.aroundTown?.length || t.international?.text);
+    return !(c.hotels?.length || t.airports?.length || t.gettingAround?.length || t.shuttles?.length || t.aroundTown?.length || (SHOW_INTL_NOTE && t.international?.text));
   },
   render(root, ctx) {
     const c = ctx.content;
@@ -173,7 +187,7 @@ export default {
 
     const has = {
       stay: hotels.length > 0,
-      "getting-here": airports.length || (t.gettingAround || []).length || shuttles.length || parking.length || t.international?.text,
+      "getting-here": airports.length || (t.gettingAround || []).length || shuttles.length || parking.length || (SHOW_INTL_NOTE && t.international?.text),
       around: around.length > 0,
     };
     const segs = SEGMENTS.filter((s) => has[s.id] || edit);
@@ -211,7 +225,7 @@ export default {
       <section class="section section--ivory trav-section" id="getting-here" aria-labelledby="gh-h">
         <div class="container stack stack--xl">
           <header class="sec-head"><h2 class="display display--l" id="gh-h">Getting Here</h2></header>
-          ${t.international?.text || edit ? html`<aside class="intl card" aria-labelledby="intl-h">
+          ${SHOW_INTL_NOTE && (t.international?.text || edit) ? html`<aside class="intl card" aria-labelledby="intl-h">
             <span class="intl-icon">${icon.info()}</span>
             <div class="stack stack--s"><h3 class="sub-title" id="intl-h" ${editAttrs("text", "travel.international.title", { placeholder: "Add a title" })}>${t.international?.title || ""}</h3>
             <p ${editAttrs("multiline", "travel.international.text", { placeholder: "Add a note for international guests" })}>${t.international?.text || ""}</p></div>
@@ -223,7 +237,7 @@ export default {
                 ${a.primary ? html`<span class="badge badge--gold">Closest major airport</span>` : ""}
                 <p class="airport-code" ${editAttrs("text", `travel.airports.${i}.code`, { placeholder: "Code" })}>${a.code}</p>
                 <h4 class="airport-name" ${editAttrs("text", `travel.airports.${i}.name`, { placeholder: "Airport name" })}>${a.name}</h4>
-                ${a.driveMinutes ? html`<p class="airport-drive">${icon.car()}<span>~${a.driveMinutes} min drive to the hotels and venues</span></p>` : ""}
+                ${a.driveMinutes ? html`<p class="airport-drive">${icon.car()}<span>${airportDriveLabel(a.driveMinutes)}</span></p>` : ""}
                 ${showField(a.tips) ? html`<p class="muted" ${editAttrs("multiline", `travel.airports.${i}.tips`, { placeholder: "Add tips" })}>${a.tips || ""}</p>` : ""}
                 ${dest ? html`<div class="card-actions"><a class="btn btn--secondary" href="${fromAirportUrl(a, dest)}" target="_blank" rel="noopener" aria-label="Directions from ${a.code} to ${destName} (opens in a new tab)">${icon.directions()}<span>To ${destName}</span></a></div>` : ""}
               </article>`)}

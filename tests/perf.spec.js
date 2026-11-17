@@ -41,7 +41,7 @@ test("?i=CODE: one PBKDF2, cached in sessionStorage, navigation and reload cost 
   await page.waitForSelector("html[data-ready]");
   const reloadMs = Date.now() - t1;
   expect(await page.evaluate(() => window.__kdf)).toBe(0);
-  await expect(page.locator("[data-guest-badge]")).toContainText("Sharma");
+  await expect(page.locator("[data-greeting]")).toContainText("Sharma");
   info.annotations.push({ type: "perf", description: `first resolve (incl. page load) ${resolveMs} ms; cached reload ${reloadMs} ms; route changes ${nav.join("/")} ms` });
   expect(resolveMs).toBeLessThan(8000);
   // View Transitions can add a short paint delay on slower WebKit devices.

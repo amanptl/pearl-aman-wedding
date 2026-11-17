@@ -67,7 +67,7 @@ test("content.json holds no private events (integrator must strip them)", async 
   expect(c.events.filter((e) => e.visibility === "private")).toEqual([]);
 });
 
-test("name lookup (any order/case/middle name) personalises, then remembered, then Not you? clears", async ({ page }) => {
+test("name lookup (any order/case/middle name) personalises, then remembered, then forgetting clears", async ({ page }) => {
   await withLookup(page);
   for (const typed of ["raj sharma", "Sharma Raj", "Raj  Kumar Sharma"]) {
     await page.context().clearCookies();
@@ -84,16 +84,6 @@ test("name lookup (any order/case/middle name) personalises, then remembered, th
   await open(page, "/");
   await expect(page.getByText(codes.sharma.greeting).first()).toBeAttached();
   expect(await eventCount(page)).toBe(3);
-  // Not you?
-  const badge = page.locator("[data-guest-badge]");
-  if (await badge.count() === 0) {
-    await page.evaluate(async () => {
-      const m = await import("/src/pages/_lookup.js");
-      const el = document.createElement("div");
-      document.body.prepend(el);
-      m.renderGuestBadge(el, window.__ctxForTest);
-    }).catch(() => {});
-  }
   await page.evaluate(async () => {
     const g = await import("/src/lib/guest.js");
     g.forgetGuest();
@@ -112,20 +102,4 @@ test("unknown name shows the not-found message and contacts", async ({ page }) =
   const msg = page.locator('[data-page="home"] [data-lookup] [data-msg]');
   await expect(msg).toContainText("We couldn't find that name");
   await expect(msg.getByRole("link", { name: /call/i }).first()).toBeVisible();
-});
-
-test("badge: Not you? forgets the guest", async ({ page }) => {
-  await withLookup(page);
-  await open(page, `/?i=${codes.sharma.code}`);
-  await page.evaluate(async () => {
-    const m = await import("/src/pages/_lookup.js");
-    const el = document.createElement("div");
-    el.id = "badge-test";
-    document.body.prepend(el);
-    m.renderGuestBadge(el, { guest: { household: "Sharma Family" } });
-  });
-  await expect(page.locator("#badge-test")).toContainText("Viewing as Sharma Family");
-  await page.locator("#badge-test [data-not-you]").click();
-  await ready(page);
-  await expect(page.locator('[data-page="home"] [data-lookup] form')).toBeVisible();
 });

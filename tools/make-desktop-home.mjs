@@ -23,3 +23,10 @@ await sharp({ create: { width: n * 2, height: n * 2, channels: 3, background: "#
   .composite([{ input: patch, left: 0, top: 0 }, { input: fx, left: n, top: 0 }, { input: fy, left: 0, top: n }, { input: fxy, left: n, top: n }])
   .resize({ width: 440 }).webp({ quality: 82 }).toFile(out("flatlay-desktop-felt.webp"));
 console.log(`flat lay ${W}x${H} → assets/img/flatlay-desktop*.webp`);
+
+// Wide desktop artwork (the current desktop home): a 16:9 flat lay that runs off every edge, with an open centre for
+// the invitation stack. Source: assets/source/flatlay-desktop-v2.png.
+const wide = path.join(root, "assets/source/flatlay-desktop-v2.png");
+await sharp(wide).removeAlpha().webp({ quality: 88 }).toFile(out("flatlay-desktop-v2.webp"));
+const wm = await sharp(wide).metadata();
+console.log(`desktop flat lay v2 ${wm.width}x${wm.height} → assets/img/flatlay-desktop-v2.webp`);

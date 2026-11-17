@@ -4,8 +4,8 @@
 //   card-paper.png      blank ivory cotton sheet (gives the invitation card's paper texture)
 // Outputs (assets/img/), all in one frame: the envelope body is 1000 x 732 (the closed envelope's proportions).
 //   env-back.webp       inside of the envelope (liner), the full body
-//   env-pocket.webp     the front pocket (side + bottom flaps), transparent where the inside shows
-//   env-flap-out.webp   outside of the flap, 1000 x 512, tip pointing down (closed)
+//   env-pocket.webp     the front pocket (side + bottom flaps), transparent where the inside shows; graded to inspo forest green
+//   env-flap-out.webp   outside of the flap, 1000 x 512, tip pointing down (closed); same forest-green grade as the pocket
 //   env-flap-in.webp    inside of the flap (liner), 1000 x 512, tip pointing up (as it lies when open)
 //   card-paper.webp     paper texture for the invitation card
 // The sources have torn (deckled) paper edges with a white rim. Every outer edge is cut just inside that deckle, on a
@@ -80,8 +80,23 @@ function bleed(rgba, w, h, reach = 8) {
   }
 }
 
-/** Crop a box to RGBA with the given alpha function, resize to w x h, soften the matte by a pixel. */
-async function layer(img, box, alpha, w, h, name) {
+/** Grade outside paper toward inspiration/envolope-insp.PNG forest green.
+ *  Measured means: source olive ≈ (81.7, 85.9, 47.7), inspo ≈ (51.8, 50.2, 31.8). */
+const OUTSIDE_SCALE = [51.8 / 81.7, 50.2 / 85.9, 31.8 / 47.7];
+function gradeOutsideRgba(rgba, n) {
+  const [sr, sg, sb] = OUTSIDE_SCALE;
+  for (let k = 0; k < n; k++) {
+    const i = k * 4;
+    if (!rgba[i + 3]) continue;
+    rgba[i] = Math.min(255, Math.round(rgba[i] * sr));
+    rgba[i + 1] = Math.min(255, Math.round(rgba[i + 1] * sg));
+    rgba[i + 2] = Math.min(255, Math.round(rgba[i + 2] * sb));
+  }
+}
+
+/** Crop a box to RGBA with the given alpha function, resize to w x h, soften the matte by a pixel.
+ *  Pass gradeOutside: true for pocket / flap-out so they match the inspiration forest green; liner stays ungraded. */
+async function layer(img, box, alpha, w, h, name, { gradeOutside = false } = {}) {
   const { data, W } = img, { left, top, width, height } = box, rgba = Buffer.alloc(width * height * 4);
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const sx = x + left, sy = y + top, i = (sy * W + sx) * 3, o = (y * width + x) * 4;
@@ -91,6 +106,7 @@ async function layer(img, box, alpha, w, h, name) {
   const a = await sharp(rgba, { raw: { width, height, channels: 4 } }).resize(w, h, { fit: "fill" }).raw().toBuffer();
   const m = await sharp(a, { raw: { width: w, height: h, channels: 4 } }).extractChannel(3).blur(0.6).raw().toBuffer();
   for (let k = 0; k < w * h; k++) a[k * 4 + 3] = m[k];
+  if (gradeOutside) gradeOutsideRgba(a, w * h);
   await sharp(a, { raw: { width: w, height: h, channels: 4 } }).webp({ quality: 90, alphaQuality: 100 }).toFile(out(name));
 }
 
@@ -114,7 +130,7 @@ const inStrip = (x, y) => { if (y < STRIP.y0 || y > STRIP.y1) return false; cons
   }
   await layer({ ...open, data: fixed }, BODY, bodyShape, BW, BH, "env-back.webp");
 }
-await layer(openClean, BODY, (x, y) => bodyShape(x, y) && isGreen(x, y) && !inStrip(x, y), BW, BH, "env-pocket.webp");
+await layer(openClean, BODY, (x, y) => bodyShape(x, y) && isGreen(x, y) && !inStrip(x, y), BW, BH, "env-pocket.webp", { gradeOutside: true });
 
 // Flap liner, tip up (y 52 .. 680). Its torn edges were fitted as straight lines (x = m*y + c) and moved in past the
 // deckle (the fit's residuals reach +10 / -13 px); the tip is rounded off where the two lines meet.
@@ -148,7 +164,7 @@ const inFlap = (x, y) => {
   if (y < 280) return flapCorners(x, y); // full width near the hinge
   return x >= leftX(y) && x <= rightX(y);
 };
-await layer(closedClean, FLAP_BOX, inFlap, BW, FH, "env-flap-out.webp");
+await layer(closedClean, FLAP_BOX, inFlap, BW, FH, "env-flap-out.webp", { gradeOutside: true });
 
 // ---- Card paper: the sheet's inside (no deckle), stretched over the card shape as its fill ----
 await sharp(src("card-paper.png")).extract({ left: 220, top: 250, width: 1080, height: 1512 }).resize(600, 840).webp({ quality: 80 }).toFile(out("card-paper.webp"));

@@ -55,7 +55,7 @@ test.describe("guest site", () => {
     await page.goto("/?i=NVMDUYC3MF&intro=0#home");
     await ready(page);
     await expect(page.locator("[data-page=home] h1")).toBeVisible();
-    await expect(page.locator("[data-guest-badge]")).toHaveCount(0);
+    await expect(page.locator("[data-greeting]")).toHaveCount(0);
     expect(await page.evaluate(() => location.search)).not.toContain("i="); // the code is stripped from the URL either way
     // the name lookup shows its friendly not-found message instead of throwing
     await page.goto("/?intro=0#rsvp");
@@ -80,11 +80,13 @@ test.describe("guest site", () => {
   test("a real personal link works, is cached for the session and stays after navigation", async ({ page }) => {
     await page.goto("/?i=NVMDUYC3MF&intro=0#schedule");
     await ready(page);
-    await expect(page.locator("[data-guest-badge]")).toContainText("Sharma");
-    expect(await page.evaluate(() => !!sessionStorage.getItem("pa.guest.session"))).toBe(true);
+    const household = () => page.evaluate(() => JSON.parse(sessionStorage.getItem("pa.guest.session") || "null")?.household);
+    expect(await household()).toBe("Sharma Family");
+    await expect(page.locator("[data-page=schedule] [data-event]")).toHaveCount(3);
     await page.goto("/?intro=0#schedule"); // no code in the URL: remembered
     await ready(page);
-    await expect(page.locator("[data-guest-badge]")).toContainText("Sharma");
+    expect(await household()).toBe("Sharma Family");
+    await expect(page.locator("[data-page=schedule] [data-event]")).toHaveCount(3);
   });
 
   test("offline after the first visit: the schedule still loads from the service worker", async ({ page, context, browserName }) => {

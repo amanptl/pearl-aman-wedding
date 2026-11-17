@@ -78,6 +78,29 @@ export function formatRange(start, end, tz = DEFAULT_TZ) {
 }
 
 /**
+ * Morning / afternoon / evening for an event.
+ * Prefers an explicit dayPart (so TBD times can still show Morning / Afternoon / Evening).
+ * Otherwise derives from a confirmed wall-clock start. Unconfirmed midnight (`T00:00`, no end)
+ * or a date with no clock time returns null unless `explicit` is set.
+ * @param {string} start local ISO date-time
+ * @param {string} [end]
+ * @param {"morning"|"afternoon"|"evening"|string} [explicit]
+ * @returns {"morning"|"afternoon"|"evening"|null}
+ */
+export function dayPart(start, end, explicit) {
+  if (explicit === "morning" || explicit === "afternoon" || explicit === "evening") return explicit;
+  const m = String(start || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!m) return null;
+  if (m[4] == null) return null; // date only — no clock time
+  const hour = +m[4];
+  const minute = +(m[5] || 0);
+  if (!end && hour === 0 && minute === 0) return null; // TBD midnight sentinel
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
+}
+
+/**
  * Group events by local calendar day, each day sorted by start.
  * @param {{start:string}[]} events
  * @param {string} tz
