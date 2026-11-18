@@ -302,6 +302,19 @@ function openEnvelope(animated) {
   f.play().then(() => { if (film === f) film = null; end(); });
 }
 
+/* Corinthia's final l runs through the space before &, so the mark is its own span (see .banner-amp). */
+function setBannerTitle(title) {
+  const el = $(".banner .script");
+  if (!el) return;
+  const text = String(title ?? "");
+  const i = text.indexOf("&");
+  if (i < 0) { el.textContent = text; return; }
+  const mark = document.createElement("span");
+  mark.className = "banner-amp";
+  mark.textContent = "&";
+  el.replaceChildren(document.createTextNode(text.slice(0, i)), mark, document.createTextNode(text.slice(i + 1)));
+}
+
 /* ---------- Boot ---------- */
 async function boot() {
   const main = $("#main");
@@ -340,7 +353,7 @@ async function boot() {
   // general (chat apps read it before any invite is unlocked).
   document.title = `${s.title} · ${homeDate(ctx)}`;
   if (s.ogImage?.src) $('meta[property="og:image"]').content = new URL(s.ogImage.src, document.baseURI).href;
-  $(".banner .script").textContent = s.title;
+  setBannerTitle(s.title);
 
   main.replaceChildren(...PAGES.map((p) => { const el = document.createElement("section"); el.dataset.page = p.id; el.hidden = true; return el; }));
   // Render only the page being opened first, so the first paint is quick; the rest follow right after.

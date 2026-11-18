@@ -177,36 +177,34 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 }
 
 /* Scroll cue: fixed ivory chevron above the tab bar; hides once the welcome block is on screen.
-   Soft dark disc keeps contrast over both the olive felt and the white lace in the artwork. */
+   Soft dark disc keeps contrast over both the olive felt and the white lace in the artwork.
+   Phones and tablets: at the right edge, clear of Respond and its date tag. Desktop (>=1024px): centred. */
 .scroll-hint {
-  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--space-s));
-  z-index: 5; transform: translateX(-50%);
+  position: fixed; right: var(--space-m); bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--space-s));
+  z-index: 5;
   display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0;
   border: 0; border-radius: 50%;
   background: rgba(20, 18, 10, 0.42); color: var(--ivory-2);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: opacity 280ms ease, visibility 280ms ease;
+  --x: 0px;
 }
 .scroll-hint .icon { width: 1.5rem; height: 1.5rem; }
 .scroll-hint:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
 .scroll-hint.is-gone { opacity: 0; visibility: hidden; pointer-events: none; }
-/* Short screens: centred, the chevron would sit on Respond or its date tag, so it moves to the right edge. */
-.scroll-hint.is-aside { left: auto; right: var(--space-m); transform: none; }
 @keyframes scroll-hint-bob {
-  from, to { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(6px); }
-}
-@keyframes scroll-hint-bob-aside {
-  from, to { transform: translateY(0); }
-  50% { transform: translateY(6px); }
+  from, to { transform: translateX(var(--x)) translateY(0); }
+  50% { transform: translateX(var(--x)) translateY(6px); }
 }
 @media (prefers-reduced-motion: no-preference) {
   .scroll-hint:not(.is-gone) { animation: scroll-hint-bob 1.8s ease-in-out infinite; }
-  .scroll-hint.is-aside:not(.is-gone) { animation-name: scroll-hint-bob-aside; }
 }
 @media (min-width: 880px) {
   .scroll-hint { bottom: var(--space-l); }
+}
+@media (min-width: 1024px) {
+  .scroll-hint { right: auto; left: 50%; --x: -50%; transform: translateX(-50%); }
 }
 
 /* ---------- Phones & tablets (<1024px): the tall phone flat lay ----------

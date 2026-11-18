@@ -244,7 +244,7 @@ export default {
     root._stackObserver?.disconnect();
     const boardEl = root.querySelector(".board");
     if (boardEl && "ResizeObserver" in window) {
-      root._stackObserver = new ResizeObserver(() => { scaleStack(root); root._placeHint?.(); });
+      root._stackObserver = new ResizeObserver(() => scaleStack(root));
       root._stackObserver.observe(boardEl);
     }
 
@@ -263,26 +263,6 @@ export default {
       hint.addEventListener("click", () => welcome.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }));
       root._scrollHintObs = new IntersectionObserver(([e]) => hint.classList.toggle("is-gone", e.isIntersecting), { threshold: 0.15 });
       root._scrollHintObs.observe(welcome);
-      // The chevron sits centred at the bottom of the screen; when that lands on Respond or its hanging date tag
-      // (short screens), move it to the side instead.
-      const pieces = [".rsvp-word", ".tag-respond", ".due-card"].map((s) => root.querySelector(s)).filter(Boolean);
-      let raf = 0;
-      const place = () => {
-        raf = 0;
-        if (!hint.isConnected) return removeEventListener("scroll", queue);
-        hint.classList.remove("is-aside");
-        const h = hint.getBoundingClientRect(), pad = 8;
-        const hit = pieces.some((el) => {
-          const r = el.getBoundingClientRect();
-          return r.width && r.left < h.right + pad && r.right > h.left - pad && r.top < h.bottom + pad && r.bottom > h.top - pad;
-        });
-        hint.classList.toggle("is-aside", hit);
-      };
-      const queue = () => { if (!raf) raf = requestAnimationFrame(place); };
-      root._placeHint = queue;
-      addEventListener("scroll", queue, { passive: true });
-      queue();
-      document.fonts?.ready.then(queue);
     }
 
     // Countdown to the wedding ceremony. One interval per root; cleared on re-render.
