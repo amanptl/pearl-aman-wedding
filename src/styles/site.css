@@ -454,6 +454,10 @@ button.chip, a.chip { min-height: var(--tap); padding-inline: var(--space-s); }
   background: url("../../assets/img/banner.webp") center 35% / cover;
   display: grid; place-items: center;
 }
+/* A phone strip shows the full photo, so the centered script lands on the calla. A light zoom, pinned right, keeps the bouquet in frame and the names on the felt. */
+@media (max-width: 767.98px) {
+  .banner { background-size: 128% auto; background-position: right 30%; }
+}
 .banner .script { color: var(--ivory); text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6); font-size: max(2rem, var(--step-4)); padding-inline: var(--gutter); text-align: center; }
 html[data-route="home"] .banner { display: none; }
 
@@ -494,13 +498,57 @@ html[data-route="home"] .banner { display: none; }
 .tabbar [aria-current="page"] { color: var(--gold-light); }
 .tabbar .tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Footer clearance for the tab bar. Extra Help-button space is off while SHOW_HELP is false. */
-#app { padding-bottom: calc(var(--tabbar-h) + var(--safe-b)); }
+/* Footer clearance for the tab bar. Extra Help-button space is off while SHOW_HELP is false.
+   The column lets a short page pin the colophon to the bottom of the screen. */
+#app {
+  display: flex; flex-direction: column; min-height: 100dvh;
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-b));
+}
+#app > main { flex: 1 1 auto; }
 @media (min-width: 768px) {
   .top-nav { display: block; }
   .tabbar { display: none; }
   #app { padding-bottom: 0; }
 }
+
+/* Colophon: credit, then the admission that the site itself is temporary. */
+.colophon {
+  margin-top: auto;
+  padding: var(--space-xl) var(--gutter) var(--space-l);
+  background: var(--olive-deep);
+  color: rgba(236, 232, 223, 0.82);
+  text-align: center;
+}
+.colophon::before {
+  content: "";
+  display: block;
+  width: 2.75rem;
+  height: 1px;
+  margin: 0 auto var(--space-s);
+  background: var(--gold);
+}
+.colophon p { margin: 0; text-wrap: balance; }
+.colophon-made {
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ivory);
+}
+.colophon-heart {
+  display: inline-block;
+  color: var(--gold-light);
+  letter-spacing: 0;
+  transform: translateY(-0.06em);
+}
+/* .colophon p { margin: 0 } is more specific than a single class, so the line names both. */
+.colophon p.colophon-line {
+  max-width: 36rem;
+  margin: var(--space-2xs) auto 0;
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+@media (min-width: 768px) { .colophon { padding-bottom: var(--space-xl); } }
 
 .help-fab {
   position: fixed; right: var(--space-s); z-index: var(--z-fab);
@@ -749,8 +797,8 @@ html[data-film] .board::before {
 }
 html[data-film="idle"] .invite { visibility: hidden; }
 html[data-film] .invite { scale: none; transform-origin: 50% 50%; }
-html[data-film] .tag, html[data-film] .kindly, html[data-film] .rsvp-word, html[data-film] .scroll-hint,
-html[data-film] .site-header, html[data-film] .top-nav, html[data-film] .tabbar, html[data-film] #help { opacity: 0; }
+html[data-film] .tag, html[data-film] .due-tag, html[data-film] .kindly, html[data-film] .rsvp-word, html[data-film] .scroll-hint,
+html[data-film] .site-header, html[data-film] .top-nav, html[data-film] .tabbar, html[data-film] .colophon, html[data-film] #help { opacity: 0; }
 html:not([data-route="home"]) .scroll-hint { opacity: 0; visibility: hidden; pointer-events: none; }
 html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-bezier(.45, 0, .55, 1) 0.8s infinite; }
 @media (prefers-reduced-motion: reduce) { html[data-film="idle"] .env-sheen { animation: none; opacity: 0; } }
@@ -787,7 +835,42 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 }
 .tag:hover { transform: translateY(-0.4cqw); background: #f3eee4; }
 .tag:focus-visible { outline-offset: -4px; }
-.tag-respond { top: 150cqw; }
+.tag-respond, .due-tag { top: 150cqw; }
+/* "by Jan 31st": a small burgundy tag hung from the Respond tag on a gold string. It shares the Respond tag's box
+   (and its desktop scale), so every size below is in --s, the Respond tag's height. */
+.due-tag { position: absolute; left: 36cqw; width: 28cqw; height: 12cqw; --s: 12cqw; pointer-events: none; }
+.due-tag::before, .due-hole {
+  content: ""; position: absolute; left: 50%; width: calc(var(--s) * 0.15); aspect-ratio: 1; translate: -50% -50%;
+  border-radius: 50%; background: #2b2a14; box-shadow: 0 0 0 calc(var(--s) * 0.03) #b8995a;
+}
+.due-tag::before { top: calc(var(--s) * 0.86); }
+.due-string {
+  position: absolute; z-index: 1; left: 50%; top: calc(var(--s) * 0.86); width: calc(var(--s) * 0.035); height: calc(var(--s) * 0.64);
+  translate: -50% 0; border-radius: 1em; background: #c9b58a; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
+.due-card {
+  position: absolute; left: 50%; top: calc(var(--s) * 1.3);
+  transform: translateX(-50%) rotate(4deg); transform-origin: 50% calc(var(--s) * 0.2);
+  filter: drop-shadow(0 calc(var(--s) * 0.06) calc(var(--s) * 0.08) rgba(0, 0, 0, 0.5));
+}
+.due-hole { top: calc(var(--s) * 0.2); }
+/* Chamfered top corners; the inset gold rule follows them (a 45° chamfer moves in by 0.414 × the inset). */
+.due-face, .due-face::before, .due-face::after {
+  --c: calc(var(--n) - var(--in) * 0.414);
+  clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, 0 100%, 0 var(--c));
+}
+.due-face {
+  --n: calc(var(--s) * 0.22); --in: 0px;
+  display: block; position: relative; height: calc(var(--s) * 0.95); padding: 0 calc(var(--s) * 0.3);
+  background: #5c1a24; white-space: nowrap;
+}
+.due-face::before, .due-face::after { content: ""; position: absolute; inset: var(--in); }
+.due-face::before { --in: calc(var(--s) * 0.07); background: rgba(236, 217, 168, 0.6); }
+.due-face::after { --in: calc(var(--s) * 0.095); background: #5c1a24; }
+.due-text {
+  position: relative; z-index: 1; display: block; padding-top: calc(var(--s) * 0.14);
+  font-family: var(--font-script); font-size: calc(var(--s) * 0.42); line-height: calc(var(--s) * 0.81); color: #ecd9a8;
+}
 .kindly, .rsvp-word {
   position: absolute; left: 0; right: 0; margin: 0; text-align: center;
   font-family: var(--font-script); color: #ddd3c2; text-shadow: 0 0.4cqw 1cqw rgba(0, 0, 0, 0.35); pointer-events: none;
@@ -815,12 +898,19 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 .scroll-hint .icon { width: 1.5rem; height: 1.5rem; }
 .scroll-hint:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
 .scroll-hint.is-gone { opacity: 0; visibility: hidden; pointer-events: none; }
+/* Short screens: centred, the chevron would sit on Respond or its date tag, so it moves to the right edge. */
+.scroll-hint.is-aside { left: auto; right: var(--space-m); transform: none; }
 @keyframes scroll-hint-bob {
   from, to { transform: translateX(-50%) translateY(0); }
   50% { transform: translateX(-50%) translateY(6px); }
 }
+@keyframes scroll-hint-bob-aside {
+  from, to { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
 @media (prefers-reduced-motion: no-preference) {
   .scroll-hint:not(.is-gone) { animation: scroll-hint-bob 1.8s ease-in-out infinite; }
+  .scroll-hint.is-aside:not(.is-gone) { animation-name: scroll-hint-bob-aside; }
 }
 @media (min-width: 880px) {
   .scroll-hint { bottom: var(--space-l); }
@@ -849,7 +939,7 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
   .kindly { top: 125.5cqw; font-size: 7cqw; }
   .rsvp-word { top: 133cqw; font-size: 12.5cqw; line-height: 1.2; }
   .bow { display: none; } /* the rings, pearls and lace are part of the artwork */
-  .tag-respond { top: 150cqw; }
+  .tag-respond, .due-tag { top: 150cqw; }
   /* Our P&A seal over the artwork's plain seal (centred at 56, 934 of 853 × 1844; the photo covers the 220cqw-tall
      board, so 1px = 0.1193cqw, minus 0.885cqw cropped off the left) */
   .board-seal {
@@ -935,8 +1025,8 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
   /* Invitation card: 230u wide (322u tall, so it ends at 612u, clear of "Kindly" at 628u) */
   .invite { left: calc(var(--cx) - var(--u) * 115); top: calc(var(--dy) + var(--u) * 290); scale: calc(var(--k, 0.5403) * 0.512); transform-origin: 0 0; }
   /* Tag: 115u × 49u, Respond under the script (at least 40px tall on a 1280 × 720 screen) */
-  .tag { left: calc(var(--cx) - var(--u) * 57.7); scale: calc(var(--k, 0.5403) * 0.4769); transform-origin: 0 0; }
-  .tag-respond { top: calc(var(--dy) + var(--u) * 756); }
+  .tag, .due-tag { left: calc(var(--cx) - var(--u) * 57.7); scale: calc(var(--k, 0.5403) * 0.4769); transform-origin: 0 0; }
+  .tag-respond, .due-tag { top: calc(var(--dy) + var(--u) * 756); }
   .kindly, .rsvp-word { right: auto; left: calc(var(--cx) - var(--u) * 300); width: calc(var(--u) * 600); }
   .kindly { top: calc(var(--dy) + var(--u) * 628); font-size: calc(var(--u) * 34); }
   .rsvp-word { top: calc(var(--dy) + var(--u) * 652); font-size: calc(var(--u) * 72); }

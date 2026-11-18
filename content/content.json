@@ -35,7 +35,7 @@
     "welcome": "We are so happy you are here. Thank you for celebrating with us.",
     "board": { "detailsLabel": "Details", "respondLabel": "Respond", "kindly": "Kindly", "rsvpWord": "Rsvp" }
   },
-  "schedule": { "intro": "Open an event for what to wear, directions and more." },
+  "schedule": { "intro": "We would love to have you with us for these days in Edmonton." },
   "events": [],
   "hotels": [
     {
@@ -65,9 +65,9 @@
       { "id": "yyc", "code": "YYC", "name": "Calgary International", "driveMinutes": 180, "tips": "Calgary works if that is where you land, but it is about a 3 hour drive and not a quick trip. Fly into YEG when you can." }
     ],
     "gettingAround": [
-      { "id": "rideshare", "title": "Rideshare and taxis", "text": "Uber and taxis are available throughout the area. Expect about [$40 to $60] from YEG to the hotels and venues." },
-      { "id": "rental", "title": "Car rental", "text": "A rental car is recommended. The venues are a short drive apart in south Edmonton. Parking at every event is free or inexpensive." },
-      { "id": "transit", "title": "Transit", "text": "ETS buses and the LRT do not conveniently reach every venue, so plan on a car or rideshare." }
+      { "id": "rideshare", "title": "Rideshare and taxis", "text": "Uber and taxis are available throughout the area." },
+      { "id": "rental", "title": "Car rental", "text": "A rental car is recommended. The venues are a short drive apart in south Edmonton. Parking is free." },
+      { "id": "transit", "title": "Transit", "text": "ETS buses and the LRT may not be a convenient way to the venues, so plan on a car or rideshare." }
     ],
     "shuttles": [],
     "international": {
@@ -75,13 +75,19 @@
       "text": "Check entry requirements early. Visitors from visa-exempt countries need an eTA (about CAD $7, usually approved within minutes). Others may need a visitor visa, which can take weeks. We are happy to provide an invitation letter; message a coordinator."
     },
     "aroundTown": [
-      { "id": "river-valley", "category": "See", "name": "Edmonton River Valley", "text": "North America's largest urban parkland, with trails along the North Saskatchewan River.", "url": "https://exploreedmonton.com/attractions-and-experiences/north-saskatchewan-river-valley", "address": "North Saskatchewan River Valley, Edmonton, AB" },
-      { "id": "muttart", "category": "See", "name": "Muttart Conservatory", "text": "Four glass pyramids filled with plants from around the world, in the river valley.", "url": "https://www.edmonton.ca/attractions_events/muttart-conservatory", "address": "9626 96A St NW, Edmonton, AB T6C 4L8" },
-      { "id": "fort-edmonton", "category": "See", "name": "Fort Edmonton Park", "text": "Living-history park spanning Indigenous and settler eras on 158 acres.", "url": "https://www.fortedmontonpark.ca/", "address": "7000 143 St NW, Edmonton, AB T6H 4P3" },
-      { "id": "elk-island", "category": "See", "name": "Elk Island National Park", "text": "Bison, elk and prairie lakes about 45 minutes east of the city.", "url": "https://parks.canada.ca/pn-np/ab/elkisland", "address": "1-54401 Range Road 203, Fort Saskatchewan, AB T8L 0V3" },
-      { "id": "wem", "category": "Shop", "name": "West Edmonton Mall", "text": "One of the world's largest malls: shopping, dining and indoor attractions.", "url": "https://www.wem.ca/", "address": "8882 170 St NW, Edmonton, AB T5T 4J2" },
-      { "id": "whyte", "category": "Eat", "name": "Whyte Avenue (Old Strathcona)", "text": "Independent restaurants, cafés and nightlife along Edmonton's historic main street.", "url": "https://www.oldstrathcona.ca/", "address": "Whyte Ave NW, Edmonton, AB" },
-      { "id": "mill-woods", "category": "Eat", "name": "Mill Woods", "text": "South Edmonton neighbourhood known for Indian restaurants and sweets shops.", "url": "https://allindiarestaurant.com/home-millwoods/", "address": "4249 23 Ave NW, Edmonton, AB T6L 5Z8" }
+      { "id": "river-valley", "category": "See", "name": "Edmonton River Valley", "text": "North America's largest urban park, along the North Saskatchewan. In July the trails are easy walking and cycling, with picnic spots and views from the bridges.", "url": "https://exploreedmonton.com/attractions-and-experiences/north-saskatchewan-river-valley", "address": "North Saskatchewan River Valley, Edmonton, AB" },
+      { "id": "muttart", "category": "See", "name": "Muttart Conservatory", "text": "Four glass pyramids of tropical, desert and temperate gardens in the river valley. A calm hour indoors if the afternoon is hot or rainy.", "url": "https://www.edmonton.ca/attractions_events/muttart-conservatory", "address": "9626 96A St NW, Edmonton, AB T6C 4L8" },
+      { "id": "fort-edmonton", "category": "See", "name": "Fort Edmonton Park", "text": "Living history on 158 acres in the river valley, open through the summer. Period streets, rides and interpreters; give it a few hours.", "url": "https://www.fortedmontonpark.ca/", "address": "7000 143 St NW, Edmonton, AB T6H 4P3" },
+      { "id": "elk-island", "category": "See", "name": "Elk Island National Park", "text": "Bison, elk and prairie lakes about 45 minutes east of the city. A morning trip if you have a car.", "url": "https://parks.canada.ca/pn-np/ab/elkisland", "address": "1-54401 Range Road 203, Fort Saskatchewan, AB T8L 0V3" },
+      { "id": "suvai-dosa", "category": "Eat", "name": "Suvai Dosa's Pure Veg", "text": "South Indian cooking in Mill Woods, a short drive from the hotels, and the menu is entirely vegetarian. Order idli, medu vada and a crisp masala dosa.", "url": "https://suvaidosaspureveg.com/", "address": "101, 4271 23 Ave NW, Edmonton, AB T6L 5Z8" },
+      { "id": "all-india", "category": "Eat", "name": "All India Restaurant & Sweets", "text": "A Mill Woods kitchen since 2006, with sweets made in the shop every day. Vegetarian dishes are marked on the menu; take gulab jamun or jalebi back with you.", "url": "https://allindiarestaurant.com/home-millwoods/", "address": "4249 23 Ave NW, Edmonton, AB T6L 5Z8" },
+      { "id": "khazana", "category": "Eat", "name": "Khazana", "text": "The downtown dining room for a proper Indian meal. Edify named it Edmonton's best Indian restaurant in 2025; order the samosas, pakoras, dal and paneer.", "url": "https://www.khazanarestaurant.ca/downtown", "address": "10177 107 St NW, Edmonton, AB T5J 1J5" },
+      { "id": "padmanadi", "category": "Eat", "name": "Padmanadi", "text": "Indonesian cooking from a family kitchen open since 2002, and the entire menu is vegan. Try the tom yum, spicy eggplant, tofu curry or ginger soy beef. The 101 Street dining room is the one to book; a smaller spot on Gateway Boulevard is closer to the hotels.", "url": "https://www.padmanadi.com/", "address": "10740 101 St NW, Edmonton, AB T5H 2S3" },
+      { "id": "an-chay", "category": "Eat", "name": "An Chay", "text": "A small Vietnamese restaurant on Jasper Avenue, and every dish is vegetarian. Start with the tofu rolls or green papaya salad, then a bowl of satay or lemongrass noodle soup.", "url": "https://www.facebook.com/anchayyeg/", "address": "11203 Jasper Ave NW, Edmonton, AB T5K 0L5" },
+      { "id": "mosaics", "category": "Eat", "name": "Caf\u00e9 Mosaics", "text": "A Whyte Avenue spot for a casual vegetarian meal: vegan wings, loaded nachos and all-day breakfast. Easy to pair with an afternoon in Old Strathcona.", "url": "https://cafemosaics.com/", "address": "10844 82 Ave NW, Edmonton, AB T6E 2B3" },
+      { "id": "farmers-market", "category": "Shop", "name": "Old Strathcona Farmers' Market", "text": "Edmonton's original indoor market, just off Whyte Avenue. Open Saturday 8 to 3 and Sunday 11 to 3, with growers, baking and local makers.", "url": "https://osfm.ca/", "address": "10310 83 Ave NW, Edmonton, AB T6E 5C3" },
+      { "id": "whyte", "category": "Shop", "name": "Whyte Avenue", "text": "Old Strathcona's main street of independent shops, bookstores and patios. Easy to combine with the farmers' market or Caf\u00e9 Mosaics.", "url": "https://www.oldstrathcona.ca/", "address": "Whyte Ave NW, Edmonton, AB" },
+      { "id": "wem", "category": "Shop", "name": "West Edmonton Mall", "text": "One of the largest malls in the world: shopping, an indoor waterpark and an amusement park. A reliable afternoon if the weather turns.", "url": "https://www.wem.ca/", "address": "8882 170 St NW, Edmonton, AB T5T 4J2" }
     ]
   },
   "story": {
@@ -113,28 +119,22 @@
     { "id": "events", "title": "The events" },
     { "id": "travel", "title": "Getting here" },
     { "id": "food", "title": "Food and drink" },
-    { "id": "family", "title": "Family and kids" },
     { "id": "gifts", "title": "Gifts" }
   ],
   "faq": [
-    { "id": "what-mehndi", "category": "events", "q": "What are Mehendi, Haldi and Vidhi, and the wedding?", "a": "Mehendi is henna at CISE. Haldi and Vidhi is the blessing at CISE. The wedding ceremony is at the Grand Imperial. Each invitation lists the events you are invited to." },
-    { "id": "what-baraat", "category": "events", "q": "What is the Baraat?", "a": "The Baraat is the groom's joyful procession to the ceremony, with drums, dancing and family." },
-    { "id": "join-baraat", "category": "events", "q": "Can I join the Baraat?", "a": "Yes, everyone is welcome. Wear shoes you can dance in, bring water, and follow the dhol. No experience required." },
-    { "id": "wear-events", "category": "before", "q": "What should I wear to each event?", "a": "Mehendi: colourful and comfortable. Haldi and Vidhi: old yellow or white clothes you can stain. Wedding: colourful and comfortable — wear whatever you feel comfortable in. Rich, elegant colours are welcome; it is better to avoid black." },
-    { "id": "wear-new", "category": "before", "q": "I have never worn Indian clothes. Where can I get some?", "a": "Message a coordinator and we will point you to shops in Edmonton, or to rentals. You are also welcome in formal Western attire." },
-    { "id": "vegetarian", "category": "food", "q": "Is the food vegetarian?", "a": "The wedding menu is fully vegetarian, with vegan and Jain options. Please note any allergies on your RSVP." },
+    { "id": "what-mehndi", "category": "events", "q": "What are Mehendi, Haldi and Vidhi, and the wedding?", "a": "Mehendi is an evening of henna. Haldi and Vidhi is a morning blessing where turmeric paste is applied to the couple. The wedding is our marriage ceremony, with vows around the sacred fire." },
+    { "id": "wear-events", "category": "before", "q": "What should I wear to each event?", "a": "Mehendi: colourful and comfortable. Haldi and Vidhi: yellow or white. Turmeric stains, so wear something you don't mind ruining. Wedding: colourful and comfortable — wear whatever you feel comfortable in. Rich, elegant colours are welcome; it is better to avoid black." },
+    { "id": "vegetarian", "category": "food", "q": "Is the food vegetarian?", "a": "The wedding menu is fully vegetarian." },
     { "id": "alcohol", "category": "food", "q": "Will there be alcohol?", "a": "The ceremony is alcohol-free." },
-    { "id": "head-covering", "category": "events", "q": "Do I need to cover my head at the ceremony?", "a": "Head coverings are welcome but not required. If you would like one, we will have scarves and caps at the entrance. Please remove your shoes before entering the ceremony space." },
-    { "id": "ceremony-length", "category": "events", "q": "How long is the ceremony?", "a": "About 90 minutes. We will have a program explaining each ritual, and seating for everyone." },
-    { "id": "kids", "category": "family", "q": "Are children welcome?", "a": "Yes! Children are welcome at all events. There will be a quiet room near the ceremony." },
-    { "id": "gifts", "category": "gifts", "q": "Do you have a registry? What about cash gifts?", "a": "Your presence is the best gift. Cash or cheques are traditional and appreciated." },
-    { "id": "parking", "category": "travel", "q": "Where should I park?", "a": "Every venue has free or inexpensive parking on site. Accessible spaces are beside each main entrance." },
-    { "id": "shuttle", "category": "travel", "q": "Is there a shuttle?", "a": "No shuttles are planned at this time; we recommend a rental car or rideshare." },
+    { "id": "gifts", "category": "gifts", "q": "Do you have a registry? What about cash gifts?", "a": "Your presence at our wedding is the greatest gift of all.\nWe kindly request no presents or covers—only your blessings and warm wishes." },
+    { "id": "parking", "category": "travel", "q": "Where should I park?", "a": "Parking is free at every venue. Accessible spaces are beside each main entrance." },
+    { "id": "shuttle", "category": "travel", "q": "Is there a shuttle?", "a": "Shuttles are not confirmed or coordinated yet. We will update this page when we have news. Until then, we recommend a rental car or rideshare." },
     { "id": "arrive", "category": "before", "q": "What time should I arrive?", "a": "Please arrive 15 to 20 minutes early so you can find your seat before each event begins." }
   ],
   "rsvp": {
-    "deadline": "2027-06-01",
-    "deadlineText": "June 1st, 2027",
+    "namesRequired": true,
+    "deadline": "2027-01-31",
+    "deadlineText": "Jan 31st 2027",
     "intro": ["We'd love for you to be part of our celebration!", "Kindly let us know which events you can join."],
     "mealOptions": ["Vegetarian", "Vegan", "Jain"],
     "dietaryOptions": ["Nut allergy", "Gluten free", "Dairy free", "Other"],

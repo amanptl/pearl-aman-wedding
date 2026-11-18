@@ -1,4 +1,5 @@
 import { html, editAttrs, listAttrs, itemAttrs, imgTag, multiline, showField, isEdit } from "../lib/dom.js";
+import { renderLookup } from "./_lookup.js";
 import { formatRange, formatDate, groupByDay, nowNext, guestTzDiffers, toInstant, dayPart } from "../lib/time.js";
 import { directionsUrl } from "../lib/maps.js";
 import { downloadIcs, googleCalUrl } from "../lib/calendar.js";
@@ -161,16 +162,15 @@ export default {
       if (k && e.photo?.src && e.photo.src === all[k - 1].photo?.src) samePhoto.add(e.id);
     });
     const tzNote = guestTzDiffers(ctx.tz);
-    const intro = ctx.content.schedule?.intro ?? (ctx.events.length === 1 ? "Here are the details for the day." : "Open an event for what to wear, directions and more.");
+    const intro = ctx.content.schedule?.intro ?? "We would love to have you with us for these days in Edmonton.";
     let tzLabel = "";
     if (tzNote) {
-      const city = ctx.tz.split("/").pop().replace(/_/g, " ");
       let abbr = "";
       try {
         const when = ctx.events[0] ? toInstant(ctx.events[0].start, ctx.tz) : new Date();
         abbr = new Intl.DateTimeFormat("en-US", { timeZone: ctx.tz, timeZoneName: "short" }).formatToParts(when).find((x) => x.type === "timeZoneName")?.value || "";
       } catch { /* ignore */ }
-      tzLabel = `Times shown in ${city} time${abbr ? ` (${abbr})` : ""}`;
+      tzLabel = `Times shown in Mountain Time${abbr ? ` (${abbr})` : ""}`;
     }
 
     root.innerHTML = html`
@@ -195,13 +195,17 @@ export default {
             <section class="day stack" id="day-${d.key}" data-day-section="${d.key}" aria-labelledby="day-h-${d.key}">
               <h2 class="display display--l day-title" id="day-h-${d.key}">${d.label}</h2>
               ${d.events.map((e) => eventCard(e, ctx, { current: current?.id === e.id, next: next?.id === e.id, samePhoto: samePhoto.has(e.id) }))}
-            </section>`) : html`
+            </section>`) : !ctx.guest && !isEdit() ? html`
+            <section class="card lookup-card" aria-label="Find your invitation to RSVP"><div data-lookup></div></section>` : html`
             <div class="card empty center stack stack--s">
               <p class="display display--m">Details are on their way</p>
               <p class="muted">We are still putting the schedule together. Please check back soon, or message us if you have a question.</p>
             </div>`}
         </div>
       </div>`;
+
+    const lookup = root.querySelector("[data-lookup]");
+    if (lookup) renderLookup(lookup, ctx, { heading: "Find your invitation to RSVP" });
 
     // Keep the day picker in step with scrolling.
     const nav = root.querySelector(".daynav");

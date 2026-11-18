@@ -164,6 +164,8 @@ test("RSVP stepper completes by keyboard alone (Tab / Space / Enter)", async ({ 
   await tabTo(`${R} .rv-quick .btn`);
   await page.keyboard.press("Space");
   await expect(page.locator(`${R} input[data-count]:checked`).first()).toBeAttached();
+  await tabTo("#x-names");
+  await page.keyboard.type("Raj and Priya");
   await tabTo(`${R} [data-act=next]`);
   await page.keyboard.press("Enter");
   await expect(H).toHaveText("A few details");

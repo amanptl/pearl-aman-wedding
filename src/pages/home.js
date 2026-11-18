@@ -1,4 +1,4 @@
-import { html, editAttrs, multiline, imgTag, isEdit } from "../lib/dom.js";
+import { html, raw, editAttrs, multiline, imgTag, isEdit } from "../lib/dom.js";
 import { formatRange, formatDate, toInstant, nowNext } from "../lib/time.js";
 import { renderLookup } from "./_lookup.js";
 import * as icon from "../lib/icons.js";
@@ -86,6 +86,23 @@ const hasReplied = (guest) => {
 };
 
 const pageOn = (ctx, id) => ctx.content.pages?.[id]?.enabled !== false;
+
+// The little burgundy tag hung under Respond: "by Jan 31st" from the RSVP deadline (or the editor's own wording).
+// Hidden once the deadline has passed, when there is no deadline, or when the RSVP page is off.
+const ordinal = (d) => d + (d % 100 >= 11 && d % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][d % 10] || "th");
+export function dueLabel(ctx) {
+  const d = ctx.content.rsvp?.deadline, custom = ctx.content.home?.board?.dueLabel;
+  if (!pageOn(ctx, "rsvp") || !d) return "";
+  if (!isEdit()) {
+    const t = toInstant(`${d}T23:59:59`, ctx.tz);
+    if (!isNaN(t) && ctx.now() > t) return "";
+  }
+  if (custom) return custom;
+  const [y, m, day] = d.split("-").map(Number);
+  if (!y || !m || !day) return "";
+  const mon = new Date(Date.UTC(y, m - 1, day)).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+  return `by ${mon} ${ordinal(day)}`;
+}
 const travelHasContent = (c) => {
   const t = c.travel || {};
   return !!(c.hotels?.length || t.airports?.length || t.gettingAround?.length || t.shuttles?.length || t.aroundTown?.length || t.international?.text);
@@ -149,6 +166,7 @@ export default {
     const smallPath = wedding ? "home.invitationLines.small" : "home.invitationLines.celebrationSmall";
     const small = (wedding ? lines.small : lines.celebrationSmall) || lines.small || "";
     const edit = isEdit();
+    const due = dueLabel(ctx);
     root.classList.add("page-home");
     root.innerHTML = html`
       <h1 class="visually-hidden">${site.couple.first} &amp; ${site.couple.second} are getting married in ${site.city || ""}, ${range}</h1>
@@ -187,7 +205,8 @@ export default {
         <p class="kindly" aria-hidden="true" ${editAttrs("text", "home.board.kindly", { placeholder: "Kindly" })}>${board.kindly || "Kindly"}</p>
         <p class="rsvp-word" aria-hidden="true" ${editAttrs("text", "home.board.rsvpWord", { placeholder: "Rsvp" })}>${board.rsvpWord || "Rsvp"}</p>
         <img class="bow" src="assets/img/lace-bow-600.webp" srcset="assets/img/lace-bow-600.webp 600w, assets/img/lace-bow.webp 1024w" sizes="(min-width: 641px) 295px, 46vw" width="600" height="600" alt="" aria-hidden="true" />
-        <a class="tag tag-respond" href="#rsvp" ${editAttrs("text", "home.board.respondLabel", { placeholder: "Respond" })}>${board.respondLabel || "Respond"}</a>
+        <a class="tag tag-respond" href="#rsvp" ${due ? raw('aria-describedby="due-tag"') : ""} ${editAttrs("text", "home.board.respondLabel", { placeholder: "Respond" })}>${board.respondLabel || "Respond"}</a>
+        ${due ? html`<span class="due-tag" aria-hidden="true"><span class="due-string"></span><span class="due-card"><span class="due-face"><span class="due-text" id="due-tag" ${editAttrs("text", "home.board.dueLabel", { placeholder: "by Jan 31st" })}>${due}</span></span><span class="due-hole"></span></span></span>` : ""}
       </div>
       </div>
 
@@ -225,7 +244,7 @@ export default {
     root._stackObserver?.disconnect();
     const boardEl = root.querySelector(".board");
     if (boardEl && "ResizeObserver" in window) {
-      root._stackObserver = new ResizeObserver(() => scaleStack(root));
+      root._stackObserver = new ResizeObserver(() => { scaleStack(root); root._placeHint?.(); });
       root._stackObserver.observe(boardEl);
     }
 
@@ -244,6 +263,26 @@ export default {
       hint.addEventListener("click", () => welcome.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }));
       root._scrollHintObs = new IntersectionObserver(([e]) => hint.classList.toggle("is-gone", e.isIntersecting), { threshold: 0.15 });
       root._scrollHintObs.observe(welcome);
+      // The chevron sits centred at the bottom of the screen; when that lands on Respond or its hanging date tag
+      // (short screens), move it to the side instead.
+      const pieces = [".rsvp-word", ".tag-respond", ".due-card"].map((s) => root.querySelector(s)).filter(Boolean);
+      let raf = 0;
+      const place = () => {
+        raf = 0;
+        if (!hint.isConnected) return removeEventListener("scroll", queue);
+        hint.classList.remove("is-aside");
+        const h = hint.getBoundingClientRect(), pad = 8;
+        const hit = pieces.some((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width && r.left < h.right + pad && r.right > h.left - pad && r.top < h.bottom + pad && r.bottom > h.top - pad;
+        });
+        hint.classList.toggle("is-aside", hit);
+      };
+      const queue = () => { if (!raf) raf = requestAnimationFrame(place); };
+      root._placeHint = queue;
+      addEventListener("scroll", queue, { passive: true });
+      queue();
+      document.fonts?.ready.then(queue);
     }
 
     // Countdown to the wedding ceremony. One interval per root; cleared on re-render.

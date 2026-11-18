@@ -228,6 +228,10 @@ button.chip, a.chip { min-height: var(--tap); padding-inline: var(--space-s); }
   background: url("../../assets/img/banner.webp") center 35% / cover;
   display: grid; place-items: center;
 }
+/* A phone strip shows the full photo, so the centered script lands on the calla. A light zoom, pinned right, keeps the bouquet in frame and the names on the felt. */
+@media (max-width: 767.98px) {
+  .banner { background-size: 128% auto; background-position: right 30%; }
+}
 .banner .script { color: var(--ivory); text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6); font-size: max(2rem, var(--step-4)); padding-inline: var(--gutter); text-align: center; }
 html[data-route="home"] .banner { display: none; }
 
@@ -268,13 +272,57 @@ html[data-route="home"] .banner { display: none; }
 .tabbar [aria-current="page"] { color: var(--gold-light); }
 .tabbar .tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Footer clearance for the tab bar. Extra Help-button space is off while SHOW_HELP is false. */
-#app { padding-bottom: calc(var(--tabbar-h) + var(--safe-b)); }
+/* Footer clearance for the tab bar. Extra Help-button space is off while SHOW_HELP is false.
+   The column lets a short page pin the colophon to the bottom of the screen. */
+#app {
+  display: flex; flex-direction: column; min-height: 100dvh;
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-b));
+}
+#app > main { flex: 1 1 auto; }
 @media (min-width: 768px) {
   .top-nav { display: block; }
   .tabbar { display: none; }
   #app { padding-bottom: 0; }
 }
+
+/* Colophon: credit, then the admission that the site itself is temporary. */
+.colophon {
+  margin-top: auto;
+  padding: var(--space-xl) var(--gutter) var(--space-l);
+  background: var(--olive-deep);
+  color: rgba(236, 232, 223, 0.82);
+  text-align: center;
+}
+.colophon::before {
+  content: "";
+  display: block;
+  width: 2.75rem;
+  height: 1px;
+  margin: 0 auto var(--space-s);
+  background: var(--gold);
+}
+.colophon p { margin: 0; text-wrap: balance; }
+.colophon-made {
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ivory);
+}
+.colophon-heart {
+  display: inline-block;
+  color: var(--gold-light);
+  letter-spacing: 0;
+  transform: translateY(-0.06em);
+}
+/* .colophon p { margin: 0 } is more specific than a single class, so the line names both. */
+.colophon p.colophon-line {
+  max-width: 36rem;
+  margin: var(--space-2xs) auto 0;
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+@media (min-width: 768px) { .colophon { padding-bottom: var(--space-xl); } }
 
 .help-fab {
   position: fixed; right: var(--space-s); z-index: var(--z-fab);

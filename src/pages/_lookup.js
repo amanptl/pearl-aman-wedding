@@ -38,8 +38,8 @@ export function renderLookup(container, ctx, { heading = "Find your invitation",
       <div class="lookup" data-lookup-root data-link-only>
         <h2 class="lookup__title" id="${id}-h">${heading}</h2>
         ${bad ? html`<p class="lookup__notice" role="status" data-badcode>That link didn't work. Please check you copied all of it, or message us for a new one.</p>` : ""}
-        <p class="lookup__intro">Please open the personal link we sent you on WhatsApp. It takes you straight to your invitation, your events and your RSVP.</p>
-        <div class="lookup__msg" data-msg>${contactsHtml(ctx) ? html`<p>Can't find your link? Message us and we'll send it again.</p>${contactsHtml(ctx)}` : ""}</div>
+        <p class="lookup__intro">Please open the personal link we sent you on WhatsApp. It takes you straight to your invitation and your RSVP.</p>
+        <p class="lookup__intro">Can't find your link? Message us and we'll send it again.</p>
       </div>`.toString();
     return;
   }

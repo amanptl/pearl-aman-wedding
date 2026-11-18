@@ -1,4 +1,4 @@
-// RSVP by household headcount: per event "how many of you will join us?" (0..seats), optional names, food counts.
+// RSVP by household headcount: per event "how many of you will join us?" (0..seats), required names (unless namesRequired is false), food counts.
 // Event lists come from content.json plus the fixture's private events, so tests read them from the page.
 import { test, expect } from "@playwright/test";
 import { assertNoHorizontalOverflow, assertNoClippedText, assertNoOverlaps, runAxe } from "./helpers/layout.js";
@@ -48,7 +48,7 @@ test("no guest: intro, deadline and lookup container", async ({ page }) => {
   await open(page, "/?intro=0#rsvp");
   await expect(page.locator(`${R} [data-lookup]`)).toHaveCount(1);
   await expect(page.locator(`${R} [data-list="rsvp.intro"] p`).first()).toBeVisible();
-  await expect(page.locator(`${R} .rv-deadline`)).toContainText("June 1st, 2027");
+  await expect(page.locator(`${R} .rv-deadline`)).toHaveText("Kindly RSVP by Jan 31st 2027");
   await expect(page.locator(`${R} [data-form]`)).toHaveCount(0);
 });
 
@@ -130,12 +130,25 @@ test("validation blocks Continue and focuses the first unanswered event", async 
   await expect(err).toBeHidden();
 });
 
-test("friend with 2 seats: counts up to 2, names optional and sent", async ({ page }, info) => {
+test("friend with 2 seats: counts up to 2, names required and sent", async ({ page }, info) => {
   await open(page, FRIEND);
   const evs = await evIds(page);
   await expect(page.locator(`${R} input[name="n__${evs[0]}"]`)).toHaveCount(3);
   await page.getByRole("button", { name: "All 2 of us, every event ✓" }).click();
+  await expect(page.locator(`${R} label[for="x-names"]`)).not.toContainText("optional");
+  await expect(page.locator("#x-names")).toHaveAttribute("aria-required", "true");
   await checks(page, info, "friend-step1");
+  await next(page);
+  await expect(heading(page)).toHaveText("Who's coming?");
+  const err = page.locator("#x-names-err");
+  await expect(err).toBeVisible();
+  await expect(err).toContainText("names of everyone coming");
+  await expect(page.locator("#x-names")).toBeFocused();
+  await page.locator("#x-names").fill("   ");
+  await next(page);
+  await expect(heading(page)).toHaveText("Who's coming?");
+  await page.locator("#x-names").fill("Jordan and Sam");
+  await expect(err).toBeHidden();
   await next(page);
   await next(page);
   await page.getByRole("button", { name: "Send RSVP" }).click();
@@ -143,7 +156,25 @@ test("friend with 2 seats: counts up to 2, names optional and sent", async ({ pa
   const P = await stored(page, "FRIEND2345");
   expect(P.seats).toBe(2);
   expect(Object.values(P.counts)).toEqual(evs.map(() => 2));
-  expect(P.names).toBe("");
+  expect(P.names).toBe("Jordan and Sam");
+});
+
+test("names stay optional when namesRequired is off", async ({ page }) => {
+  await page.route("**/content/content.json", async (route) => {
+    const j = JSON.parse(fs.readFileSync("content/content.json", "utf8"));
+    j.rsvp.namesRequired = false;
+    await route.fulfill({ json: j });
+  });
+  await open(page, FRIEND);
+  await page.getByRole("button", { name: "All 2 of us, every event ✓" }).click();
+  await expect(page.locator(`${R} label[for="x-names"]`)).toContainText("(optional)");
+  await expect(page.locator("#x-names")).not.toHaveAttribute("aria-required", "true");
+  await next(page);
+  await expect(heading(page)).toHaveText("A few details");
+  await next(page);
+  await page.getByRole("button", { name: "Send RSVP" }).click();
+  await expect(heading(page)).toHaveText("Thank you, Jordan Lee");
+  expect((await stored(page, "FRIEND2345")).names).toBe("");
 });
 
 test("one seat: accept/decline wording, no names box", async ({ page }) => {
@@ -198,6 +229,7 @@ test("revisit pre-fills from the stored response", async ({ page }) => {
   await open(page, FAMILY);
   const evs = await evIds(page);
   await page.getByRole("button", { name: "All 3 of us, every event ✓" }).click();
+  await page.locator("#x-names").fill("Raj, Priya, Anika");
   await next(page);
   await page.locator("#x-phone").fill("647 555 0000");
   await next(page);
@@ -208,7 +240,7 @@ test("revisit pre-fills from the stored response", async ({ page }) => {
   await page.reload();
   await page.waitForSelector("html[data-ready]");
   await expect(page.locator(`${R} [data-replied]`)).toContainText("You replied on");
-  await expect(page.locator(`${R} [data-replied]`)).toContainText("June 1st, 2027");
+  await expect(page.locator(`${R} [data-replied]`)).toContainText("Jan 31st 2027");
   await expect(page.locator(`${R} input[value="3"]:checked`)).toHaveCount(evs.length);
   await next(page);
   await expect(page.locator("#x-phone")).toHaveValue("647 555 0000");
@@ -256,6 +288,7 @@ test("endpoint: GET prefill and POST payload; failure keeps answers and retries"
   await open(page, url);
   const evs = await evIds(page);
   await page.getByRole("button", { name: "All 2 of us, every event ✓" }).click();
+  await page.locator("#x-names").fill("Jordan and Sam");
   await next(page);
   await page.locator("#x-song").fill("Tum Hi Ho");
   await next(page);
@@ -278,6 +311,7 @@ test("endpoint: a POST the backend did not save shows an unconfirmed message and
   await page.route(`${EP}**`, (route) => route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: route.request().method() === "POST" ? "{}" : JSON.stringify({ ok: true, P: null }) }));
   await open(page, "/?content=tests/fixtures/content-rsvp-endpoint.json&guest=tests/fixtures/guest-friend.json&intro=0#rsvp");
   await page.getByRole("button", { name: "All 2 of us, every event ✓" }).click();
+  await page.locator("#x-names").fill("Jordan and Sam");
   await next(page);
   await next(page);
   await page.getByRole("button", { name: "Send RSVP" }).click();
