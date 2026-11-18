@@ -89,17 +89,14 @@ test("the date tag is gone once the deadline has passed", async ({ page }) => {
   await expect(page.locator(".due-tag")).toHaveCount(0);
 });
 
-test("the scroll chevron never sits on Respond or the date tag", async ({ page }) => {
+test("the scroll chevron sits at the right edge on phones and tablets, centred on desktop", async ({ page }) => {
   await page.addInitScript(() => { try { sessionStorage.setItem("pa.intro", "1"); } catch {} });
   await page.goto("/?intro=0#home");
   await page.waitForSelector("html[data-ready]");
-  await page.waitForTimeout(800);
-  const hit = await page.evaluate(() => {
+  const { cx, vw } = await page.evaluate(() => {
     const h = document.querySelector(".scroll-hint").getBoundingClientRect();
-    return [".tag-respond", ".due-card"].some((s) => {
-      const r = document.querySelector(s).getBoundingClientRect();
-      return r.left < h.right && r.right > h.left && r.top < h.bottom && r.bottom > h.top;
-    });
+    return { cx: h.left + h.width / 2, vw: innerWidth };
   });
-  expect(hit).toBe(false);
+  if (vw >= 1024) expect(Math.abs(cx - vw / 2)).toBeLessThan(2);
+  else expect(cx).toBeGreaterThan(vw - 60);
 });

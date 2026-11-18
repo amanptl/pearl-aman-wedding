@@ -233,6 +233,8 @@ button.chip, a.chip { min-height: var(--tap); padding-inline: var(--space-s); }
   .banner { background-size: 128% auto; background-position: right 30%; }
 }
 .banner .script { color: var(--ivory); text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6); font-size: max(2rem, var(--step-4)); padding-inline: var(--gutter); text-align: center; }
+/* Corinthia's final l swash covers the space before &, so the mark is nudged right until a gap shows. */
+.banner .script .banner-amp { margin-inline-start: 0.25em; }
 html[data-route="home"] .banner { display: none; }
 
 .top-nav, .tabbar { background: var(--olive-deep); color: var(--ivory); --focus: var(--gold-light); }
