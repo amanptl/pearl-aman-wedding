@@ -100,7 +100,7 @@ test.describe("guest site", () => {
     await context.setOffline(true);
     await page.goto("/?sw=1&intro=0#schedule");
     await ready(page);
-    await expect(page.locator("[data-page=schedule]")).toContainText("Details are on their way");
+    await expect(page.locator("[data-page=schedule]")).toContainText("Find your invitation to RSVP");
     await expect(page.locator("[data-page=schedule] h1")).toBeVisible();
     await context.setOffline(false);
     errors = errors.filter((e) => !/ERR_INTERNET_DISCONNECTED|Failed to fetch|net::/i.test(e));
@@ -119,6 +119,7 @@ test.describe("guest site", () => {
       await expect(page.locator(`[data-page="${r}"] h1`)).toBeVisible();
     }
     await page.getByRole("button", { name: "All 3 of us, every event ✓" }).click();
+    await page.locator("#x-names").fill("Raj, Priya, Anika");
     await page.locator("[data-page=rsvp] [data-act=next]").click();
     await expect(page.locator("[data-page=rsvp] [data-step-heading]")).toHaveText("A few details");
     // the sealed envelope at / also tolerates storage that throws

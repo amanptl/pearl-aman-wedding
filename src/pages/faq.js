@@ -126,7 +126,11 @@ function listHtml(ctx, st, edit) {
   return { html: body, total, hasQuery };
 }
 
+/** Coordinator card under the questions. Hidden for now; flip this to bring it back. */
+const SHOW_FAQ_FOOTER = false;
+
 function footerCard(ctx) {
+  if (!SHOW_FAQ_FOOTER) return "";
   const cs = contactsOf(ctx);
   if (!cs.length) return "";
   return html`<aside class="faq-foot card" aria-labelledby="faq-foot-h">
@@ -184,7 +188,7 @@ export default {
       <div class="section section--paper page-head">
         <div class="container container--narrow center stack">
           <h1 class="page-title">Questions &amp; Answers</h1>
-          <p class="lede">Anything we missed? Search below, or message a coordinator.</p>
+          <p class="lede">Anything we missed? Search below.</p>
         </div>
       </div>
       <div class="section section--ivory faq-section">

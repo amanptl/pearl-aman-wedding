@@ -70,3 +70,36 @@ test("a Sangeet-only guest sees only the Sangeet's day", async ({ page }) => {
   expect(c.text).toContain("July 24, 2027");
   expect(c.title).toContain("July 24, 2027");
 });
+
+test("a burgundy date tag hangs from Respond until the RSVP deadline", async ({ page }) => {
+  await page.goto("/?intro=0#home");
+  await page.waitForSelector("html[data-ready]");
+  await expect(page.locator(".due-text")).toHaveText("by Jan 31st");
+  await expect(page.locator(".tag-respond")).toHaveAccessibleDescription("by Jan 31st");
+  const [r, d] = await Promise.all([".tag-respond", ".due-card"].map((s) => page.locator(s).boundingBox()));
+  expect(Math.abs(r.x + r.width / 2 - (d.x + d.width / 2))).toBeLessThan(4); // hung from the centre
+  expect(d.y).toBeGreaterThan(r.y + r.height);
+});
+
+test("the date tag is gone once the deadline has passed", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2027-02-01T12:00:00-07:00"));
+  await page.goto("/?intro=0#home");
+  await page.waitForSelector("html[data-ready]");
+  await expect(page.locator(".tag-respond")).toBeVisible();
+  await expect(page.locator(".due-tag")).toHaveCount(0);
+});
+
+test("the scroll chevron never sits on Respond or the date tag", async ({ page }) => {
+  await page.addInitScript(() => { try { sessionStorage.setItem("pa.intro", "1"); } catch {} });
+  await page.goto("/?intro=0#home");
+  await page.waitForSelector("html[data-ready]");
+  await page.waitForTimeout(800);
+  const hit = await page.evaluate(() => {
+    const h = document.querySelector(".scroll-hint").getBoundingClientRect();
+    return [".tag-respond", ".due-card"].some((s) => {
+      const r = document.querySelector(s).getBoundingClientRect();
+      return r.left < h.right && r.right > h.left && r.top < h.bottom && r.bottom > h.top;
+    });
+  });
+  expect(hit).toBe(false);
+});

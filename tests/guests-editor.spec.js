@@ -482,7 +482,7 @@ test("content fields: board labels and schedule intro come from content; hotels 
   await expect(page.locator(".kindly")).toHaveText("Please");
   await expect(page.locator(".rsvp-word")).toHaveText("Reply");
   await page.goto("/#schedule");
-  await expect(page.locator('[data-page="schedule"] .lede').first()).toContainText("Open an event for what to wear");
+  await expect(page.locator('[data-page="schedule"] .lede').first()).toHaveText("We would love to have you with us for these days in Edmonton.");
   await page.goto("/?content=tests/fixtures/content-board.json#schedule");
   await expect(page.locator('[data-page="schedule"] .lede').first()).toHaveText("Custom intro sentence.");
   await page.goto("/#travel");

@@ -6,7 +6,7 @@ import { seatsOf } from "../lib/guestfiles.js";
 
 /*
  * RSVP by household headcount: for each invited event the family says how many of them are coming (0 up to the
- * household's seats), plus optional names, food preferences as counts, and the household questions (hotel, travel…).
+ * household's seats), plus names (required unless rsvp.namesRequired is false), food preferences as counts, and the household questions (hotel, travel…).
  * Payload v2: { v:2, code, household, seats, submittedAt, counts:{eventId:n}, names, diet:{label:n}, dietNote, extras }.
  */
 
@@ -28,6 +28,8 @@ const blank = () => ({
 
 /* ---------- derived data ---------- */
 const rsvpEvents = (ctx) => ctx.events.filter((e) => e.rsvp !== false);
+/** Names of those coming. Required unless content.rsvp.namesRequired is explicitly false. */
+const namesAreRequired = (ctx) => ctx.content.rsvp?.namesRequired !== false;
 /** Food preferences asked as counts: the meal options then the dietary options, without "Other" (that's the notes box). */
 const foodOptions = (ctx) => [...new Set([...(ctx.content.rsvp?.mealOptions || []), ...(ctx.content.rsvp?.dietaryOptions || [])])].filter((o) => o && !/^other$/i.test(o));
 const evTz = (e, ctx) => e.timezone || ctx.tz;
@@ -175,6 +177,7 @@ function step1(st, ctx) {
   const one = cap === 1;
   const known = (ctx.guest.members || []).map((m) => m.name).filter(Boolean);
   const anyComing = evs.some((e) => countAt(st, e.id) > 0);
+  const needNames = namesAreRequired(ctx);
   return html`<fieldset class="rv-step" data-step="1">
     ${stepHead(1, "Who's coming?", one
       ? "For each event, let us know if you can join us. You can change it any time before the deadline."
@@ -200,9 +203,10 @@ function step1(st, ctx) {
       </section>`;
     })}
     ${one ? "" : html`<div class="rv-card rv-names" data-names-card ${anyComing ? "" : "hidden"}>
-      <div class="rv-field"><label for="x-names">Names of those coming <span class="rv-muted">(optional)</span></label>
-        <textarea id="x-names" data-f="names" rows="2" maxlength="600" autocomplete="off" aria-describedby="x-names-h" placeholder="${known.length ? `e.g. ${known.slice(0, 3).join(", ")}` : "e.g. Raj Sharma, Priya Sharma"}">${st.names}</textarea>
-        <p class="rv-help" id="x-names-h">It helps us with name cards and seating.</p></div>
+      <div class="rv-field"><label for="x-names">Names of those coming${needNames ? "" : html` <span class="rv-muted">(optional)</span>`}</label>
+        <textarea id="x-names" data-f="names" rows="2" maxlength="600" autocomplete="off" ${needNames ? raw('aria-required="true" aria-describedby="x-names-h x-names-err"') : raw('aria-describedby="x-names-h"')} placeholder="${known.length ? `e.g. ${known.slice(0, 3).join(", ")}` : "e.g. Raj Sharma, Priya Sharma"}">${st.names}</textarea>
+        <p class="rv-help" id="x-names-h">It helps us with name cards and seating.</p>
+        ${needNames ? html`<p class="rv-err" id="x-names-err" hidden></p>` : ""}</div>
     </div>`}
   </fieldset>`;
 }
@@ -374,6 +378,7 @@ function validate1(root) {
   const { st, ctx } = ui;
   const body = root.querySelector("[data-body]");
   let first = null;
+  let firstMsg = "";
   let count = 0;
   for (const e of rsvpEvents(ctx)) {
     const err = body.querySelector(`#er-${e.id}`);
@@ -382,13 +387,28 @@ function validate1(root) {
       err.textContent = seats(ctx) === 1 ? `Please let us know if you can come to ${e.name}.` : `Please choose how many of you are coming to ${e.name}.`;
       err.hidden = false;
       count++;
-      if (!first) first = body.querySelector(`input[name="n__${e.id}"]`);
+      if (!first) { first = body.querySelector(`input[name="n__${e.id}"]`); firstMsg = err.textContent; }
     } else err.hidden = true;
+  }
+  const namesEl = body.querySelector("#x-names");
+  const namesErr = body.querySelector("#x-names-err");
+  const coming = rsvpEvents(ctx).some((e) => countAt(st, e.id) > 0);
+  if (namesEl && namesErr) {
+    if (namesAreRequired(ctx) && coming && !(st.names || "").trim()) {
+      namesErr.textContent = "Please add the names of everyone coming.";
+      namesErr.hidden = false;
+      namesEl.setAttribute("aria-invalid", "true");
+      count++;
+      if (!first) { first = namesEl; firstMsg = namesErr.textContent; }
+    } else {
+      namesErr.hidden = true;
+      namesEl.removeAttribute("aria-invalid");
+    }
   }
   if (first) {
     first.focus();
     first.scrollIntoView({ block: "center" });
-    setLive(root, `${count} ${count === 1 ? "answer is" : "answers are"} still needed. ${first.closest(".rv-howmany")?.querySelector(".rv-err")?.textContent || ""}`);
+    setLive(root, `${count} ${count === 1 ? "answer is" : "answers are"} still needed. ${firstMsg}`);
     return false;
   }
   return true;
@@ -473,6 +493,7 @@ function bind(root) {
       if (t.type === "radio" && !t.checked) return;
       setPath(st, t.dataset.f, t.value);
       if (t.id === "x-arrival") { const d = root.querySelector("#x-departure"); if (d) d.min = t.value || d.min; }
+      if (t.id === "x-names" && t.value.trim()) { const err = root.querySelector("#x-names-err"); if (err) err.hidden = true; t.removeAttribute("aria-invalid"); }
     } else if (t.dataset.count) {
       if (!t.checked) return;
       st.counts[t.dataset.count] = Math.max(0, Math.min(seats(ctx), Math.round(+t.value) || 0));
@@ -587,7 +608,7 @@ export default {
           <div class="stack stack--s center" ${listAttrs("rsvp.intro")}>
             ${(r.intro || []).map((p, i) => html`<p class="lede" ${editAttrs("multiline", `rsvp.intro.${i}`)} data-index="${i}">${p}</p>`)}
           </div>
-          ${r.deadlineText || ctx.mode === "edit" ? html`<p class="center rv-deadline">Please reply by <strong ${editAttrs("text", "rsvp.deadlineText", { placeholder: "Add deadline" })}>${r.deadlineText}</strong></p>` : ""}
+          ${r.deadlineText || ctx.mode === "edit" ? html`<p class="center rv-deadline">Kindly RSVP by <strong ${editAttrs("text", "rsvp.deadlineText", { placeholder: "Add deadline" })}>${r.deadlineText}</strong></p>` : ""}
           <div class="visually-hidden" role="status" aria-live="polite" data-live></div>
           ${g ? html`<div class="rv-body" data-body></div>` : html`<div class="rv-card rv-lookup" data-lookup></div>`}
         </div>
