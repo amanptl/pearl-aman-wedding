@@ -60,7 +60,7 @@ assert.equal(post({ ...mk({ wedding: 2 }), code: "bad" }).ok, false);
 assert.equal(post(mk({})).ok, false, "no events");
 assert.equal(post({ ...mk({ wedding: 2 }), seats: 0 }).ok, false, "no seats");
 
-assert.equal(post(mk({ mehndi: 3, haldi: 2, wedding: 4 })).ok, true);
+assert.equal(post(mk({ mehndi: 3, vidhi: 2, wedding: 4 })).ok, true);
 assert.equal(sheets.Responses.rows.length, 1 + 3, "one row per household and event");
 assert.equal(sheets.Responses.frozen, 1);
 assert.deepEqual(sheets.Responses.rows[0], ["code", "household", "eventId", "invited", "attending", "updatedAt"]);
@@ -68,8 +68,8 @@ assert.equal(sheets.Responses.rows.find((r) => r[R.eventId] === "wedding")[R.att
 
 // resubmit: replaced, not duplicated; an event dropped from the payload is deleted; changed value updated
 assert.equal(post(mk({ mehndi: 1, wedding: 0 })).ok, true);
-assert.equal(sheets.Responses.rows.length, 1 + 2, "rows replaced, haldi deleted");
-assert.ok(!sheets.Responses.rows.some((r) => r[R.eventId] === "haldi"));
+assert.equal(sheets.Responses.rows.length, 1 + 2, "rows replaced, vidhi deleted");
+assert.ok(!sheets.Responses.rows.some((r) => r[R.eventId] === "vidhi"));
 assert.equal(sheets.Responses.rows.find((r) => r[R.eventId] === "mehndi")[R.attending], 1);
 assert.equal(sheets.Households.rows.length, 2, "one household row");
 const hrow = sheets.Households.rows[1];
@@ -162,7 +162,7 @@ assert.equal(post({ ...base, names: "x".repeat(1001) }).ok, false, "names too lo
 assert.equal(post({ ...base, extras: { message: "x".repeat(2001) } }).ok, false, "message too long");
 assert.equal(raw(JSON.stringify(base) + " ".repeat(60001)).ok, false, "payload over 60 KB");
 assert.equal(sheets.Responses?.rows.length ?? 0, 0, "invalid submissions never write");
-assert.equal(post({ ...base, extras: { shuttle: { wedding: 9999, haldi: -1, sangeet: "abc", mehndi: 3.7 } } }).ok, true);
+assert.equal(post({ ...base, extras: { shuttle: { wedding: 9999, vidhi: -1, sangeet: "abc", mehndi: 3.7 } } }).ok, true);
 assert.equal(sheets.Households.rows[1][H.shuttle], '{"mehndi":3}', "shuttle seats clamped and floored");
 // food labels can't smuggle the separators the summary parses
 reset();
@@ -212,7 +212,7 @@ assert.equal(get({ action: "get", code: "ABCDE23456'; DROP" }).P, null);
 reset();
 const L = (n) => String.fromCharCode(65 + n);
 const codes = Array.from({ length: 100 }, (_, i) => "ABCDE" + L(Math.floor(i / 10)) + L(i % 10) + "222");
-const events = ["mehndi", "haldi", "sangeet", "wedding", "reception"];
+const events = ["mehndi", "vidhi", "sangeet", "wedding", "reception"];
 for (let pass = 0; pass < 2; pass++) {
   for (const code of codes) {
     const r = post({ v: 2, code, household: "HH " + code, seats: 4, submittedAt: "2027-01-01T00:00:00Z", counts: Object.fromEntries(events.map((e) => [e, pass ? 0 : 4])), names: "", diet: { Veg: 2 }, dietNote: "", extras: { hotel: "need", shuttle: {} } });

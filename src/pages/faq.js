@@ -1,6 +1,5 @@
 import { html, raw, esc, editAttrs, listAttrs, itemAttrs, multiline, isEdit } from "../lib/dom.js";
 import { telUrl, whatsappUrl } from "../lib/maps.js";
-import { copyText } from "../lib/ui.js";
 import * as icon from "../lib/icons.js";
 
 const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -97,7 +96,6 @@ function item({ f, i }, terms, open, edit) {
       <summary><span class="faq-q" ${editAttrs("text", `faq.${i}.q`, { placeholder: "Add a question" })}>${q}</span>${icon.chevron()}</summary>
       <div class="faq-body"><div class="faq-answer">
         <p ${editAttrs("multiline", `faq.${i}.a`, { placeholder: "Write the answer" })}>${a}</p>
-        <button type="button" class="btn btn--ghost btn--small faq-link" data-copy-link="${f.id}" aria-label="Copy link to this question">${icon.share()}Copy link</button>
       </div></div>
     </details>`;
 }
@@ -249,8 +247,6 @@ export default {
       const cat = t.closest("[data-cat]");
       if (cat) { root._faq.st.cat = cat.dataset.cat; return root._faqApply(); }
       if (t.closest("[data-reset]")) { root._faq.st.cat = "all"; return setQuery("", true); }
-      const link = t.closest("[data-copy-link]");
-      if (link) copyText(`${location.origin}${location.pathname}#faq/${link.dataset.copyLink}`, "link");
     });
     // Keep the URL shareable and remember which items are open across filtering.
     root.addEventListener("toggle", (e) => {

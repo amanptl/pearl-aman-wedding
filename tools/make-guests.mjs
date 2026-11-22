@@ -38,7 +38,7 @@ if (existsSync(adminPath)) {
 }
 
 const iter = args.iter ? Number(args.iter) : undefined;
-const { guestsJson, adminJson } = await buildGuestFiles({ households, privateEvents, passphrase: args.passphrase, rsvpAdminKey, iter, presets, waTemplate, waReminder });
+const { guestsJson, adminJson } = await buildGuestFiles({ households, privateEvents, passphrase: args.passphrase, nameLookup: content.site?.nameLookup === true, rsvpAdminKey, iter, presets, waTemplate, waReminder });
 await writeFile(path.join(root, "content/guests.json"), JSON.stringify(guestsJson) + "\n");
 await writeFile(adminPath, JSON.stringify(adminJson) + "\n");
 

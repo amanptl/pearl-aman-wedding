@@ -97,7 +97,6 @@ function eventCard(e, ctx, flags) {
       <div class="event-band">
         <div class="event-band-main">
           ${flags.current ? html`<span class="badge badge--band">Happening now</span>` : flags.next ? html`<span class="badge badge--gold">Up next</span>` : ""}
-          <p class="event-invite">You're invited to the</p>
           <h3 class="event-name" ${editAttrs("text", p("name"), { placeholder: "Add event name" })}>${e.name}</h3>
           ${whenLine(e, tz)}
         </div>

@@ -202,22 +202,22 @@ test("validation blocks Continue and focuses the first unanswered event", async 
 test("more seats on a later event: names written once are offered everywhere there is room", async ({ page }) => {
   await page.route("**/tests/fixtures/guest-mixed.json", async (route) => {
     const g = JSON.parse(fs.readFileSync("tests/fixtures/guest-family.json", "utf8"));
-    await route.fulfill({ json: { ...g, code: "MIXED23456", members: [{ id: "m1", name: "Raj Sharma" }], eventSeats: { mehndi: 2, haldi: 4, sangeet: 1 } } });
+    await route.fulfill({ json: { ...g, code: "MIXED23456", members: [{ id: "m1", name: "Raj Sharma" }], eventSeats: { mehndi: 2, vidhi: 4, sangeet: 1 } } });
   });
   await open(page, "/?guest=tests/fixtures/guest-mixed.json&intro=0#rsvp");
   await expect(lines(page, "mehndi")).toHaveCount(2);
-  await expect(lines(page, "haldi")).toHaveCount(4);
+  await expect(lines(page, "vidhi")).toHaveCount(4);
   await expect(lines(page, "sangeet")).toHaveCount(1);
   // A name typed on the 4-seat event becomes a pill on the 2-seat one
-  await page.locator("#x-name-haldi-0").fill("Nani Kapoor");
-  await page.locator("#x-name-haldi-0").blur();
+  await page.locator("#x-name-vidhi-0").fill("Nani Kapoor");
+  await page.locator("#x-name-vidhi-0").blur();
   await addPill(page, "mehndi", "Nani Kapoor").click();
   await addPill(page, "mehndi", "Raj Sharma").click();
   await expect.poll(() => vals(page, "mehndi")).toEqual(["Nani Kapoor", "Raj Sharma"]);
   await expect(page.locator(`${R} .rv-ev[data-ev="mehndi"] .rv-addname`)).toHaveCount(0); // full: no pills
   await expect(page.locator(`${R} [data-count-for="mehndi"]`)).toHaveText("2 of 2 coming ✓");
-  await addPill(page, "haldi", "Raj Sharma").click();
-  await expect.poll(() => vals(page, "haldi")).toEqual(["Nani Kapoor", "Raj Sharma", "", ""]);
+  await addPill(page, "vidhi", "Raj Sharma").click();
+  await expect.poll(() => vals(page, "vidhi")).toEqual(["Nani Kapoor", "Raj Sharma", "", ""]);
   await expect(page.locator(`${R} [data-act=decline][data-k="sangeet"]`)).toHaveText("Regretfully declines");
 });
 test("friend with 2 seats: counts up to 2, names required and sent", async ({ page }, info) => {
@@ -321,7 +321,7 @@ test("reload mid-form keeps the draft", async ({ page }) => {
 });
 
 test("a saved food or hotel answer stays off the details step and the review", async ({ page }) => {
-  const events = ["mehndi", "haldi", "sangeet", "wedding", "reception"];
+  const events = ["mehndi", "vidhi", "sangeet", "wedding", "reception"];
   const namesByEvent = Object.fromEntries(events.map((id) => [id, ["Raj Sharma"]]));
   const draft = {
     phase: "form", step: 2, counts: Object.fromEntries(events.map((id) => [id, 1])), namesByEvent,

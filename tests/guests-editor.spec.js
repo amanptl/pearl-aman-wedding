@@ -83,8 +83,8 @@ test.describe("unlock", () => {
     await page.keyboard.press("Enter");
     await expect(page.locator("#lock-banner")).toBeHidden();
     d = await draft(page);
-    expect(d.events.map((e) => e.id).sort()).toEqual(["haldi-vidhi", "mehendi", "wedding"]);
-    expect(d.events.filter((e) => e.visibility === "private").map((e) => e.id).sort()).toEqual(["haldi-vidhi", "mehendi", "wedding"]);
+    expect(d.events.map((e) => e.id).sort()).toEqual(["mehendi", "vidhi", "wedding"]);
+    expect(d.events.filter((e) => e.visibility === "private").map((e) => e.id).sort()).toEqual(["mehendi", "vidhi", "wedding"]);
     expect(d._admin.households).toHaveLength(6);
     // nothing is dirty just because we unlocked
     await expect(page.locator("#status")).toContainText("No unpublished changes");
@@ -161,11 +161,11 @@ test.describe("guest manager", () => {
     const d = await draft(page);
     for (const code of [CODES.walker, CODES.patel]) {
       const hh = d._admin.households.find((x) => x.code === code);
-      expect([...hh.eventIds].sort()).toEqual(["haldi-vidhi", "mehendi", "wedding"]);
+      expect([...hh.eventIds].sort()).toEqual(["mehendi", "vidhi", "wedding"]);
       expect(hh.tags).toContain("close-family");
     }
     // untouched households keep what they had
-    expect(d._admin.households.find((x) => x.code === CODES.chen).eventIds).toEqual(["haldi-vidhi", "wedding"]);
+    expect(d._admin.households.find((x) => x.code === CODES.chen).eventIds).toEqual(["vidhi", "wedding"]);
     await page.getByRole("button", { name: "Edit groups…" }).click();
     await expect(page.locator("dialog").getByLabel("Group name").nth(1)).toHaveValue("Friends");
     await page.keyboard.press("Escape");
@@ -247,7 +247,7 @@ test.describe("guest manager", () => {
     await page.getByRole("button", { name: "Import CSV / Excel" }).click();
     const csv = [
       "household,members,tags,events,plusOnes",
-      "Kapoor Family,Anil Kapoor; Rita Kapoor,family,wedding;haldi-vidhi,1",
+      "Kapoor Family,Anil Kapoor; Rita Kapoor,family,wedding;vidhi,1",
       "Lee & Park,Jin Lee; Su Park,friends,Friends,0",
       "Bad Row,,friends,nonsense,0",
       "Sharma Family,Raj Sharma; Priya Sharma; Anika Sharma; Dev Sharma,close-family,all,0",
@@ -264,7 +264,7 @@ test.describe("guest manager", () => {
     const d = await draft(page);
     expect(d._admin.households).toHaveLength(8);
     const lee = d._admin.households.find((x) => x.household === "Lee & Park");
-    expect(lee.eventIds).toEqual(["haldi-vidhi", "wedding"]); // preset name resolved
+    expect(lee.eventIds).toEqual(["vidhi", "wedding"]); // preset name resolved
     expect(lee.tags).toContain("friends");
     const sharma = d._admin.households.find((x) => x.household === "Sharma Family");
     expect(sharma.code).toBe(CODES.sharma); // existing code never changes
@@ -292,7 +292,7 @@ test.describe("guest manager", () => {
 
     const xlsx = workbookBuffer({
       Households: [
-        ["household", "members", "tags", "mehendi", "haldi-vidhi", "wedding"],
+        ["household", "members", "tags", "mehendi", "vidhi", "wedding"],
         ["Nguyen Family", "Lan Nguyen; Minh Nguyen", "close-family", "3", "2", "4"],
         ["Only Wedding", "", "friends", "0", "0", "2"],
       ],
@@ -312,8 +312,8 @@ test.describe("guest manager", () => {
     const d = await draft(page);
     expect(d._admin.households).toHaveLength(8);
     const nguyen = d._admin.households.find((x) => x.household === "Nguyen Family");
-    expect(nguyen.eventSeats).toEqual({ mehendi: 3, "haldi-vidhi": 2, wedding: 4 });
-    expect(nguyen.eventIds.sort()).toEqual(["haldi-vidhi", "mehendi", "wedding"]);
+    expect(nguyen.eventSeats).toEqual({ mehendi: 3, "vidhi": 2, wedding: 4 });
+    expect(nguyen.eventIds.sort()).toEqual(["mehendi", "vidhi", "wedding"]);
     expect(nguyen.members.map((m) => m.name)).toEqual(["Lan Nguyen", "Minh Nguyen"]);
     const only = d._admin.households.find((x) => x.household === "Only Wedding");
     expect(only.eventSeats).toEqual({ wedding: 2 });
@@ -366,7 +366,7 @@ test.describe("publishing", () => {
 
     const content = JSON.parse(contentText);
     expect(content.events.map((e) => e.id)).toEqual(["mehendi"]); // the one event made public
-    for (const id of ["haldi-vidhi", "wedding"]) expect(content.events.map((e) => e.id)).not.toContain(id);
+    for (const id of ["vidhi", "wedding"]) expect(content.events.map((e) => e.id)).not.toContain(id);
     expect(contentText).not.toContain("Zhang");
     expect(contentText).not.toContain("_admin");
 
@@ -385,7 +385,7 @@ test.describe("publishing", () => {
     }, [adminText, PASS]);
     expect(bundle.hh).toContain("Zhang Family");
     expect(bundle.codes.slice(0, 6)).toEqual(Object.values(CODES));
-    expect(bundle.priv.sort()).toEqual(["haldi-vidhi", "wedding"]);
+    expect(bundle.priv.sort()).toEqual(["vidhi", "wedding"]);
 
     // a guest record decrypts with its code, and now includes the (formerly public) private reception
     const g = await page.evaluate(async ([text, code]) => {
@@ -394,7 +394,7 @@ test.describe("publishing", () => {
       const rec = gj.records[await c.sha256Hex(code)];
       return c.decryptJSON(await c.deriveKey(code, gj.kdf.salt, gj.kdf.iter), rec);
     }, [guestsText, CODES.sharma]);
-    expect(g.privateEvents.map((e) => e.id).sort()).toEqual(["haldi-vidhi", "wedding"]);
+    expect(g.privateEvents.map((e) => e.id).sort()).toEqual(["vidhi", "wedding"]);
 
     expect(calls.find((c) => c.path === "/git/commits").body.message).toMatch(/guest list/);
     await expect(page.locator("#status")).toContainText(/Published|going live|No unpublished/);
@@ -421,13 +421,13 @@ test.describe("publishing", () => {
     });
     let d = await draft(page);
     expect(d.events.find((x) => x.id === "mehendi").visibility).toBe("public");
-    expect(await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id).sort())).toEqual(["haldi-vidhi", "wedding"]);
+    expect(await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id).sort())).toEqual(["vidhi", "wedding"]);
     await page.evaluate(() => {
       const e = window.__editor;
       const i = e.draft.events.findIndex((x) => x.id === "mehendi");
       e.commit(`events.${i}.visibility`, "private", "Mehendi private");
     });
-    expect(await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id).sort())).toEqual(["haldi-vidhi", "mehendi", "wedding"]);
+    expect(await page.evaluate(() => window.__editor.privateEvents().map((e) => e.id).sort())).toEqual(["mehendi", "vidhi", "wedding"]);
   });
 });
 

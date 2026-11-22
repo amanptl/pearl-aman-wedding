@@ -112,7 +112,7 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   await page.getByRole("button", { name: /^Friends/ }).click();
   const added = (await draft(page))._admin.households.at(-1);
   expect(added.household).toBe("Okonkwo Friends");
-  expect([...added.eventIds].sort()).toEqual(["haldi-vidhi", "wedding"]);
+  expect([...added.eventIds].sort()).toEqual(["vidhi", "wedding"]);
   const NEW_CODE = added.code;
 
   /* 8. Mehendi public, then private again */
@@ -169,8 +169,8 @@ test("couple's journey: edit, publish, then a guest sees exactly the published s
   expect(await guest.evaluate(() => JSON.parse(sessionStorage.getItem("pa.guest.session") || "null")?.household)).toBe("Okonkwo Friends");
   const eventNames = await guest.locator("[data-page=schedule] .event h3, [data-page=schedule] [data-event] h3").allTextContents();
   expect(eventNames.join("|")).toContain(NEW_TITLE);
-  await expect(guest.locator("[data-page=schedule] .event")).toHaveCount(2); // Haldi and Vidhi + the wedding
-  expect(await guest.locator("[data-page=schedule] .event").evaluateAll((els) => els.map((e) => e.getAttribute("data-event") || e.id))).toEqual(expect.arrayContaining([expect.stringMatching(/haldi-vidhi/), expect.stringMatching(/wedding/)]));
+  await expect(guest.locator("[data-page=schedule] .event")).toHaveCount(2); // Vidhi + the wedding
+  expect(await guest.locator("[data-page=schedule] .event").evaluateAll((els) => els.map((e) => e.getAttribute("data-event") || e.id))).toEqual(expect.arrayContaining([expect.stringMatching(/vidhi/), expect.stringMatching(/wedding/)]));
   // a public visitor does not get the private Sangeet
   const pub = await gctx.newPage();
   await pub.addInitScript(() => { try { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem("pa.intro", "1"); } catch {} });

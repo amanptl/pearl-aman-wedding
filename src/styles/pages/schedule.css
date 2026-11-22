@@ -40,18 +40,17 @@
 [data-page="schedule"] .event-body { padding: var(--space-m); }
 [data-page="schedule"] .event-photo { aspect-ratio: 16 / 9; background: var(--card); }
 [data-page="schedule"] .event-photo img { width: 100%; height: 100%; object-fit: cover; }
-/* Ticket band: "You're invited to the" + script name + when, with a date stub.
+/* Ticket band: script name + when, with a date stub.
    Events sit on the card paper under a gold hairline; only the wedding gets the burgundy band. */
 [data-page="schedule"] .event-band {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-s);
   margin-inline: var(--space-m); padding: var(--space-s) 0; border-bottom: 1px solid rgba(104, 77, 23, 0.3); color: var(--olive);
 }
 [data-page="schedule"] .event-band-main { flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4xs); min-width: 0; }
-[data-page="schedule"] .event-invite,
 [data-page="schedule"] .event-when { margin: 0; font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-text); line-height: 1.3; }
 [data-page="schedule"] .event-name {
-  margin: 0; font-family: var(--font-script); font-weight: 400; font-size: clamp(2.4rem, 9vw, 3rem); line-height: 1.05;
-  letter-spacing: 0; text-transform: none; color: var(--olive); overflow-wrap: anywhere; text-wrap: balance;
+  margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.75rem, 7vw, 2.1rem); line-height: 1.15;
+  letter-spacing: 0.01em; text-transform: none; color: var(--olive); overflow-wrap: anywhere; text-wrap: balance;
 }
 [data-page="schedule"] .event-when { display: flex; gap: var(--space-3xs); align-items: flex-start; margin-top: var(--space-3xs); letter-spacing: 0.08em; }
 [data-page="schedule"] .event-when svg { width: 1.05em; height: 1.05em; flex: none; margin-top: 0.12em; }
@@ -70,7 +69,6 @@
   margin-inline: 0; padding: var(--space-s) clamp(var(--space-s), 4vw, var(--space-m)); border-bottom: 0;
   background: var(--burgundy); color: #f3e6c6; --focus: var(--gold-light);
 }
-[data-page="schedule"] .event--feature .event-invite,
 [data-page="schedule"] .event--feature .event-when { color: var(--gold-light); }
 [data-page="schedule"] .event--feature .event-name { color: #fbf1da; }
 [data-page="schedule"] .event--feature .event-stub { color: #f3e6c6; border-left-color: rgba(243, 230, 198, 0.55); }

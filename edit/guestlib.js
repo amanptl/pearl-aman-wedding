@@ -7,7 +7,7 @@ const clone = (x) => structuredClone(x);
 /** Presets are stored in the admin bundle. "*" in eventIds means "every event" (so new events are included automatically). */
 export const DEFAULT_PRESETS = [
   { id: "close-family", name: "Close family", tag: "close-family", eventIds: ["*"] },
-  { id: "friends", name: "Friends", tag: "friends", eventIds: ["haldi-vidhi", "wedding"] },
+  { id: "friends", name: "Friends", tag: "friends", eventIds: ["vidhi", "wedding"] },
   { id: "colleagues", name: "Colleagues", tag: "colleagues", eventIds: ["wedding"] },
 ];
 

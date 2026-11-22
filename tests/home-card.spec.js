@@ -24,7 +24,7 @@ test("dates list only the invited days: single, consecutive, gaps, month ends", 
     return [
       inviteDates(ev("2027-07-23"), site), // Mehendi only
       inviteDates(ev("2027-07-23", "2027-07-25"), site), // Mehendi + wedding
-      inviteDates(ev("2027-07-24", "2027-07-25"), site), // Haldi & Vidhi + wedding
+      inviteDates(ev("2027-07-24", "2027-07-25"), site), // Vidhi + wedding
       inviteDates(ev("2027-07-23", "2027-07-24", "2027-07-25"), site),
       inviteDates(ev("2027-07-23", "2027-07-24", "2027-07-26"), site),
       inviteDates(ev("2027-07-25", "2027-07-25"), site), // two events, one day

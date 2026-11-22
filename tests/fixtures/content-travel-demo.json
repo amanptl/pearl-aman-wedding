@@ -390,8 +390,8 @@
     {
       "id": "what-mehndi",
       "category": "events",
-      "q": "What are Mehendi, Haldi and Vidhi, and the wedding?",
-      "a": "Mehendi is henna at CISE. Haldi and Vidhi is the blessing at CISE. The wedding ceremony is at the Grand Imperial. Each invitation lists the events you are invited to."
+      "q": "What are Mehendi, Vidhi, and the wedding?",
+      "a": "Mehendi is henna at CISE. Vidhi is a morning Grah Shanti puja for peace at CISE. The wedding ceremony is at the Grand Imperial. Each invitation lists the events you are invited to."
     },
     {
       "id": "what-baraat",
@@ -409,7 +409,7 @@
       "id": "wear-events",
       "category": "before",
       "q": "What should I wear to each event?",
-      "a": "Mehendi: colourful and comfortable. Haldi and Vidhi: old yellow or white clothes you can stain. Wedding: traditional Indian or formal. See each event on the Schedule page for swatches."
+      "a": "Mehendi: colourful and comfortable. Vidhi: traditional and comfortable. Wedding: traditional Indian or formal. See each event on the Schedule page for swatches."
     },
     {
       "id": "wear-new",
