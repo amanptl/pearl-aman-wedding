@@ -3,6 +3,8 @@
 .lookup__title { margin: 0; font-family: var(--font-display); font-size: clamp(1.6rem, 5vw, 2.2rem); line-height: var(--lh-tight); }
 .lookup__intro { margin: 0; font-size: 1.0625rem; color: var(--text-muted); }
 .lookup__notice { margin: 0; padding: calc(var(--space-2xs) + var(--space-4xs)) calc(var(--space-xs) + var(--space-4xs)); border: 1px solid var(--gold-text); border-radius: var(--radius-m); background: rgba(184, 154, 94, 0.18); font-size: 1.0625rem; color: var(--ink); }
+/* The recipe above is for ivory. On olive paper that ink disappears, so match .rv-note. */
+.on-dark .lookup__notice, .section--paper .lookup__notice, .section--photo .lookup__notice { color: var(--ivory); border-color: var(--gold-light); background: rgba(230, 207, 148, 0.12); }
 .lookup__form { display: flex; flex-direction: column; gap: var(--space-xs); text-align: left; }
 .lookup__label { font-size: 1.0625rem; font-weight: 600; }
 .lookup__input { box-sizing: border-box; width: 100%; min-height: var(--tap); padding: var(--control-py) calc(var(--space-xs) + var(--space-4xs)); font: inherit; font-size: 1.125rem; color: var(--ink); background: #fff; border: 1.5px solid var(--ink); border-radius: var(--radius-m); }

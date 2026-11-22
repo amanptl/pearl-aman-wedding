@@ -1,4 +1,4 @@
-import { html, raw, editAttrs, listAttrs, itemAttrs, imgTag, showField } from "../lib/dom.js";
+import { html, raw, editAttrs, listAttrs, itemAttrs, imgTag, showField, isEdit } from "../lib/dom.js";
 import { formatDate, formatTime, daysUntil } from "../lib/time.js";
 import { directionsUrl, driveEstimate, telUrl, whatsappUrl } from "../lib/maps.js";
 import { copyText } from "../lib/ui.js";
@@ -39,7 +39,8 @@ function driveList(h, groups) {
   for (const g of groups) {
     const override = g.events.map((e) => h.driveMinutes?.[e.id]).find((m) => Number.isFinite(+m) && m !== null && m !== "");
     const min = override != null ? +override : driveEstimate(h, g.venue);
-    if (Number.isFinite(min)) rows.push({ min, name: joinNames(g.events.map((e) => e.name)) });
+    // Over two hours is not a drive between a wedding hotel and its venues; it means the pins are wrong or placeholders.
+    if (Number.isFinite(min) && min <= 120) rows.push({ min, name: joinNames(g.events.map((e) => e.name)) });
   }
   return rows;
 }
@@ -65,27 +66,38 @@ function deadline(h, ctx) {
   return html`<p class="deadline${days < 14 ? " is-urgent" : ""}">${icon.clock()}<span>Book by <strong>${date}</strong> <span class="deadline-left">${left}</span></span></p>`;
 }
 
+/** The room block box: rate, book-by date and group code once they exist, a quiet "coming soon" until then. */
+function blockBox(h, ctx, p) {
+  const ready = h.rate || h.groupCode || h.bookBy;
+  if (!ready && !isEdit()) {
+    return html`<div class="hotel-block is-soon"><div><p class="hotel-block-label">Wedding room block</p><p class="hotel-block-title">Group rate coming soon</p></div><p class="hotel-block-note">We'll share the code here</p></div>`;
+  }
+  return html`<div class="hotel-block">
+    <p class="hotel-block-label">Wedding room block</p>
+    ${showField(h.rate) ? html`<p class="hotel-rate"><span class="rate" ${editAttrs("text", p("rate"), { placeholder: "Add rate" })}>${h.rate || ""}</span>${showField(h.rateNote) ? html` <span class="muted rate-note" ${editAttrs("text", p("rateNote"), { placeholder: "Add rate note" })}>${h.rateNote || ""}</span>` : ""}</p>` : ""}
+    ${deadline(h, ctx)}
+    ${showField(h.groupCode) ? html`<div class="code-row"><span class="code-label">Group code</span><span class="code-pill"><code class="code" ${editAttrs("text", p("groupCode"), { placeholder: "Add group code" })}>${h.groupCode || ""}</code>${h.groupCode ? html`<button class="btn btn--small code-copy" type="button" data-copy="${h.groupCode}" aria-label="Copy group code for ${h.name}">${icon.copy()}Copy</button>` : ""}</span></div>` : ""}
+  </div>`;
+}
+
 function blockCard(h, i, ctx, groups) {
   const p = (f) => `hotels.${i}.${f}`;
-  const photo = imgTag(h.photo, { path: p("photo"), sizes: "(min-width: 768px) 24rem, 100vw" });
+  // The desktop photo is a tall crop, so the browser needs a much wider file than the column is on screen.
+  const photo = imgTag(h.photo, { path: p("photo"), sizes: "(min-width: 768px) 60rem, 100vw" });
   const book = safeUrl(h.bookingUrl);
   return html`
     <article class="hotel card" id="hotel-${h.id}" ${itemAttrs("hotels", i)}>
-      ${String(photo) ? html`<div class="hotel-photo">${photo}</div>` : ""}
+      <div class="hotel-photo${String(photo) ? "" : " is-empty"}">${String(photo) ? photo : html`${icon.bed()}<span>Hotel photo coming soon</span>`}</div>
       <div class="hotel-body">
-        <div class="hotel-badges cluster cluster--s">
-          ${h.recommended ? html`<span class="badge">Our pick</span>` : ""}
-          ${h.groupCode || h.rate ? html`<span class="badge badge--outline">Negotiated rate</span>` : ""}
-        </div>
+        ${h.recommended ? html`<span class="badge hotel-pick">Our pick</span>` : ""}
         <h3 class="hotel-name" ${editAttrs("text", p("name"), { placeholder: "Add hotel name" })}>${h.name}</h3>
-        ${showField(h.rate) ? html`<p class="hotel-rate"><span class="rate" ${editAttrs("text", p("rate"), { placeholder: "Add rate" })}>${h.rate || ""}</span>${showField(h.rateNote) ? html` <span class="muted rate-note" ${editAttrs("text", p("rateNote"), { placeholder: "Add rate note" })}>${h.rateNote || ""}</span>` : ""}</p>` : ""}
-        ${deadline(h, ctx)}
-        ${showField(h.groupCode) ? html`<div class="code-row"><span class="code-label">Group code</span><span class="code-pill"><code class="code" ${editAttrs("text", p("groupCode"), { placeholder: "Add group code" })}>${h.groupCode || ""}</code>${h.groupCode ? html`<button class="btn btn--small code-copy" type="button" data-copy="${h.groupCode}" aria-label="Copy group code for ${h.name}">${icon.copy()}Copy</button>` : ""}</span></div>` : ""}
+        ${showField(h.address) ? html`<p class="hotel-addr">${icon.mapPin()}<span ${editAttrs("text", p("address"), { placeholder: "Add address" })}>${h.address || ""}</span></p>` : ""}
         ${(h.perks || []).length ? html`<ul class="perks cluster cluster--s" ${listAttrs(p("perks"))}>${h.perks.map((x, k) => html`<li class="chip" ${editAttrs("text", p(`perks.${k}`))}>${icon.check()}<span>${x}</span></li>`)}</ul>` : ""}
         ${drives(driveList(h, groups))}
         ${showField(h.notes) ? html`<p class="muted hotel-notes" ${editAttrs("multiline", p("notes"), { placeholder: "Add a note" })}>${h.notes || ""}</p>` : ""}
+        ${blockBox(h, ctx, p)}
         <div class="hotel-actions">
-          ${book ? html`<a class="btn btn--primary" href="${book}" target="_blank" rel="noopener" aria-label="Book now at ${h.name} (opens in a new tab)">Book now${icon.external()}</a>` : ""}
+          ${book ? html`<a class="btn btn--primary" href="${book}" target="_blank" rel="noopener" aria-label="Book now at ${h.name} (opens in a new tab)">Book now${icon.external()}</a>` : html`<span class="btn btn--soon">${icon.clock()}Booking opens soon</span>`}
           <a class="btn btn--secondary" href="${directionsUrl(h)}" target="_blank" rel="noopener" aria-label="Directions to ${h.name}">${icon.directions()}Directions</a>
           ${h.phone ? html`<a class="btn btn--secondary" href="${telUrl(h.phone)}" aria-label="Call ${h.name}">${icon.phone()}Call</a>` : ""}
         </div>
@@ -149,6 +161,12 @@ function shuttleTime(v, tz) {
   return ISO.test(s) ? formatTime(s, tz) : s;
 }
 
+/** Icon for a "Getting around" row, from its id or title. */
+function aroundIcon(g) {
+  const k = `${g.id || ""} ${g.title || ""}`.toLowerCase();
+  return /transit|bus|lrt|train|shuttle/.test(k) ? icon.bus() : /fly|plane|air/.test(k) ? icon.plane() : icon.car();
+}
+
 function aroundGroups(items) {
   const groups = [];
   items.forEach((a, i) => {
@@ -210,9 +228,9 @@ export default {
 
       ${segs.some((s) => s.id === "stay") ? html`
       <section class="section section--ivory trav-section" id="stay" aria-labelledby="stay-h">
-        <div class="container stack stack--l">
+        <div class="container trav-wrap stack stack--l">
           <header class="sec-head"><h2 class="display display--l" id="stay-h">Where to Stay</h2><p class="muted sec-intro">${stayIntro}</p></header>
-          ${block.length || edit ? html`<div class="hotel-grid" ${listAttrs("hotels")}>${block.map(({ h, i }) => blockCard(h, i, ctx, groups))}</div>` : ""}
+          ${block.length || edit ? html`<div class="hotel-list" ${listAttrs("hotels")}>${block.map(({ h, i }) => blockCard(h, i, ctx, groups))}</div>` : ""}
           ${nearby.length || (edit && !block.length) ? html`<div class="stack">
             <h3 class="sub-title">Other nearby options</h3>
             <ul class="nearby card card--flat" ${listAttrs("hotels")}>${nearby.map(({ h, i }) => nearbyItem(h, i, groups))}</ul>
@@ -223,34 +241,41 @@ export default {
 
       ${segs.some((s) => s.id === "getting-here") ? html`
       <section class="section section--ivory trav-section" id="getting-here" aria-labelledby="gh-h">
-        <div class="container stack stack--xl">
+        <div class="container trav-wrap stack stack--l">
           <header class="sec-head"><h2 class="display display--l" id="gh-h">Getting Here</h2></header>
           ${SHOW_INTL_NOTE && (t.international?.text || edit) ? html`<aside class="intl card" aria-labelledby="intl-h">
             <span class="intl-icon">${icon.info()}</span>
             <div class="stack stack--s"><h3 class="sub-title" id="intl-h" ${editAttrs("text", "travel.international.title", { placeholder: "Add a title" })}>${t.international?.title || ""}</h3>
             <p ${editAttrs("multiline", "travel.international.text", { placeholder: "Add a note for international guests" })}>${t.international?.text || ""}</p></div>
           </aside>` : ""}
-          ${airports.length ? html`<div class="stack">
-            <h3 class="sub-title">${icon.plane()}Airports</h3>
-            <div class="card-grid" ${listAttrs("travel.airports")}>
-              ${airports.map(({ a, i }) => html`<article class="card airport" ${itemAttrs("travel.airports", i)}>
-                ${a.primary ? html`<span class="badge badge--gold">Closest major airport</span>` : ""}
-                <p class="airport-code" ${editAttrs("text", `travel.airports.${i}.code`, { placeholder: "Code" })}>${a.code}</p>
-                <h4 class="airport-name" ${editAttrs("text", `travel.airports.${i}.name`, { placeholder: "Airport name" })}>${a.name}</h4>
+          ${airports.length ? (() => { const main = airports.find(({ a }) => a.primary) || airports[0]; const others = airports.filter((x) => x !== main); const { a, i } = main; return html`<div class="airports card" ${listAttrs("travel.airports")}>
+            <div class="airport" ${itemAttrs("travel.airports", i)}>
+              <p class="airport-code" ${editAttrs("text", `travel.airports.${i}.code`, { placeholder: "Code" })}>${a.code}</p>
+              <div class="airport-main">
+                <p class="airport-eyebrow">Fly into</p>
+                <h3 class="airport-name" ${editAttrs("text", `travel.airports.${i}.name`, { placeholder: "Airport name" })}>${a.name}</h3>
                 ${a.driveMinutes ? html`<p class="airport-drive">${icon.car()}<span>${airportDriveLabel(a.driveMinutes)}</span></p>` : ""}
                 ${showField(a.tips) ? html`<p class="muted" ${editAttrs("multiline", `travel.airports.${i}.tips`, { placeholder: "Add tips" })}>${a.tips || ""}</p>` : ""}
-                ${dest ? html`<div class="card-actions"><a class="btn btn--secondary" href="${fromAirportUrl(a, dest)}" target="_blank" rel="noopener" aria-label="Directions from ${a.code} to ${destName} (opens in a new tab)">${icon.directions()}<span>To ${destName}</span></a></div>` : ""}
-              </article>`)}
+                ${dest ? html`<a class="trav-link" href="${fromAirportUrl(a, dest)}" target="_blank" rel="noopener" aria-label="Directions from ${a.code} to ${destName} (opens in a new tab)">${icon.directions()}<span>Directions to ${destName}</span></a>` : ""}
+              </div>
             </div>
-          </div>` : ""}
-          ${(t.gettingAround || []).length ? html`<div class="stack">
-            <h3 class="sub-title">${icon.car()}Getting around</h3>
-            <div class="card-grid" ${listAttrs("travel.gettingAround")}>
-              ${t.gettingAround.map((g, i) => html`<article class="card" ${itemAttrs("travel.gettingAround", i)}>
-                <h4 class="card-title" ${editAttrs("text", `travel.gettingAround.${i}.title`, { placeholder: "Title" })}>${g.title}</h4>
-                <p class="muted" ${editAttrs("multiline", `travel.gettingAround.${i}.text`, { placeholder: "Details" })}>${g.text}</p>
-              </article>`)}
-            </div>
+            ${others.map(({ a, i }) => html`<p class="airport-alt" ${itemAttrs("travel.airports", i)}><strong>Landing in <span ${editAttrs("text", `travel.airports.${i}.code`, { placeholder: "Code" })}>${a.code}</span> (<span ${editAttrs("text", `travel.airports.${i}.name`, { placeholder: "Airport name" })}>${a.name}</span>)?</strong> ${showField(a.tips) ? html`<span ${editAttrs("multiline", `travel.airports.${i}.tips`, { placeholder: "Add tips" })}>${a.tips || ""}</span>` : a.driveMinutes ? airportDriveLabel(a.driveMinutes) + "." : ""}</p>`)}
+          </div>`; })() : ""}
+          ${(t.gettingAround || []).length || parking.length ? html`<div class="gh-grid">
+            ${(t.gettingAround || []).length ? html`<div class="gh-col">
+              <h3 class="sub-title">${icon.car()}Getting around</h3>
+              <ul class="trav-list" ${listAttrs("travel.gettingAround")}>
+                ${t.gettingAround.map((g, i) => html`<li ${itemAttrs("travel.gettingAround", i)}><span class="trav-ico">${aroundIcon(g)}</span><div>
+                  <h4 class="trav-list-title" ${editAttrs("text", `travel.gettingAround.${i}.title`, { placeholder: "Title" })}>${g.title}</h4>
+                  <p class="muted" ${editAttrs("multiline", `travel.gettingAround.${i}.text`, { placeholder: "Details" })}>${g.text}</p></div></li>`)}
+              </ul>
+            </div>` : ""}
+            ${parking.length ? html`<div class="gh-col">
+              <h3 class="sub-title">${icon.mapPin()}Parking at the venues</h3>
+              <ul class="trav-list">
+                ${parking.map((g) => html`<li><span class="trav-ico">${icon.mapPin()}</span><div><h4 class="trav-list-title">${g.venue.name}</h4><p class="muted">${g.venue.parking}</p></div></li>`)}
+              </ul>
+            </div>` : ""}
           </div>` : ""}
           ${shuttles.length ? html`<div class="stack">
             <h3 class="sub-title">${icon.bus()}Shuttles</h3>
@@ -267,36 +292,27 @@ export default {
               </tbody>
             </table></div>
           </div>` : ""}
-          ${parking.length ? html`<div class="stack">
-            <h3 class="sub-title">${icon.car()}Parking</h3>
-            <div class="card-grid">
-              ${parking.map((g) => html`<article class="card">
-                <h4 class="card-title">${g.venue.name}</h4>
-                <p class="muted">${g.venue.parking}</p>
-              </article>`)}
-            </div>
-          </div>` : ""}
         </div>
       </section>` : ""}
 
       ${segs.some((s) => s.id === "around") ? html`
       <section class="section section--ivory trav-section" id="around" aria-labelledby="around-h">
-        <div class="container stack stack--l">
-          <header class="sec-head"><h2 class="display display--l" id="around-h">Around Town</h2></header>
-          ${around.map((g) => html`<div class="stack">
-            <h3 class="sub-title">${g.key}</h3>
-            <ul class="card-grid" ${listAttrs("travel.aroundTown")}>
-              ${g.items.map(({ a, i }) => html`<li class="card place" ${itemAttrs("travel.aroundTown", i)}>
+        <div class="container trav-wrap stack stack--l">
+          <header class="sec-head"><h2 class="display display--l" id="around-h">Around Town</h2><p class="muted sec-intro">A few favourites for the time between events.</p></header>
+          <div class="town-cols">${around.map((g) => html`<div class="town-col">
+            <h3 class="town-cat">${g.key}</h3>
+            <ul class="town-list" ${listAttrs("travel.aroundTown")}>
+              ${g.items.map(({ a, i }) => html`<li class="place" ${itemAttrs("travel.aroundTown", i)}>
                 ${edit ? html`<p class="eyebrow" ${editAttrs("text", `travel.aroundTown.${i}.category`, { placeholder: "Category" })}>${a.category}</p>` : ""}
-                <h4 class="card-title" ${editAttrs("text", `travel.aroundTown.${i}.name`, { placeholder: "Add a name" })}>${a.name}</h4>
+                <h4 class="place-name" ${editAttrs("text", `travel.aroundTown.${i}.name`, { placeholder: "Add a name" })}>${a.name}</h4>
                 <p class="muted" ${editAttrs("multiline", `travel.aroundTown.${i}.text`, { placeholder: "Add a description" })}>${a.text}</p>
-                <div class="card-actions">
-                  ${safeUrl(a.url) ? html`<a class="btn btn--secondary btn--small" href="${safeUrl(a.url)}" target="_blank" rel="noopener" aria-label="Website for ${a.name} (opens in a new tab)">Website${icon.external()}</a>` : ""}
-                  ${a.address || a.name ? html`<a class="btn btn--secondary btn--small" href="${directionsUrl({ address: a.address, name: a.name })}" target="_blank" rel="noopener" aria-label="Directions to ${a.name}">${icon.directions()}Directions</a>` : ""}
+                <div class="place-links">
+                  ${safeUrl(a.url) ? html`<a class="trav-link" href="${safeUrl(a.url)}" target="_blank" rel="noopener" aria-label="Website for ${a.name} (opens in a new tab)">Website${icon.external()}</a>` : ""}
+                  ${a.address || a.name ? html`<a class="trav-link" href="${directionsUrl({ address: a.address, name: a.name })}" target="_blank" rel="noopener" aria-label="Directions to ${a.name}">${icon.directions()}Directions</a>` : ""}
                 </div>
               </li>`)}
             </ul>
-          </div>`)}
+          </div>`)}</div>
           ${edit && !around.length ? html`<ul class="card-grid" ${listAttrs("travel.aroundTown")}></ul>` : ""}
         </div>
       </section>` : ""}`;

@@ -1,6 +1,7 @@
 // Guest resolution: personal link / remembered code / name lookup. Never logs codes or decrypted data.
 import { loadGuests } from "./store.js";
 import { sha256Hex, deriveKey, decryptJSON, normName, normCode } from "./crypto.js";
+import { syncEventSeats } from "./guestfiles.js";
 
 const LS_KEY = "pa.guest.v1";
 const SS_GUEST = "pa.guest.session";
@@ -20,7 +21,8 @@ async function openRecord(guests, code) {
   try {
     const key = await deriveKey(code, guests.kdf.salt, guests.kdf.iter);
     const g = await decryptJSON(key, rec);
-    return g && typeof g === "object" ? { ...g, code } : null;
+    if (!g || typeof g !== "object") return null;
+    return syncEventSeats({ ...g, code });
   } catch {
     return null;
   }

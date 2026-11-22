@@ -311,12 +311,40 @@ html[data-route="home"] .banner { display: none; }
   text-transform: uppercase;
   color: var(--ivory);
 }
+/* The heart is a quiet button (the signature easter egg). It sits in the line exactly like the text heart did;
+   an invisible ::after gives it a comfortable tap area without moving the words. */
 .colophon-heart {
-  display: inline-block;
-  color: var(--gold-light);
+  position: relative; display: inline-block; margin: 0; padding: 0;
+  border: 0; background: none; cursor: pointer;
+  font: inherit; line-height: inherit; color: var(--gold-light);
   letter-spacing: 0;
   transform: translateY(-0.06em);
+  transition: transform var(--dur-fast), text-shadow var(--dur-fast);
 }
+.colophon-heart::after { content: ""; position: absolute; inset: -0.75rem -0.6rem; }
+.colophon-heart:hover, .colophon-heart[aria-expanded="true"] { text-shadow: 0 0 12px rgba(230, 207, 148, 0.8); transform: translateY(-0.06em) scale(1.2); }
+.colophon-heart:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 4px; border-radius: 2px; }
+/* A soft double heartbeat the first time the footer comes into view, so people notice the heart can be tapped. */
+.colophon-heart.is-hint { animation: heart-beat 1.6s ease-in-out 2; }
+@keyframes heart-beat {
+  0%, 40%, 100% { transform: translateY(-0.06em) scale(1); text-shadow: none; }
+  12% { transform: translateY(-0.06em) scale(1.3); text-shadow: 0 0 14px rgba(230, 207, 148, 0.9); }
+  24% { transform: translateY(-0.06em) scale(1.08); }
+  32% { transform: translateY(-0.06em) scale(1.25); text-shadow: 0 0 10px rgba(230, 207, 148, 0.7); }
+}
+/* Revealed signature: written on from left to right (a plain fade with reduced motion). */
+.colophon-sign { display: block; width: auto; height: 3.25rem; max-width: 100%; margin: var(--space-s) auto 0; scroll-margin-bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--space-m)); }
+@media (min-width: 768px) { .colophon-sign { scroll-margin-bottom: var(--space-l); } }
+.colophon-sign[hidden] { display: none; }
+.colophon-sign:not([hidden]):not(.is-writing) { visibility: hidden; } /* waits for the image to load */
+.colophon-sign.is-writing { animation: sign-write 1.4s ease-out both; }
+@keyframes sign-write { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .colophon-sign.is-writing { animation: sign-fade 0.3s ease-out both; }
+  .colophon-heart { transition: none; }
+  .colophon-heart.is-hint { animation: none; }
+}
+@keyframes sign-fade { from { opacity: 0; } to { opacity: 1; } }
 /* .colophon p { margin: 0 } is more specific than a single class, so the line names both. */
 .colophon p.colophon-line {
   max-width: 36rem;

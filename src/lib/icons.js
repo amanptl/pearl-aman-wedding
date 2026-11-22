@@ -38,5 +38,7 @@ export const gift = () => svg(`<rect x="3.500" y="9" width="17" height="4" rx="1
 export const heart = () => svg(`<path d="M12 20s-8-4.800-8-10.700A4.600 4.600 0 0 1 12 6.500a4.600 4.600 0 0 1 8 2.800C20 15.200 12 20 12 20z"/>`);
 export const question = () => svg(`<circle cx="12" cy="12" r="8.500"/><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.400-1 .9-1 1.700"/><circle cx="12" cy="16.800" r=".6" fill="currentColor"/>`);
 export const x = () => svg(`<path d="M6 6l12 12M18 6L6 18"/>`);
+/** A reply envelope sealed with a small heart (the RSVP reminder tag). */
+export const envelopeHeart = () => svg(`<rect x="3.5" y="6" width="17" height="12.5" rx="1.5"/><path d="M3.8 6.6l8.2 6.2 8.2-6.2"/><path d="M12 17.2s-2.6-1.5-2.6-3.2c0-.9.7-1.5 1.4-1.5.6 0 1 .3 1.2.8.2-.5.6-.8 1.2-.8.7 0 1.4.6 1.4 1.5 0 1.7-2.6 3.2-2.6 3.2z" stroke-width="1.3"/>`);
 
-export default { mapPin, directions, calendarPlus, copy, phone, whatsapp, external, clock, sunrise, sun, moon, hanger, car, plane, bus, bed, info, chevron, check, search, share, home, menuDots, gift, heart, question, x };
+export default { mapPin, directions, calendarPlus, copy, phone, whatsapp, external, clock, sunrise, sun, moon, hanger, car, plane, bus, bed, info, chevron, check, search, share, home, menuDots, gift, heart, question, x, envelopeHeart };

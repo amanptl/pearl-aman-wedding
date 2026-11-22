@@ -108,9 +108,10 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
 **Guest (decrypted household record):**
 ```js
 { code, household: "Sharma Family", greeting: "Dear Sharma Family",
-  seats: 4,                          // how many people may come to each event (the RSVP asks for a count up to this)
-  members: [{ id: "m1", name: "Raj Sharma" }, { id: "m2", name: "Priya Sharma" }],  // optional names (lookup, hints)
-  eventIds: ["mehndi","sangeet","wedding","reception"],
+  eventSeats: { mehndi: 4, sangeet: 4, wedding: 2, reception: 2 }, // invited headcount per event (0 = not invited)
+  eventIds: ["mehndi","sangeet","wedding","reception"],            // ids with eventSeats > 0 (kept for schedule / private copies)
+  seats: 4,                          // largest eventSeats value (older readers still have one number)
+  members: [{ id: "m1", name: "Raj Sharma" }, { id: "m2", name: "Priya Sharma" }],  // optional names (lookup only)
   privateEvents: [Event, ...],       // full copies of the private events this household is invited to
   tags: ["close-family"] }
 ```
@@ -139,13 +140,15 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
 **POST** (`mode: "no-cors"`), body `URLSearchParams({ payload: JSON.stringify(P) })`:
 ```js
 P = { v: 2, code, household, seats, submittedAt,
-      counts: { [eventId]: n },                         // how many of the household are coming, 0..seats, every RSVP event
-      names: "Raj Sharma, Priya Sharma",                // optional, free text
+      eventSeats: { [eventId]: n },                     // invited headcount per event
+      counts: { [eventId]: n },                         // how many are coming, 0..eventSeats[id], every RSVP event
+      namesByEvent: { [eventId]: ["Raj Sharma", "Priya Sharma"] }, // one name per person coming (empty until the guest types)
+      names: "Mehndi: Raj Sharma, Priya Sharma; Wedding: Raj Sharma", // readable summary for the Households sheet
       diet: { Vegetarian: 3, Jain: 1 },                 // food counts (meal + dietary options), each <= the biggest count
       dietNote: "one peanut allergy",
       extras: { hotel: "need"|"booked"|"local"|"", arrival, departure, flight, flightTime, address, shuttle: { [eventId]: seats }, phone, song, message } }
 ```
-The backend upserts one row per (code, eventId) in the **Responses** sheet (`invited` = seats, `attending` = count), and one row per code in the **Households** sheet (names, `dietary` as "Jain: 1; Vegetarian: 3", dietNote, extras). Re-submitting replaces rather than duplicates. Older per-person replies (v1, with members/responses) are still read back by the form.
+The backend upserts one row per (code, eventId) in the **Responses** sheet (`invited` = that event’s `eventSeats`, `attending` = count), and one row per code in the **Households** sheet (`names` summary, `dietary` as "Jain: 1; Vegetarian: 3", dietNote, extras). Re-submitting replaces rather than duplicates. Older replies with a single `names` string (or v1 per-person replies) are still read back by the form.
 
 - **GET `?action=get&code=CODE`:** returns `{ ok, P | null }`, the household's latest submission, used to pre-fill the form.
 - **GET `?action=summary&key=ADMIN_KEY`:** returns `{ ok, households:[…], responses:[…], counts: { [eventId]: { coming, invited, households, declined } }, dietary: { label: n } }` for the editor dashboard.

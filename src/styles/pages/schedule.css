@@ -40,18 +40,48 @@
 [data-page="schedule"] .event-body { padding: var(--space-m); }
 [data-page="schedule"] .event-photo { aspect-ratio: 16 / 9; background: var(--card); }
 [data-page="schedule"] .event-photo img { width: 100%; height: 100%; object-fit: cover; }
-[data-page="schedule"] .event-top { justify-content: flex-start; }
-[data-page="schedule"] .event-time { display: inline-flex; align-items: center; gap: var(--space-2xs); }
-[data-page="schedule"] .event-time svg { width: 1.1em; height: 1.1em; }
-[data-page="schedule"] .period {
-  display: inline-flex; align-items: center; gap: var(--space-3xs);
-  padding: var(--space-4xs) calc(var(--space-2xs) + var(--space-4xs));
-  border: 1px solid var(--line); border-radius: var(--radius-pill); background: transparent;
-  font-size: var(--step--1); line-height: 1.2; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--gold-text); white-space: nowrap;
+/* Ticket band: "You're invited to the" + script name + when, with a date stub.
+   Events sit on the card paper under a gold hairline; only the wedding gets the burgundy band. */
+[data-page="schedule"] .event-band {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-s);
+  margin-inline: var(--space-m); padding: var(--space-s) 0; border-bottom: 1px solid rgba(104, 77, 23, 0.3); color: var(--olive);
 }
-[data-page="schedule"] .period svg { width: 1em; height: 1em; color: var(--burgundy); flex: none; }
-[data-page="schedule"] .event-title { --stack-gap: var(--space-2xs); }
+[data-page="schedule"] .event-band-main { flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4xs); min-width: 0; }
+[data-page="schedule"] .event-invite,
+[data-page="schedule"] .event-when { margin: 0; font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-text); line-height: 1.3; }
+[data-page="schedule"] .event-name {
+  margin: 0; font-family: var(--font-script); font-weight: 400; font-size: clamp(2.4rem, 9vw, 3rem); line-height: 1.05;
+  letter-spacing: 0; text-transform: none; color: var(--olive); overflow-wrap: anywhere; text-wrap: balance;
+}
+[data-page="schedule"] .event-when { display: flex; gap: var(--space-3xs); align-items: flex-start; margin-top: var(--space-3xs); letter-spacing: 0.08em; }
+[data-page="schedule"] .event-when svg { width: 1.05em; height: 1.05em; flex: none; margin-top: 0.12em; }
+[data-page="schedule"] .event-part,
+[data-page="schedule"] .event-time { white-space: nowrap; }
+[data-page="schedule"] .event-stub {
+  flex: none; display: flex; flex-direction: column; align-items: center; line-height: 1.05;
+  padding-left: clamp(var(--space-xs), 3vw, var(--space-s)); border-left: 1px dashed rgba(104, 77, 23, 0.45);
+  font-size: var(--step--1); letter-spacing: 0.16em; text-transform: uppercase; color: var(--olive);
+}
+[data-page="schedule"] .event-stub b { font-family: var(--font-display); font-weight: 400; font-size: 2.2rem; letter-spacing: 0; line-height: 1.1; }
+[data-page="schedule"] .event-band .badge { margin-bottom: var(--space-3xs); }
+[data-page="schedule"] .event-band .badge--band { background: var(--burgundy); color: #fbf1da; border-color: var(--burgundy); }
+/* The wedding: full-bleed burgundy band */
+[data-page="schedule"] .event--feature .event-band {
+  margin-inline: 0; padding: var(--space-s) clamp(var(--space-s), 4vw, var(--space-m)); border-bottom: 0;
+  background: var(--burgundy); color: #f3e6c6; --focus: var(--gold-light);
+}
+[data-page="schedule"] .event--feature .event-invite,
+[data-page="schedule"] .event--feature .event-when { color: var(--gold-light); }
+[data-page="schedule"] .event--feature .event-name { color: #fbf1da; }
+[data-page="schedule"] .event--feature .event-stub { color: #f3e6c6; border-left-color: rgba(243, 230, 198, 0.55); }
+[data-page="schedule"] .event--feature .badge--band { background: #fbf1da; color: var(--burgundy); border-color: #fbf1da; }
+[data-page="schedule"] .event-sub { font-size: var(--step-1); }
+/* Tear line with notches cut into the card edges */
+[data-page="schedule"] .event-perf { position: relative; height: 0; border-top: 2px dashed rgba(104, 77, 23, 0.35); }
+[data-page="schedule"] .event-perf::before,
+[data-page="schedule"] .event-perf::after { content: ""; position: absolute; top: -12px; width: 11px; height: 22px; }
+[data-page="schedule"] .event-perf::before { left: calc(-1 * var(--space-m)); background: radial-gradient(circle at 0 50%, var(--ivory) 10.5px, transparent 11px); }
+[data-page="schedule"] .event-perf::after { right: calc(-1 * var(--space-m)); background: radial-gradient(circle at 100% 50%, var(--ivory) 10.5px, transparent 11px); }
 [data-page="schedule"] .event .badge { vertical-align: middle; }
 [data-page="schedule"] .event-venue,
 [data-page="schedule"] .event-parking,
@@ -89,10 +119,10 @@
 [data-page="schedule"] .tips li { position: relative; padding-left: 1.25rem; }
 [data-page="schedule"] .tips li::before { content: ""; position: absolute; left: var(--space-4xs); top: 0.7em; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--gold); }
 
-/* Actions: Directions is the primary; the other two share a row */
+/* Actions: Directions and Save share a row; Copy address sits under them */
 [data-page="schedule"] .event-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xs); margin-top: var(--space-2xs); }
 [data-page="schedule"] .event-actions .btn { width: 100%; padding-inline: var(--space-xs); }
-[data-page="schedule"] .event-actions .btn--primary { grid-column: 1 / -1; }
+[data-page="schedule"] .event-actions [data-copy] { grid-column: 1 / -1; }
 @media (min-width: 560px) {
   [data-page="schedule"] .event-actions { display: flex; flex-wrap: wrap; }
   [data-page="schedule"] .event-actions .btn { width: auto; flex: 1 1 0; }
@@ -112,9 +142,10 @@
 [data-page="schedule"] .event-notes .chip { border-radius: var(--radius-m); }
 
 /* Narrow phones: stack the actions so labels never wrap inside a pill */
-@media (max-width: 29.99rem) {
+@media (max-width: 21.99rem) {
   [data-page="schedule"] .event-actions { grid-template-columns: 1fr; }
+  [data-page="schedule"] .event--feature .event-band { padding-inline: var(--space-s); }
 }
-[data-page="schedule"] .event-time { white-space: nowrap; flex-wrap: nowrap; }
-[data-page="schedule"] .day-title, [data-page="schedule"] .event-title h3 { text-wrap: balance; }
+[data-page="schedule"] .day-title { text-wrap: balance; }
 [data-page="schedule"] [data-cal-all] { text-transform: none; letter-spacing: 0.01em; font-size: var(--step-0); text-wrap: balance; }
+.cal-sheet .btn { text-transform: none; letter-spacing: 0.01em; font-size: var(--step-0); text-wrap: balance; }

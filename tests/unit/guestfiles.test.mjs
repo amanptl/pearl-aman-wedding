@@ -88,7 +88,7 @@ test("nameLookup: false publishes no name index (a known name can't be turned in
 });
 
 test("seats: explicit seats win; older records count names + plus-ones; always 1..MAX_SEATS", async () => {
-  const { seatsOf, makeHousehold, MAX_SEATS } = await import("../../src/lib/guestfiles.js");
+  const { seatsOf, makeHousehold, eventSeatsOf, syncEventSeats, MAX_SEATS } = await import("../../src/lib/guestfiles.js");
   assert.equal(seatsOf({ seats: 6, members: [{ name: "a" }] }), 6);
   assert.equal(seatsOf({ members: [{ name: "a" }, { name: "b" }, { name: "" }], plusOnes: 1 }), 3);
   assert.equal(seatsOf({ members: [] }), 1);
@@ -96,4 +96,14 @@ test("seats: explicit seats win; older records count names + plus-ones; always 1
   assert.equal(makeHousehold({ household: "No names", seats: 4 }).seats, 4);
   assert.equal(makeHousehold({ household: "Old", members: ["a", "b"], plusOnes: 2 }).seats, 4);
   assert.equal(makeHousehold({ household: "Old" }).plusOnes, undefined);
+  const per = makeHousehold({ household: "Mixed", eventSeats: { mehndi: 4, wedding: 2 } });
+  assert.deepEqual(per.eventSeats, { mehndi: 4, wedding: 2 });
+  assert.deepEqual(per.eventIds, ["mehndi", "wedding"]);
+  assert.equal(per.seats, 4);
+  assert.equal(eventSeatsOf(per, "mehndi"), 4);
+  assert.equal(eventSeatsOf(per, "wedding"), 2);
+  assert.equal(eventSeatsOf(per, "reception"), 0);
+  const old = syncEventSeats({ seats: 3, eventIds: ["wedding", "reception"], members: [] });
+  assert.deepEqual(old.eventSeats, { wedding: 3, reception: 3 });
+  assert.equal(eventSeatsOf({ seats: 2, eventIds: ["wedding"] }, "wedding"), 2);
 });

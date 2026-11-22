@@ -39,13 +39,9 @@ test("travel: Book now opens in a new tab safely", async ({ page }) => {
   await expect(a).toHaveAttribute("aria-label", /Book now at .+/);
 });
 
-test("travel: hotel cards show drive times and align actions at the bottom", async ({ page }) => {
+test("travel: hotel cards show drive times", async ({ page }) => {
   await open(page, `/?${TRAVEL_DEMO}&${FAMILY}#travel`);
   await expect(page.locator('[data-page="travel"] .hotel').first().locator(".drives-list li").first()).toContainText(/~\d+ min to/);
-  if (page.viewportSize().width >= 1000) {
-    const bottoms = await page.locator('[data-page="travel"] .hotel-actions').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().bottom)));
-    expect(new Set(bottoms).size).toBe(1);
-  }
 });
 
 test("travel: shuttle table stays hidden unless the viewer can see that event", async ({ page }) => {

@@ -3,15 +3,16 @@
 import { h } from "./ui.js";
 import { ico } from "./icons.js";
 import * as GL from "./guestlib.js";
-import { makeHousehold, seatsOf, MAX_SEATS } from "../src/lib/guestfiles.js";
+import { makeHousehold, seatsOf, eventSeatsOf, syncEventSeats, clampEventSeats, MAX_SEATS } from "../src/lib/guestfiles.js";
 import { randomCode } from "../src/lib/crypto.js";
 
 const clone = (x) => structuredClone(x);
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const withIcon = (name, text, size = 15) => [h("span.ic", { html: ico(name, size) }), text];
 
-function download(name, text, type = "text/csv;charset=utf-8") {
-  const a = h("a", { href: URL.createObjectURL(new Blob([text], { type })), download: name });
+function download(name, data, type = "text/csv;charset=utf-8") {
+  const blob = data instanceof Blob ? data : new Blob([data], { type });
+  const a = h("a", { href: URL.createObjectURL(blob), download: name });
   document.body.append(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -24,6 +25,16 @@ const loadQr = () => (qrLib ||= new Promise((res, rej) => {
   s.src = "../vendor/qrcode.min.js";
   s.onload = () => res();
   s.onerror = () => { qrLib = null; rej(new Error("The QR code library didn't load.")); };
+  document.head.append(s);
+}));
+
+let xlsxLib;
+const loadXlsx = () => (xlsxLib ||= new Promise((res, rej) => {
+  if (window.XLSX) return res(window.XLSX);
+  const s = document.createElement("script");
+  s.src = "../vendor/xlsx.mini.min.js";
+  s.onload = () => (window.XLSX ? res(window.XLSX) : (xlsxLib = null, rej(new Error("The spreadsheet library didn't load."))));
+  s.onerror = () => { xlsxLib = null; rej(new Error("The spreadsheet library didn't load.")); };
   document.head.append(s);
 }));
 
@@ -149,7 +160,8 @@ export function mountGuests(el, api) {
 
     const actions = h("div.gm-actions",
       h("button.btn.primary.small", { type: "button", id: "gm-add", onclick: addHousehold }, withIcon("plus", "Add household")),
-      h("button.btn.small", { type: "button", onclick: importCsv }, withIcon("upload", "Import CSV")),
+      h("button.btn.small", { type: "button", onclick: importCsv }, withIcon("upload", "Import CSV / Excel")),
+      h("button.btn.small", { type: "button", onclick: downloadExcelTemplate }, withIcon("download", "Excel template")),
       h("button.btn.small", { type: "button", onclick: exportCsv }, withIcon("download", "Export CSV")),
       h("button.btn.small", { type: "button", onclick: editTemplates }, withIcon("chat", "Message text")),
       count);
@@ -166,7 +178,7 @@ export function mountGuests(el, api) {
     S.updateCount?.();
     S.renderPresets?.();
     if (!households().length) {
-      tbodyHost.replaceChildren(h("div.empty", h("p", h("strong", "No households yet")), h("p.muted", "Add a household, or import your list from a spreadsheet (Import CSV). Each household gets its own private link."),
+      tbodyHost.replaceChildren(h("div.empty", h("p", h("strong", "No households yet")), h("p.muted", "Add a household, or import your list from a spreadsheet (Excel template, then Import CSV / Excel). Each household gets its own private link."),
         h("button.btn.primary", { type: "button", onclick: addHousehold }, "Add the first household")));
       return;
     }
@@ -174,8 +186,8 @@ export function mountGuests(el, api) {
     const allOn = rows.every((r) => S.selected.has(r.code));
     const selAll = h("input", { type: "checkbox", checked: allOn, "aria-label": "Select all shown households" });
     selAll.addEventListener("change", () => { rows.forEach((r) => (selAll.checked ? S.selected.add(r.code) : S.selected.delete(r.code))); renderTable(); });
-    const head = h("tr", h("th.c-sel", selAll), h("th.c-name", "Household"), h("th.c-mem", { title: "Optional: used for name lookup and as a hint on the RSVP form" }, "Names (optional)"), h("th.c-po", { title: "How many people this household may bring to each event" }, "Guests"), h("th.c-tags", "Groups"),
-      ...evs.map((e) => h("th.c-ev", { title: `${e.name || e.id}${e.visibility === "private" ? " (private)" : ""}` }, h("span", e.name || e.id), e.visibility === "private" ? h("small", "private") : null)));
+    const head = h("tr", h("th.c-sel", selAll), h("th.c-name", "Household"), h("th.c-mem", { title: "Optional: used for name lookup" }, "Names (optional)"), h("th.c-tags", "Groups"),
+      ...evs.map((e) => h("th.c-ev", { title: `How many people are invited to ${e.name || e.id}. 0 means not invited.${e.visibility === "private" ? " (private)" : ""}` }, h("span", e.name || e.id), e.visibility === "private" ? h("small", "private") : null)));
     const table = h("table.gm-table", { "aria-label": "Households" }, h("thead", head), h("tbody", rows.map((hh) => row(hh, evs))));
     tbodyHost.replaceChildren(table);
     if (S.refocus) {
@@ -212,21 +224,26 @@ export function mountGuests(el, api) {
       items: (hh.tags || []).map((t) => ({ key: t, text: t })),
       onChange: (items) => { S.refocus = { code: hh.code, field: '[data-field="tags"] .chip-add' }; editHousehold(hh.code, (x) => { x.tags = [...new Set(items.map((i) => GL.slug(i.text)).filter(Boolean))]; }, "Edit groups"); renderTable(); },
     });
-    const po = h("input.gm-in.num", { type: "number", min: 1, max: MAX_SEATS, value: seatsOf(hh), "aria-label": `How many guests ${label} may bring` });
-    po.addEventListener("change", () => editHousehold(hh.code, (x) => { x.seats = Math.max(1, Math.min(MAX_SEATS, Math.round(+po.value) || 1)); delete x.plusOnes; po.value = x.seats; }, "Change guests", `hh-${hh.code}-po`));
-    const checks = evs.map((e) => {
-      const c = h("input", { type: "checkbox", checked: (hh.eventIds || []).includes(e.id), "aria-label": `${label}: invited to ${e.name || e.id}` });
-      c.addEventListener("change", () => editHousehold(hh.code, (x) => { const s = new Set(x.eventIds || []); c.checked ? s.add(e.id) : s.delete(e.id); x.eventIds = [...s]; }, "Change invitations"));
-      return h("td.c-ev", c);
+    const seats = evs.map((e) => {
+      const n = eventSeatsOf(hh, e.id);
+      const input = h("input.gm-in.num", { type: "number", min: 0, max: MAX_SEATS, value: n, "aria-label": `${label}: guests invited to ${e.name || e.id}` });
+      input.addEventListener("change", () => editHousehold(hh.code, (x) => {
+        if (!x.eventSeats) x.eventSeats = Object.fromEntries((x.eventIds || []).map((id) => [id, seatsOf(x)]));
+        const v = clampEventSeats(input.value);
+        if (v > 0) x.eventSeats[e.id] = v; else delete x.eventSeats[e.id];
+        syncEventSeats(x);
+        input.value = eventSeatsOf(x, e.id);
+      }, "Change invitations", `hh-${hh.code}-ev-${e.id}`));
+      return h("td.c-ev", input);
     });
-    return h("tr", { "data-code": hh.code }, h("td.c-sel", sel), h("td.c-name", name, acts), h("td.c-mem", members), h("td.c-po", po), h("td.c-tags", tagsEd), ...checks);
+    return h("tr", { "data-code": hh.code }, h("td.c-sel", sel), h("td.c-name", name, acts), h("td.c-mem", members), h("td.c-tags", tagsEd), ...seats);
   }
 
   /* ---------- household actions ---------- */
   function addHousehold() {
     S.q = ""; S.tag = ""; S.event = "";
     const list = clone(households());
-    const hh = makeHousehold({ id: `hh-${randomCode(6).toLowerCase()}`, household: "New household", members: [], seats: 2, eventIds: [] }, new Set(list.map((x) => x.code)));
+    const hh = makeHousehold({ id: `hh-${randomCode(6).toLowerCase()}`, household: "New household", members: [], seats: 2, eventIds: [], eventSeats: {} }, new Set(list.map((x) => x.code)));
     hh.household = ""; hh.greeting = "";
     list.push(hh);
     setHouseholds(list, "Add household");
@@ -253,7 +270,14 @@ export function mountGuests(el, api) {
     const ids = GL.presetEventIds(p, evs);
     const list = clone(households());
     for (const hh of list) if (codes.includes(hh.code)) {
-      hh.eventIds = [...new Set([...(hh.eventIds || []).filter((id) => !evs.some((e) => e.id === id)), ...ids])];
+      const keep = {};
+      for (const [id, n] of Object.entries(hh.eventSeats || Object.fromEntries((hh.eventIds || []).map((eid) => [eid, seatsOf(hh)])))) {
+        if (!evs.some((e) => e.id === id)) keep[id] = n;
+      }
+      const fill = seatsOf(hh) || 2;
+      for (const id of ids) keep[id] = keep[id] || fill;
+      hh.eventSeats = keep;
+      syncEventSeats(hh);
       if (p.tag && !(hh.tags || []).includes(p.tag)) hh.tags = [...(hh.tags || []), p.tag];
     }
     setHouseholds(list, `Apply "${p.name}" to ${plural(codes.length, "household")}`);
@@ -351,34 +375,100 @@ export function mountGuests(el, api) {
     api.toast("Exported households with their personal links");
   }
 
+  async function downloadExcelTemplate() {
+    try {
+      const XLSX = await loadXlsx();
+      const evs = events();
+      const wb = XLSX.utils.book_new();
+      const householdsSheet = XLSX.utils.aoa_to_sheet(GL.householdsTemplateGrid(evs));
+      const guideSheet = XLSX.utils.aoa_to_sheet(GL.householdsGuideGrid(evs, presets()));
+      XLSX.utils.book_append_sheet(wb, householdsSheet, "Households");
+      XLSX.utils.book_append_sheet(wb, guideSheet, "How to fill");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      download("households-template.xlsx", new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+      api.toast("Downloaded Excel template");
+    } catch (e) {
+      api.toast(e.message || "Couldn't build the Excel template", { ms: 5000 });
+    }
+  }
+
+  function showImportPreview(csvRows, evs, out, applyBtn) {
+    let parsed = null;
+    if (!csvRows?.length) {
+      out.replaceChildren(h("p.muted", "Columns: household, guests (how many may come), members (optional names, separated with ;), tags, events — or use the Excel template with one column per event."));
+      if (applyBtn) { applyBtn.textContent = "Import"; applyBtn.disabled = true; }
+      return null;
+    }
+    parsed = GL.importRows(csvRows, { events: evs, presets: presets(), existing: households() });
+    if (parsed.headerErrors.length) {
+      out.replaceChildren(h("p.dlg-note.err", parsed.headerErrors.join(" ")));
+      if (applyBtn) { applyBtn.textContent = "Nothing to import"; applyBtn.disabled = true; }
+      return null;
+    }
+    const ok = parsed.rows.filter((r) => r.action !== "error");
+    const bad = parsed.rows.length - ok.length;
+    out.replaceChildren(
+      h("p.gm-sum", `${plural(ok.filter((r) => r.action === "add").length, "household")} to add, ${ok.filter((r) => r.action === "update").length} to update${bad ? `, ` : ""}`, bad ? h("strong.err", `${plural(bad, "row")} with problems (skipped)`) : null),
+      h("div.gm-tablewrap.short", h("table.gm-table.prev", h("thead", h("tr", ...["Row", "Household", "Guests", "Events", "Result"].map((t) => h("th", t)))),
+        h("tbody", parsed.rows.map((r) => h("tr", { "data-action": r.action },
+          h("td", String(r.line)), h("td", r.data.household || "—"), h("td", [String(r.data.seats), r.data.members.length ? h("small.muted", ` ${r.data.members.join(", ")}`) : null]), h("td", r.data.eventIds.join(", ") || "none"),
+          h("td", r.action === "error" ? h("span.err", r.errors.join("; ")) : [h("span.pill", r.action === "add" ? "New" : "Update"), ...r.warnings.map((w) => h("span.warnt", ` ${w}`))])))))));
+    if (applyBtn) {
+      applyBtn.textContent = ok.length ? `Import ${plural(ok.length, "household")}` : "Nothing to import";
+      applyBtn.disabled = !ok.length;
+    }
+    return parsed;
+  }
+
   function importCsv() {
     const evs = events();
     const text = h("textarea", { rows: 5, placeholder: "household,guests,members,tags,events\nSharma Family,4,Raj Sharma; Priya Sharma,close-family,all", "aria-label": "Paste CSV text", spellcheck: false });
-    const file = h("input", { type: "file", accept: ".csv,text/csv,text/plain", "aria-label": "Choose a CSV file" });
+    const file = h("input", { type: "file", accept: ".csv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "aria-label": "Choose a CSV or Excel file" });
     const out = h("div.gm-prev", { "aria-live": "polite" });
     let parsed = null;
     let applyBtn;
-    const refresh = () => {
+    const refreshFromCsvText = () => {
       parsed = null;
-      if (!text.value.trim()) { out.replaceChildren(h("p.muted", "Columns: household, guests (how many may come), members (optional names, separated with ;), tags, events (event ids separated by ; or a group name like Friends).")); return; }
-      parsed = GL.importRows(GL.parseCsv(text.value), { events: evs, presets: presets(), existing: households() });
-      if (parsed.headerErrors.length) { out.replaceChildren(h("p.dlg-note.err", parsed.headerErrors.join(" "))); parsed = null; return; }
-      const ok = parsed.rows.filter((r) => r.action !== "error");
-      const bad = parsed.rows.length - ok.length;
-      out.replaceChildren(
-        h("p.gm-sum", `${plural(ok.filter((r) => r.action === "add").length, "household")} to add, ${ok.filter((r) => r.action === "update").length} to update${bad ? `, ` : ""}`, bad ? h("strong.err", `${plural(bad, "row")} with problems (skipped)`) : null),
-        h("div.gm-tablewrap.short", h("table.gm-table.prev", h("thead", h("tr", ...["Row", "Household", "Guests", "Events", "Result"].map((t) => h("th", t)))),
-          h("tbody", parsed.rows.map((r) => h("tr", { "data-action": r.action },
-            h("td", String(r.line)), h("td", r.data.household || "—"), h("td", [String(r.data.seats), r.data.members.length ? h("small.muted", ` ${r.data.members.join(", ")}`) : null]), h("td", r.data.eventIds.join(", ") || "none"),
-            h("td", r.action === "error" ? h("span.err", r.errors.join("; ")) : [h("span.pill", r.action === "add" ? "New" : "Update"), ...r.warnings.map((w) => h("span.warnt", ` ${w}`))])))))));
-      applyBtn.textContent = ok.length ? `Import ${plural(ok.length, "household")}` : "Nothing to import";
-      applyBtn.disabled = !ok.length;
+      if (!text.value.trim()) { showImportPreview(null, evs, out, applyBtn); return; }
+      parsed = showImportPreview(GL.parseCsv(text.value), evs, out, applyBtn);
     };
-    text.addEventListener("input", refresh);
-    file.addEventListener("change", async () => { const f = file.files[0]; if (f) { text.value = await f.text(); refresh(); } });
+    text.addEventListener("input", refreshFromCsvText);
+    file.addEventListener("change", async () => {
+      const f = file.files[0];
+      if (!f) return;
+      const isXlsx = /\.xlsx$/i.test(f.name) || /spreadsheetml|excel|officedocument/.test(f.type);
+      try {
+        if (isXlsx) {
+          const XLSX = await loadXlsx();
+          const data = await f.arrayBuffer();
+          const wb = XLSX.read(data, { type: "array" });
+          const sheetName = wb.SheetNames.includes("Households") ? "Households" : wb.SheetNames[0];
+          const grid = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: "", raw: false });
+          const adapted = GL.sheetToImportRows(grid, { events: evs });
+          if (adapted.headerErrors.length) {
+            out.replaceChildren(h("p.dlg-note.err", adapted.headerErrors.join(" ")));
+            parsed = null;
+            if (applyBtn) { applyBtn.textContent = "Nothing to import"; applyBtn.disabled = true; }
+            text.value = "";
+            return;
+          }
+          text.value = GL.toCsv(adapted.rows).trimEnd();
+          parsed = showImportPreview(adapted.rows, evs, out, applyBtn);
+        } else {
+          text.value = await f.text();
+          refreshFromCsvText();
+        }
+      } catch (e) {
+        out.replaceChildren(h("p.dlg-note.err", e.message || "Couldn't read that file."));
+        parsed = null;
+        if (applyBtn) { applyBtn.textContent = "Nothing to import"; applyBtn.disabled = true; }
+      }
+    });
     api.dialog({
-      title: "Import households from CSV", wide: true,
-      body: h("div.gm-imp", h("div.row", file, h("button.link", { type: "button", onclick: () => download("households-template.csv", GL.toCsv([["household", "guests", "members", "tags", "events"], ["Sharma Family", "4", "Raj Sharma; Priya Sharma", "close-family", "all"], ["Maria Garcia", "2", "", "friends", "Friends"]])) }, "Download a template")), text, out),
+      title: "Import households from CSV or Excel", wide: true,
+      body: h("div.gm-imp", h("div.row", file,
+        h("button.link", { type: "button", onclick: () => download("households-template.csv", GL.toCsv(GL.householdsTemplateGrid([]))) }, "Download a CSV template"),
+        h("button.link", { type: "button", onclick: downloadExcelTemplate }, "Download Excel template")), text, out),
       actions: [{ label: "Cancel", value: false }, { label: "Import", primary: true, keepOpen: true, onClick: (close) => {
         if (!parsed) return;
         const good = parsed.rows.filter((r) => r.action !== "error");
@@ -386,7 +476,7 @@ export function mountGuests(el, api) {
         setHouseholds(GL.applyImport(households(), good), `Import ${plural(good.length, "household")}`);
         close(true); render(); api.toast(`Imported ${plural(good.length, "household")}`);
       } }],
-      onOpen: () => { applyBtn = [...document.querySelectorAll("dialog.dlg .dlg-f .btn")].find((b) => /^Import/.test(b.textContent)); applyBtn.disabled = true; refresh(); },
+      onOpen: () => { applyBtn = [...document.querySelectorAll("dialog.dlg .dlg-f .btn")].find((b) => /^Import/.test(b.textContent)); applyBtn.disabled = true; refreshFromCsvText(); },
     });
   }
 

@@ -8,7 +8,8 @@
 [data-page="story"] .story-text p { font-size: var(--step-1); line-height: 1.5; }
 [data-page="story"] .polaroids { display: grid; gap: var(--space-l); justify-items: center; padding-block: var(--space-xs); }
 [data-page="story"] .polaroid { width: min(100%, 20rem); background: #f7f5f0; padding: var(--space-xs) var(--space-xs) var(--space-xl); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); }
-[data-page="story"] .polaroid img { width: 100%; aspect-ratio: 1.05; object-fit: cover; }
+/* Portraits (3:4). A square frame was cropping heads and feet. */
+[data-page="story"] .polaroid img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
 [data-page="story"] .polaroid:nth-child(odd) { transform: rotate(-2.5deg); }
 [data-page="story"] .polaroid:nth-child(even) { transform: rotate(2.5deg); }
 @media (min-width: 768px) {

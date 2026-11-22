@@ -50,8 +50,7 @@ body.wide-panel { --pw: min(980px, 68vw); }
 .gm-table .c-name { min-width: 150px; }
 .gm-table .c-mem { min-width: 165px; }
 .gm-table .c-tags { min-width: 105px; }
-.gm-table .c-po { width: 54px; }
-.gm-table .c-ev { width: 54px; text-align: center; font-size: 11.5px; line-height: 1.2; }
+.gm-table .c-ev { width: 64px; text-align: center; font-size: 11.5px; line-height: 1.2; }
 .gm-table th.c-ev small { display: block; font-weight: 500; color: var(--warn); font-size: 10.5px; }
 .gm-table td.c-ev { vertical-align: middle; }
 .gm-table input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent-bright); cursor: pointer; margin: 6px 0 0; }
