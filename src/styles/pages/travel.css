@@ -114,7 +114,7 @@
 [data-page="travel"] .intl-icon svg { width: 1.75rem; height: 1.75rem; }
 [data-page="travel"] .airport .badge { align-self: flex-start; }
 [data-page="travel"] .airport-code { font-family: var(--font-display); font-size: var(--step-4); line-height: 1; letter-spacing: 0.04em; color: var(--burgundy); }
-[data-page="travel"] .airport-name { font-size: var(--step-1); font-weight: 400; line-height: 1.25; }
+[data-page="travel"] .airport-name { font-family: var(--font-display); font-size: var(--step-1); font-weight: 400; line-height: 1.25; text-transform: none; letter-spacing: 0.01em; }
 [data-page="travel"] .airport-drive { display: flex; gap: var(--space-2xs); align-items: flex-start; }
 [data-page="travel"] .airport-drive svg { width: 1.2em; height: 1.2em; margin-top: 0.22em; color: var(--burgundy); }
 [data-page="travel"] .airport .card-actions .btn { text-align: left; }
@@ -178,7 +178,7 @@
 }
 [data-page="travel"] .hotel-block.is-soon { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3xs) var(--space-s); }
 [data-page="travel"] .hotel-block p { margin: 0; }
-[data-page="travel"] .hotel-block-label { font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
+[data-page="travel"] .hotel-block-label { font-size: 0.8125rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
 [data-page="travel"] .hotel-block-title { font-family: var(--font-display); font-size: var(--step-1); line-height: 1.2; color: var(--burgundy); }
 [data-page="travel"] .hotel-block-note { font-size: var(--step--1); color: var(--text-muted); }
 [data-page="travel"] .hotel-actions { padding-top: 0; }
@@ -195,7 +195,7 @@
 [data-page="travel"] .airport-code { flex: none; margin: 0; white-space: nowrap; font-size: clamp(2.6rem, 10vw, 3.4rem); line-height: 0.9; }
 [data-page="travel"] .airport-main { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3xs); min-width: 0; }
 [data-page="travel"] .airport-main p { margin: 0; }
-[data-page="travel"] .airport-eyebrow { font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
+[data-page="travel"] .airport-eyebrow { font-size: 0.8125rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
 [data-page="travel"] .airport-alt { margin: 0; padding: var(--space-s) var(--space-m); border-top: 1px solid var(--rule); font-size: var(--step--1); color: var(--text-muted); }
 [data-page="travel"] .airport-alt strong { color: var(--ink); font-weight: 500; }
 [data-page="travel"] .gh-grid { display: grid; gap: var(--space-m) var(--space-l); }

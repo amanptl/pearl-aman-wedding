@@ -53,6 +53,11 @@ export function makeHousehold({ household, members = [], seats, eventSeats, even
   return hh;
 }
 
+/** Site headings show the name on its own. Stored greetings often start with "Dear", which invitation messages add themselves. */
+export function displayGreeting(greeting) {
+  return String(greeting || "").replace(/^\s*dear\s+/i, "").trim();
+}
+
 /** How many people a household may bring overall: max of `eventSeats`, else `seats`, else (older lists) names + plus-ones; 1 to MAX_SEATS. */
 export const MAX_SEATS = 20;
 export function seatsOf(h) {

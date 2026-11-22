@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildGuestFiles, openAdmin, nameVariants, reuseCodes } from "../../src/lib/guestfiles.js";
+import { buildGuestFiles, openAdmin, nameVariants, reuseCodes, displayGreeting } from "../../src/lib/guestfiles.js";
 import { sha256Hex, deriveKey, decryptJSON, normName, randomCode, CODE_ALPHABET } from "../../src/lib/crypto.js";
 
 const ITER = 1000;
@@ -106,4 +106,11 @@ test("seats: explicit seats win; older records count names + plus-ones; always 1
   const old = syncEventSeats({ seats: 3, eventIds: ["wedding", "reception"], members: [] });
   assert.deepEqual(old.eventSeats, { wedding: 3, reception: 3 });
   assert.equal(eventSeatsOf({ seats: 2, eventIds: ["wedding"] }, "wedding"), 2);
+});
+
+test("displayGreeting drops a leading Dear and keeps a custom line", () => {
+  assert.equal(displayGreeting("Dear Sharma Family"), "Sharma Family");
+  assert.equal(displayGreeting("  dear  Jordan & Sam Walker"), "Jordan & Sam Walker");
+  assert.equal(displayGreeting("Hi Raj"), "Hi Raj");
+  assert.equal(displayGreeting(""), "");
 });

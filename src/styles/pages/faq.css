@@ -41,9 +41,8 @@
 [data-page="faq"] .faq-q { min-width: 0; flex: 1; text-wrap: pretty; }
 [data-page="faq"] .faq-item summary svg { transition: transform var(--dur) var(--ease); color: var(--burgundy); }
 [data-page="faq"] .faq-item[open] summary svg { transform: rotate(90deg); }
-[data-page="faq"] .faq-answer { padding: 0 0 var(--space-m); max-width: var(--container-text); color: var(--text-muted); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2xs); }
+[data-page="faq"] .faq-answer { padding: 0 0 var(--space-m); max-width: var(--container-text); color: var(--text-muted); }
 [data-page="faq"] .faq-answer a { color: var(--burgundy); }
-[data-page="faq"] .faq-link { color: var(--ink); margin-left: calc(var(--space-xs) * -1); }
 [data-page="faq"] mark { background: rgba(184, 154, 94, 0.4); color: inherit; border-radius: 2px; padding: 0 0.1em; }
 
 [data-page="faq"] .faq-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-s); text-align: center; padding: var(--space-l) var(--space-m); }

@@ -400,15 +400,22 @@ function setupSignature() {
     const near = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) { near.disconnect(); preload(); } }, { rootMargin: "200px 0px" });
     near.observe(heart);
   }
-  // Once per visit, a soft heartbeat when the footer first comes into view: a nudge that the heart can be tapped.
-  const KEY = "pa.heartHint";
-  let seen = false;
-  try { seen = sessionStorage.getItem(KEY) === "1"; } catch { /* storage blocked: hint every visit */ }
-  if (seen || !("IntersectionObserver" in window)) return;
+  // A soft heartbeat when the footer comes into view, once on each page the guest visits (up to 3 per visit), as a
+  // nudge that the heart can be tapped. It stops for good once they've found it.
+  if (!("IntersectionObserver" in window)) return;
+  const KEY = "pa.heartHint", FOUND = "pa.heartFound", MAX = 3;
+  const get = (k) => { try { return sessionStorage.getItem(k); } catch { return null; } };
+  const set = (k, v) => { try { sessionStorage.setItem(k, v); } catch { /* storage blocked: fine */ } };
+  let armed = true; // re-armed each time the guest moves to another page
+  heart.addEventListener("click", () => set(FOUND, "1"));
+  window.addEventListener("hashchange", () => { armed = true; });
   const io = new IntersectionObserver((entries) => {
-    if (!entries.some((e) => e.isIntersecting)) return;
-    io.disconnect();
-    try { sessionStorage.setItem(KEY, "1"); } catch { /* fine */ }
+    if (!armed || !entries.some((e) => e.isIntersecting)) return;
+    armed = false;
+    const shown = Number(get(KEY)) || 0;
+    if (get(FOUND) || shown >= MAX || heart.getAttribute("aria-expanded") === "true") return;
+    set(KEY, String(shown + 1));
+    heart.classList.remove("is-hint"); void heart.offsetWidth; // restart if it was mid-beat
     heart.classList.add("is-hint");
     heart.addEventListener("animationend", () => heart.classList.remove("is-hint"), { once: true });
   }, { threshold: 1 });

@@ -2,7 +2,7 @@
 // `node tools/make-guests.mjs --households tools/sample-households.json --passphrase dev-passphrase`.
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import { openAdmin } from "../src/lib/guestfiles.js";
+import { openAdmin, displayGreeting } from "../src/lib/guestfiles.js";
 
 let codes = {};
 test.beforeAll(async () => {
@@ -33,7 +33,7 @@ test("name lookup is off by default: no name form, only 'open your personal link
 test("family link shows all 3 events and the greeting", async ({ page }) => {
   await open(page, `/?i=${codes.sharma.code}`);
   expect(await eventCount(page)).toBe(3);
-  await expect(page.getByText(codes.sharma.greeting).first()).toBeAttached();
+  await expect(page.getByText(displayGreeting(codes.sharma.greeting), { exact: true }).first()).toBeAttached();
 });
 
 test("friend link shows exactly its events", async ({ page }) => {
@@ -77,12 +77,12 @@ test("name lookup (any order/case/middle name) personalises, then remembered, th
     const form = page.locator('[data-page="home"] [data-lookup] form');
     await form.getByLabel("Your full name").fill(typed);
     await form.getByRole("button").click();
-    await expect(page.getByText(codes.sharma.greeting).first()).toBeAttached();
+    await expect(page.getByText(displayGreeting(codes.sharma.greeting), { exact: true }).first()).toBeAttached();
     await expect.poll(() => page.url()).not.toContain("i=");
   }
   // Returning visit without ?i
   await open(page, "/");
-  await expect(page.getByText(codes.sharma.greeting).first()).toBeAttached();
+  await expect(page.getByText(displayGreeting(codes.sharma.greeting), { exact: true }).first()).toBeAttached();
   expect(await eventCount(page)).toBe(3);
   await page.evaluate(async () => {
     const g = await import("/src/lib/guest.js");

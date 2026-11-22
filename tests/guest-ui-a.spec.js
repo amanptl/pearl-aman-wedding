@@ -51,7 +51,7 @@ test("Up next badge goes to the next event", async ({ page }) => {
   await freezeTime(page, "2027-07-24T10:00:00-04:00");
   await open(page, `/?guest=${FAMILY}#schedule`);
   await expect(page.locator(".event .badge", { hasText: "Up next" })).toHaveCount(1);
-  await expect(page.locator("#event-haldi .badge--gold")).toHaveText("Up next");
+  await expect(page.locator("#event-vidhi .badge--gold")).toHaveText("Up next");
   await open(page, `/?guest=${FAMILY}#home`);
   await expect(page.locator(".nextup")).toHaveCount(0); // home card hidden for now (SHOW_NEXT_UP in src/pages/home.js)
 });

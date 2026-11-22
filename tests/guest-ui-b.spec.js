@@ -107,18 +107,12 @@ test("faq: category chips filter", async ({ page }) => {
   await expect(page.locator('[data-page="faq"] [data-cat]').nth(1)).toHaveAttribute("aria-pressed", "true");
 });
 
-test("faq: deep link opens, focuses and copies link", async ({ page, context, browserName }) => {
-  if (browserName === "chromium") await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+test("faq: deep link opens and focuses", async ({ page }) => {
   await open(page, "/#faq/vegetarian");
   const item = page.locator("#faq-vegetarian");
   await expect(item).toHaveAttribute("open", "");
   await expect(item.locator("summary")).toBeFocused();
-  await expect(item.locator(".faq-link")).toBeVisible();
-  if (browserName === "chromium") {
-    await item.locator(".faq-link").click();
-    const t = await page.evaluate(() => navigator.clipboard.readText());
-    expect(t).toMatch(/#faq\/vegetarian$/);
-  }
+  await expect(item.locator(".faq-link")).toHaveCount(0);
   const other = page.locator('[data-page="faq"] .faq-item').first();
   await other.locator("summary").click();
   await expect(other).toHaveAttribute("open", "");

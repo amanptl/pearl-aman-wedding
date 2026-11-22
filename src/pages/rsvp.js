@@ -3,7 +3,7 @@ import { renderLookup } from "./_lookup.js";
 import { formatDate, formatTime, toInstant } from "../lib/time.js";
 import { downloadIcs } from "../lib/calendar.js";
 import { calendarSheet } from "./schedule.js";
-import { seatsOf, eventSeatsOf, eventSeatsMap } from "../lib/guestfiles.js";
+import { seatsOf, eventSeatsOf, eventSeatsMap, displayGreeting } from "../lib/guestfiles.js";
 import { envelopeHeart, calendarPlus as calIcon } from "../lib/icons.js";
 
 /*
@@ -543,7 +543,7 @@ function syncHead(root, ui, ctx) {
   const replied = !!ui.st.replied && !deadlinePassed(ctx) && ctx.mode !== "edit";
   const greet = root.querySelector("[data-greet]"), intro = root.querySelector("[data-intro]");
   const warn = root.querySelector(".rv-warn"), line = root.querySelector("[data-replied]");
-  if (greet) greet.textContent = replied ? `Thank you, ${ctx.guest.household}` : ctx.guest.greeting;
+  if (greet) greet.textContent = replied ? `Thank you, ${ctx.guest.household}` : displayGreeting(ctx.guest.greeting);
   if (intro) intro.hidden = replied;
   if (warn) warn.hidden = replied;
   if (line) {
@@ -977,7 +977,7 @@ export default {
       <div class="section section--paper rv page-head">
         <div class="container container--narrow rv-wrap">
           <h1 class="page-title center">RSVP</h1>
-          ${g ? html`<p class="lede center" data-greet>${g.greeting}</p>` : ""}
+          ${g ? html`<p class="lede center" data-greet>${displayGreeting(g.greeting)}</p>` : ""}
           <div class="stack stack--s center" data-intro ${listAttrs("rsvp.intro")}>
             ${(r.intro || []).map((p, i) => html`<p class="lede" ${editAttrs("multiline", `rsvp.intro.${i}`)} data-index="${i}">${p}</p>`)}
           </div>

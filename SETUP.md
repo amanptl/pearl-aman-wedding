@@ -18,7 +18,7 @@ This guide has two audiences. The first half is for the couple (editing, guests,
 4. Press **Publish**. Everything you changed goes live in one step (usually under a minute).
 
 ### Unlock the guest list
-Private events (for example Mehndi, Haldi, Sangeet) and your households are stored **encrypted**. A grey-blue banner at the top says *Unlock guest list to edit private events and guests* until you unlock.
+Private events (for example Mehndi, Vidhi, Sangeet) and your households are stored **encrypted**. A grey-blue banner at the top says *Unlock guest list to edit private events and guests* until you unlock.
 
 - Press **Unlock** and type your guest-list passphrase. The very first time there is no guest list yet, and the editor asks you to **create a passphrase** (at least 8 characters). Write it down: if it is lost, the guest list cannot be recovered. You can always rebuild it from your spreadsheet.
 - The passphrase is remembered for this browser tab only and is forgotten when you close the tab.

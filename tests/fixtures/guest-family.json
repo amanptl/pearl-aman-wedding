@@ -19,7 +19,7 @@
   "plusOnes": 0,
   "eventIds": [
     "mehndi",
-    "haldi",
+    "vidhi",
     "sangeet",
     "wedding",
     "reception"
@@ -64,9 +64,9 @@
       "shuttle": false
     },
     {
-      "id": "haldi",
-      "name": "Haldi",
-      "subtitle": "A morning of turmeric, laughter and blessings",
+      "id": "vidhi",
+      "name": "Vidhi",
+      "subtitle": "A morning Grah Shanti puja for peace",
       "start": "2027-07-24T10:30",
       "end": "2027-07-24T13:00",
       "venue": {
@@ -78,24 +78,12 @@
         "parking": "[Driveway and nearby street parking.]",
         "notes": "[Outdoor courtyard.]"
       },
-      "description": "Family and close friends gather to apply haldi (turmeric paste) to the couple. It is messy and joyful.",
+      "description": "A morning Grah Shanti puja for peace.",
       "dressCode": {
-        "title": "Wear something you can stain",
-        "text": "Yellow, white or pastel cotton outfits you will not mind getting turmeric on.",
-        "swatches": [
-          "#f2c230",
-          "#f5f0e0",
-          "#f3d9a4",
-          "#fbe9a6"
-        ],
-        "tips": [
-          "Bring a change of clothes for afterwards.",
-          "Old white or yellow kurtas are ideal."
-        ]
+        "title": "Traditional and comfortable",
+        "text": "Traditional and comfortable."
       },
-      "notes": [
-        "Turmeric stains fabric; we will provide towels and wipes."
-      ],
+      "notes": [],
       "photo": null,
       "visibility": "private",
       "rsvp": true,

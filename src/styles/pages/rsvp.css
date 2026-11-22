@@ -42,12 +42,12 @@
 .rv-form, .rv-step, .rv-sub { min-width: 0; margin: 0; padding: 0; border: 0; }
 .rv-step { display: flex; flex-direction: column; gap: var(--space-m); }
 .rv-legend { padding: 0; width: 100%; display: flex; flex-direction: column; gap: var(--space-3xs); margin-bottom: var(--space-2xs); }
-.rv-legend h2 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--step-3); line-height: 1.15; outline-offset: 6px; scroll-margin-top: var(--scroll-offset); }
+.rv-legend h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--step-2); line-height: 1.2; text-transform: uppercase; letter-spacing: 0.08em; outline-offset: 6px; scroll-margin-top: var(--scroll-offset); }
 .rv-count { font-size: var(--step--1); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-light); }
 .rv-sub { display: flex; flex-direction: column; gap: var(--space-xs); }
 .rv-sub > legend { padding: 0; margin-bottom: var(--space-2xs); font-size: var(--step-0); }
 .rv-form [data-step-heading]:focus, .rv-done [data-step-heading]:focus, .rv-passed [data-step-heading]:focus { outline: 3px solid var(--gold-light); }
-.rv-done h2, .rv-passed h2 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--step-3); scroll-margin-top: var(--scroll-offset); outline-offset: 6px; }
+.rv-done h2, .rv-passed h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--step-2); line-height: 1.2; text-transform: uppercase; letter-spacing: 0.08em; scroll-margin-top: var(--scroll-offset); outline-offset: 6px; }
 
 .rv-quick { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 
@@ -103,7 +103,7 @@
 .rv-ev--book + .rv-ev--book .rv-book { border-top: 1px dashed rgba(230, 207, 148, 0.35); }
 .rv-book-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-4xs) var(--space-s); }
 .rv-card h3.rv-book-name, .rv-book-name {
-  margin: 0; font-family: var(--font-script); font-weight: 400; font-size: var(--step-3); line-height: 1.1; color: #fbf1da; overflow-wrap: anywhere;
+  margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; line-height: 1.2; letter-spacing: 0.01em; color: #fbf1da; overflow-wrap: anywhere;
 }
 .rv-book-head .rv-when { font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; }
 .rv-quick { align-items: center; gap: var(--space-s); }
@@ -118,7 +118,7 @@
 .rv-line { display: flex; align-items: center; gap: var(--space-xs); min-height: var(--tap); border-bottom: 1px solid var(--bk-rule); }
 .rv-line:focus-within { border-bottom-color: var(--bk-wine); box-shadow: 0 1px 0 var(--bk-wine); }
 .rv-line:has(input[aria-invalid="true"]) { border-bottom-color: var(--danger-light); }
-.rv-line-n { flex: none; width: 1.4rem; text-align: center; font-family: var(--font-script); font-size: var(--step-2); line-height: 1; color: var(--gold-light); }
+.rv-line-n { flex: none; width: 1.1rem; text-align: center; font-family: var(--font-body); font-size: 0.95rem; line-height: 1; color: var(--gold-light); }
 .rv-form .rv-line input:not([type="radio"]):not([type="checkbox"]) {
   flex: 1; min-width: 0; min-height: var(--tap); padding: var(--space-3xs) 0; border: 0; border-radius: 0; background: transparent;
   color: var(--bk-ink); color-scheme: dark; font-family: var(--font-display); font-size: max(16px, var(--step-1));
@@ -235,11 +235,31 @@
 .rv-done-head { min-height: 6.5rem; }
 .rv-done h2 { max-width: calc(100% - 11.5rem); font-size: var(--step-2); font-weight: 400; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.2; color: #fbf1da; }
 .rv-done .rv-sum { gap: 0; }
-.rv-done .rv-sum-ev { flex-direction: row; align-items: baseline; gap: var(--space-s); padding: var(--space-xs) 0; border-top: 1px solid rgba(230, 207, 148, 0.22); border-bottom: 0; }
+.rv-done .rv-sum-ev { flex-direction: column; align-items: stretch; gap: var(--space-3xs); padding: var(--space-xs) 0; border-top: 1px solid rgba(230, 207, 148, 0.22); border-bottom: 0; }
 .rv-done .rv-sum-ev:last-child { border-bottom: 1px solid rgba(230, 207, 148, 0.22); padding-bottom: var(--space-xs); }
-.rv-done .rv-sum-name { flex: none; width: 5.5rem; font-size: var(--step-1); line-height: 1.2; color: #fbf1da; overflow-wrap: anywhere; }
-.rv-done .rv-sum-detail { min-width: 0; font-size: var(--step--1); color: rgba(236, 232, 223, 0.85); overflow-wrap: anywhere; }
-.rv-done .rv-sum-when { display: block; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-light); }
+.rv-done .rv-sum-name {
+  display: block; width: auto; max-width: 100%; min-width: 0;
+  font-size: var(--step-1); line-height: 1.2; color: #fbf1da;
+  overflow-wrap: break-word; text-wrap: balance; hyphens: manual;
+}
+.rv-done .rv-sum-detail { min-width: 0; font-size: var(--step--1); color: rgba(236, 232, 223, 0.85); overflow-wrap: break-word; }
+.rv-done .rv-sum-when { display: block; font-size: 0.8125rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-light); }
+@media (min-width: 640px) {
+  .rv-done .rv-sum {
+    display: grid;
+    grid-template-columns: fit-content(16rem) minmax(0, 1fr);
+    column-gap: var(--space-m);
+    row-gap: 0;
+  }
+  .rv-done .rv-sum-ev {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: baseline;
+    column-gap: var(--space-m);
+    row-gap: 0;
+  }
+}
 .rv-done-btn { width: 100%; text-transform: none; letter-spacing: 0.01em; font-size: var(--step-0); }
 .rv-done .rv-done-btn + .rv-done-btn { margin-top: calc(-1 * var(--space-xs)); }
 .rv-done .btn--secondary { color: var(--ivory); border-color: rgba(236, 232, 223, 0.65); }
@@ -271,5 +291,5 @@
 /* Replied line in the header (takes the place of "Kindly reply" once a household has answered). */
 .rv-replied { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3xs) var(--space-xs); margin: 0; text-align: center; font-size: var(--step--1); color: rgba(236, 232, 223, 0.85); }
 .rv-replied[hidden] { display: none; }
-.rv-replied-tag { font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-light); }
+.rv-replied-tag { font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-light); }
 .rv-replied-rule { width: 1.6rem; border-top: 1px solid rgba(230, 207, 148, 0.5); }

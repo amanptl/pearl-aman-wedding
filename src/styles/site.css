@@ -379,10 +379,10 @@ h1[tabindex="-1"]:focus { outline: none; }
   min-height: var(--tap); min-width: var(--tap);
   padding: var(--control-py) var(--control-px);
   font-family: var(--font-body);
-  font-size: var(--step--1);
+  font-size: var(--step-0);
   line-height: 1.2;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none; /* sentence case reads faster than spaced caps on actions */
   text-decoration: none;
   text-align: center;
   color: var(--text);
@@ -404,7 +404,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 .btn--light:hover { background: var(--ivory); color: var(--ink); }
 .btn--ghost { border-color: transparent; padding-inline: var(--space-xs); text-decoration: underline; text-underline-offset: 0.3em; text-decoration-thickness: 1px; }
 .btn--ghost:hover { background: rgba(127, 127, 127, 0.14); }
-.btn--small { padding: var(--control-py-s) var(--control-px-s); }
+.btn--small { padding: var(--control-py-s) var(--control-px-s); font-size: var(--step--1); }
 .btn--block { width: 100%; }
 .on-dark .btn--primary, .section--paper .btn--primary, .section--photo .btn--primary { background: var(--ivory); color: var(--ink); border-color: var(--ivory); }
 .on-dark .btn--primary:hover, .section--paper .btn--primary:hover, .section--photo .btn--primary:hover { background: #fff; }
@@ -1112,18 +1112,17 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 [data-page="schedule"] .event-body { padding: var(--space-m); }
 [data-page="schedule"] .event-photo { aspect-ratio: 16 / 9; background: var(--card); }
 [data-page="schedule"] .event-photo img { width: 100%; height: 100%; object-fit: cover; }
-/* Ticket band: "You're invited to the" + script name + when, with a date stub.
+/* Ticket band: script name + when, with a date stub.
    Events sit on the card paper under a gold hairline; only the wedding gets the burgundy band. */
 [data-page="schedule"] .event-band {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-s);
   margin-inline: var(--space-m); padding: var(--space-s) 0; border-bottom: 1px solid rgba(104, 77, 23, 0.3); color: var(--olive);
 }
 [data-page="schedule"] .event-band-main { flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4xs); min-width: 0; }
-[data-page="schedule"] .event-invite,
 [data-page="schedule"] .event-when { margin: 0; font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-text); line-height: 1.3; }
 [data-page="schedule"] .event-name {
-  margin: 0; font-family: var(--font-script); font-weight: 400; font-size: clamp(2.4rem, 9vw, 3rem); line-height: 1.05;
-  letter-spacing: 0; text-transform: none; color: var(--olive); overflow-wrap: anywhere; text-wrap: balance;
+  margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.75rem, 7vw, 2.1rem); line-height: 1.15;
+  letter-spacing: 0.01em; text-transform: none; color: var(--olive); overflow-wrap: anywhere; text-wrap: balance;
 }
 [data-page="schedule"] .event-when { display: flex; gap: var(--space-3xs); align-items: flex-start; margin-top: var(--space-3xs); letter-spacing: 0.08em; }
 [data-page="schedule"] .event-when svg { width: 1.05em; height: 1.05em; flex: none; margin-top: 0.12em; }
@@ -1142,7 +1141,6 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
   margin-inline: 0; padding: var(--space-s) clamp(var(--space-s), 4vw, var(--space-m)); border-bottom: 0;
   background: var(--burgundy); color: #f3e6c6; --focus: var(--gold-light);
 }
-[data-page="schedule"] .event--feature .event-invite,
 [data-page="schedule"] .event--feature .event-when { color: var(--gold-light); }
 [data-page="schedule"] .event--feature .event-name { color: #fbf1da; }
 [data-page="schedule"] .event--feature .event-stub { color: #f3e6c6; border-left-color: rgba(243, 230, 198, 0.55); }
@@ -1339,7 +1337,7 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 [data-page="travel"] .intl-icon svg { width: 1.75rem; height: 1.75rem; }
 [data-page="travel"] .airport .badge { align-self: flex-start; }
 [data-page="travel"] .airport-code { font-family: var(--font-display); font-size: var(--step-4); line-height: 1; letter-spacing: 0.04em; color: var(--burgundy); }
-[data-page="travel"] .airport-name { font-size: var(--step-1); font-weight: 400; line-height: 1.25; }
+[data-page="travel"] .airport-name { font-family: var(--font-display); font-size: var(--step-1); font-weight: 400; line-height: 1.25; text-transform: none; letter-spacing: 0.01em; }
 [data-page="travel"] .airport-drive { display: flex; gap: var(--space-2xs); align-items: flex-start; }
 [data-page="travel"] .airport-drive svg { width: 1.2em; height: 1.2em; margin-top: 0.22em; color: var(--burgundy); }
 [data-page="travel"] .airport .card-actions .btn { text-align: left; }
@@ -1403,7 +1401,7 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 }
 [data-page="travel"] .hotel-block.is-soon { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3xs) var(--space-s); }
 [data-page="travel"] .hotel-block p { margin: 0; }
-[data-page="travel"] .hotel-block-label { font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
+[data-page="travel"] .hotel-block-label { font-size: 0.8125rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
 [data-page="travel"] .hotel-block-title { font-family: var(--font-display); font-size: var(--step-1); line-height: 1.2; color: var(--burgundy); }
 [data-page="travel"] .hotel-block-note { font-size: var(--step--1); color: var(--text-muted); }
 [data-page="travel"] .hotel-actions { padding-top: 0; }
@@ -1420,7 +1418,7 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 [data-page="travel"] .airport-code { flex: none; margin: 0; white-space: nowrap; font-size: clamp(2.6rem, 10vw, 3.4rem); line-height: 0.9; }
 [data-page="travel"] .airport-main { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3xs); min-width: 0; }
 [data-page="travel"] .airport-main p { margin: 0; }
-[data-page="travel"] .airport-eyebrow { font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
+[data-page="travel"] .airport-eyebrow { font-size: 0.8125rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-text); }
 [data-page="travel"] .airport-alt { margin: 0; padding: var(--space-s) var(--space-m); border-top: 1px solid var(--rule); font-size: var(--step--1); color: var(--text-muted); }
 [data-page="travel"] .airport-alt strong { color: var(--ink); font-weight: 500; }
 [data-page="travel"] .gh-grid { display: grid; gap: var(--space-m) var(--space-l); }
@@ -1540,9 +1538,8 @@ html[data-film="idle"] .env-sheen { opacity: 1; animation: env-sheen 5.5s cubic-
 [data-page="faq"] .faq-q { min-width: 0; flex: 1; text-wrap: pretty; }
 [data-page="faq"] .faq-item summary svg { transition: transform var(--dur) var(--ease); color: var(--burgundy); }
 [data-page="faq"] .faq-item[open] summary svg { transform: rotate(90deg); }
-[data-page="faq"] .faq-answer { padding: 0 0 var(--space-m); max-width: var(--container-text); color: var(--text-muted); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2xs); }
+[data-page="faq"] .faq-answer { padding: 0 0 var(--space-m); max-width: var(--container-text); color: var(--text-muted); }
 [data-page="faq"] .faq-answer a { color: var(--burgundy); }
-[data-page="faq"] .faq-link { color: var(--ink); margin-left: calc(var(--space-xs) * -1); }
 [data-page="faq"] mark { background: rgba(184, 154, 94, 0.4); color: inherit; border-radius: 2px; padding: 0 0.1em; }
 
 [data-page="faq"] .faq-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-s); text-align: center; padding: var(--space-l) var(--space-m); }
@@ -1613,12 +1610,12 @@ html[data-mode="edit"] [data-page="registry"] .registry-bg { pointer-events: aut
 .rv-form, .rv-step, .rv-sub { min-width: 0; margin: 0; padding: 0; border: 0; }
 .rv-step { display: flex; flex-direction: column; gap: var(--space-m); }
 .rv-legend { padding: 0; width: 100%; display: flex; flex-direction: column; gap: var(--space-3xs); margin-bottom: var(--space-2xs); }
-.rv-legend h2 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--step-3); line-height: 1.15; outline-offset: 6px; scroll-margin-top: var(--scroll-offset); }
+.rv-legend h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--step-2); line-height: 1.2; text-transform: uppercase; letter-spacing: 0.08em; outline-offset: 6px; scroll-margin-top: var(--scroll-offset); }
 .rv-count { font-size: var(--step--1); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-light); }
 .rv-sub { display: flex; flex-direction: column; gap: var(--space-xs); }
 .rv-sub > legend { padding: 0; margin-bottom: var(--space-2xs); font-size: var(--step-0); }
 .rv-form [data-step-heading]:focus, .rv-done [data-step-heading]:focus, .rv-passed [data-step-heading]:focus { outline: 3px solid var(--gold-light); }
-.rv-done h2, .rv-passed h2 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--step-3); scroll-margin-top: var(--scroll-offset); outline-offset: 6px; }
+.rv-done h2, .rv-passed h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--step-2); line-height: 1.2; text-transform: uppercase; letter-spacing: 0.08em; scroll-margin-top: var(--scroll-offset); outline-offset: 6px; }
 
 .rv-quick { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 
@@ -1674,7 +1671,7 @@ html[data-mode="edit"] [data-page="registry"] .registry-bg { pointer-events: aut
 .rv-ev--book + .rv-ev--book .rv-book { border-top: 1px dashed rgba(230, 207, 148, 0.35); }
 .rv-book-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-4xs) var(--space-s); }
 .rv-card h3.rv-book-name, .rv-book-name {
-  margin: 0; font-family: var(--font-script); font-weight: 400; font-size: var(--step-3); line-height: 1.1; color: #fbf1da; overflow-wrap: anywhere;
+  margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; line-height: 1.2; letter-spacing: 0.01em; color: #fbf1da; overflow-wrap: anywhere;
 }
 .rv-book-head .rv-when { font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; }
 .rv-quick { align-items: center; gap: var(--space-s); }
@@ -1689,7 +1686,7 @@ html[data-mode="edit"] [data-page="registry"] .registry-bg { pointer-events: aut
 .rv-line { display: flex; align-items: center; gap: var(--space-xs); min-height: var(--tap); border-bottom: 1px solid var(--bk-rule); }
 .rv-line:focus-within { border-bottom-color: var(--bk-wine); box-shadow: 0 1px 0 var(--bk-wine); }
 .rv-line:has(input[aria-invalid="true"]) { border-bottom-color: var(--danger-light); }
-.rv-line-n { flex: none; width: 1.4rem; text-align: center; font-family: var(--font-script); font-size: var(--step-2); line-height: 1; color: var(--gold-light); }
+.rv-line-n { flex: none; width: 1.1rem; text-align: center; font-family: var(--font-body); font-size: 0.95rem; line-height: 1; color: var(--gold-light); }
 .rv-form .rv-line input:not([type="radio"]):not([type="checkbox"]) {
   flex: 1; min-width: 0; min-height: var(--tap); padding: var(--space-3xs) 0; border: 0; border-radius: 0; background: transparent;
   color: var(--bk-ink); color-scheme: dark; font-family: var(--font-display); font-size: max(16px, var(--step-1));
@@ -1806,11 +1803,31 @@ html[data-mode="edit"] [data-page="registry"] .registry-bg { pointer-events: aut
 .rv-done-head { min-height: 6.5rem; }
 .rv-done h2 { max-width: calc(100% - 11.5rem); font-size: var(--step-2); font-weight: 400; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.2; color: #fbf1da; }
 .rv-done .rv-sum { gap: 0; }
-.rv-done .rv-sum-ev { flex-direction: row; align-items: baseline; gap: var(--space-s); padding: var(--space-xs) 0; border-top: 1px solid rgba(230, 207, 148, 0.22); border-bottom: 0; }
+.rv-done .rv-sum-ev { flex-direction: column; align-items: stretch; gap: var(--space-3xs); padding: var(--space-xs) 0; border-top: 1px solid rgba(230, 207, 148, 0.22); border-bottom: 0; }
 .rv-done .rv-sum-ev:last-child { border-bottom: 1px solid rgba(230, 207, 148, 0.22); padding-bottom: var(--space-xs); }
-.rv-done .rv-sum-name { flex: none; width: 5.5rem; font-size: var(--step-1); line-height: 1.2; color: #fbf1da; overflow-wrap: anywhere; }
-.rv-done .rv-sum-detail { min-width: 0; font-size: var(--step--1); color: rgba(236, 232, 223, 0.85); overflow-wrap: anywhere; }
-.rv-done .rv-sum-when { display: block; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-light); }
+.rv-done .rv-sum-name {
+  display: block; width: auto; max-width: 100%; min-width: 0;
+  font-size: var(--step-1); line-height: 1.2; color: #fbf1da;
+  overflow-wrap: break-word; text-wrap: balance; hyphens: manual;
+}
+.rv-done .rv-sum-detail { min-width: 0; font-size: var(--step--1); color: rgba(236, 232, 223, 0.85); overflow-wrap: break-word; }
+.rv-done .rv-sum-when { display: block; font-size: 0.8125rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-light); }
+@media (min-width: 640px) {
+  .rv-done .rv-sum {
+    display: grid;
+    grid-template-columns: fit-content(16rem) minmax(0, 1fr);
+    column-gap: var(--space-m);
+    row-gap: 0;
+  }
+  .rv-done .rv-sum-ev {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: baseline;
+    column-gap: var(--space-m);
+    row-gap: 0;
+  }
+}
 .rv-done-btn { width: 100%; text-transform: none; letter-spacing: 0.01em; font-size: var(--step-0); }
 .rv-done .rv-done-btn + .rv-done-btn { margin-top: calc(-1 * var(--space-xs)); }
 .rv-done .btn--secondary { color: var(--ivory); border-color: rgba(236, 232, 223, 0.65); }
@@ -1842,7 +1859,7 @@ html[data-mode="edit"] [data-page="registry"] .registry-bg { pointer-events: aut
 /* Replied line in the header (takes the place of "Kindly reply" once a household has answered). */
 .rv-replied { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3xs) var(--space-xs); margin: 0; text-align: center; font-size: var(--step--1); color: rgba(236, 232, 223, 0.85); }
 .rv-replied[hidden] { display: none; }
-.rv-replied-tag { font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-light); }
+.rv-replied-tag { font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-light); }
 .rv-replied-rule { width: 1.6rem; border-top: 1px solid rgba(230, 207, 148, 0.5); }
 
 /* ===== pages/lookup.css ===== */

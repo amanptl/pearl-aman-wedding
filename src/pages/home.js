@@ -1,4 +1,5 @@
 import { html, raw, editAttrs, multiline, imgTag, isEdit } from "../lib/dom.js";
+import { displayGreeting } from "../lib/guestfiles.js";
 import { formatRange, formatDate, toInstant, nowNext } from "../lib/time.js";
 import { renderLookup } from "./_lookup.js";
 import * as icon from "../lib/icons.js";
@@ -167,6 +168,7 @@ export default {
     const small = (wedding ? lines.small : lines.celebrationSmall) || lines.small || "";
     const edit = isEdit();
     const due = dueLabel(ctx);
+    const greeting = displayGreeting(ctx.guest?.greeting);
     root.classList.add("page-home");
     root.innerHTML = html`
       <h1 class="visually-hidden">${site.couple.first} &amp; ${site.couple.second} are getting married in ${site.city || ""}, ${range}</h1>
@@ -213,7 +215,7 @@ export default {
       <div class="section section--ivory welcome">
         <div class="container container--narrow stack stack--l">
           <header class="welcome-head center stack stack--s">
-            ${ctx.guest?.greeting ? html`<p class="welcome-greeting display display--l" data-greeting>${ctx.guest.greeting}</p>` : ""}
+            ${greeting ? html`<p class="welcome-greeting display display--l" data-greeting>${greeting}</p>` : ""}
             ${home.welcome || edit ? html`<p class="lede" ${editAttrs("multiline", "home.welcome", { placeholder: "Add a welcome message" })}>${multiline(home.welcome || "")}</p>` : ""}
             <p class="welcome-when">
               <strong class="welcome-dates">${range}</strong>
