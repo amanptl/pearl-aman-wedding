@@ -2,7 +2,8 @@
  * Wedding RSVP backend (Google Apps Script web app). See README.md.
  * POST  payload=<JSON>            -> upserts Responses (one row per household and event: how many are coming) and
  *                                    Households (names, food counts, travel), appends History
- * Payload (v2): { v, code, household, seats, submittedAt, counts:{eventId:n}, names, diet:{label:n}, dietNote, extras }
+ * Payload (v2): { v, code, household, seats, eventSeats:{eventId:n}, submittedAt, counts:{eventId:n},
+ *                 namesByEvent:{eventId:string[]}, names, diet:{label:n}, dietNote, extras }
  * GET   ?action=get&code=CODE     -> { ok, P }
  * GET   ?action=summary&key=KEY   -> { ok, households, responses, counts, dietary, meals }
  */
@@ -55,13 +56,34 @@ function validate_(P) {
   if (!P.counts || typeof P.counts !== 'object' || Array.isArray(P.counts)) throw new Error('Bad counts');
   var evIds = Object.keys(P.counts);
   if (evIds.length < 1 || evIds.length > LIMITS.events) throw new Error('Bad counts');
+  var eventSeatsIn = P.eventSeats && typeof P.eventSeats === 'object' && !Array.isArray(P.eventSeats) ? P.eventSeats : {};
+  var eventSeats = {};
+  Object.keys(eventSeatsIn).forEach(function (id) {
+    if (!EVENT_RE.test(id)) throw new Error('Bad event id');
+    var n = count(eventSeatsIn[id]);
+    if (n > 0) eventSeats[id] = Math.min(n, LIMITS.seats);
+  });
   var counts = {};
   evIds.forEach(function (id) {
     if (!EVENT_RE.test(id)) throw new Error('Bad event id');
-    counts[id] = Math.min(count(P.counts[id]), seats);
+    var cap = eventSeats[id] != null ? eventSeats[id] : seats;
+    counts[id] = Math.min(count(P.counts[id]), cap);
+    if (eventSeats[id] == null) eventSeats[id] = seats;
   });
   var top = 0;
   evIds.forEach(function (id) { top = Math.max(top, counts[id]); });
+  var namesByEvent = {};
+  var namesIn = P.namesByEvent && typeof P.namesByEvent === 'object' && !Array.isArray(P.namesByEvent) ? P.namesByEvent : null;
+  if (namesIn) {
+    Object.keys(namesIn).forEach(function (id) {
+      if (!EVENT_RE.test(id)) throw new Error('Bad event id');
+      var attending = counts[id] || 0;
+      var list = namesIn[id];
+      if (!Array.isArray(list)) throw new Error('Bad namesByEvent');
+      if (list.length > attending) throw new Error('Too many names');
+      namesByEvent[id] = list.slice(0, attending).map(function (n) { return str_(n, 80); });
+    });
+  }
   var dietIn = P.diet && typeof P.diet === 'object' && !Array.isArray(P.diet) ? P.diet : {};
   var labels = Object.keys(dietIn);
   if (labels.length > LIMITS.diet) throw new Error('Bad diet');
@@ -84,7 +106,9 @@ function validate_(P) {
     household: str_(P.household, 120),
     submittedAt: str_(P.submittedAt, 40) || new Date().toISOString(),
     seats: seats,
+    eventSeats: eventSeats,
     counts: counts,
+    namesByEvent: namesByEvent,
     names: str_(P.names, 1000),
     diet: diet,
     dietNote: str_(P.dietNote, LIMITS.str),
@@ -140,7 +164,8 @@ function doPost(e) {
     var appendRows = [];
     Object.keys(P.counts).forEach(function (eventId) {
       keep[eventId] = true;
-      var vals = [P.code, safe_(P.household), safe_(eventId), P.seats, P.counts[eventId], now];
+      var invited = (P.eventSeats && P.eventSeats[eventId] != null) ? P.eventSeats[eventId] : P.seats;
+      var vals = [P.code, safe_(P.household), safe_(eventId), invited, P.counts[eventId], now];
       if (existing[eventId]) rs.getRange(existing[eventId], 1, 1, vals.length).setValues([vals]);
       else appendRows.push(vals);
     });

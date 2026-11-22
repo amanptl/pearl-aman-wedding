@@ -28,11 +28,12 @@ Private events (for example Mehndi, Haldi, Sangeet) and your households are stor
 
 Open the **Guests** tab (after unlocking).
 
-- **Households:** one row per invitation. Edit the household name, **Guests** (how many people the household may bring; the RSVP asks "how many of you will join us?" up to this number), optional names (type a name, press Enter), groups, and tick the events they are invited to. Ticking an event decides what that household sees on its Schedule and RSVP pages.
+- **Households:** one row per invitation. Edit the household name, optional names (type a name, press Enter; used for name lookup), groups, and a number under each event for how many people are invited (0 means not invited). The RSVP asks "how many of you will join us?" up to that event’s number, and shows one empty name field per person coming.
 - **Groups (presets):** tick some households, then press a group such as *Close family* (all events) or *Friends* (Sangeet + Wedding + Reception) to set their events in one go. *Edit groups…* lets you change what each group means.
 - **Add household** adds a row and puts the cursor in the name field. **Delete** asks first.
 - **Search and filters:** by name, group or event.
-- **Import CSV:** columns `household, guests, members, tags, events` (`members` = optional names). Separate several names or events with `;`. Older files with `plusOnes` and no `guests` still work: guests = names + plus-ones. `events` can be event ids (`wedding;reception`), `all`, or a group name (`Friends`). You see a preview with any problems before anything is added. Existing households (same name) keep their personal link.
+- **Import CSV / Excel:** columns `household, guests, members, tags, events` (`members` = optional names). Separate several names or events with `;`. Older files with `plusOnes` and no `guests` still work: guests = names + plus-ones. `events` can be event ids (`wedding;reception`), `all`, a group name (`Friends`), or per-event counts (`mehndi:4; wedding:2`). You see a preview with any problems before anything is added. Existing households (same name) keep their personal link.
+- **Excel template:** downloads a fillable `.xlsx` with one column per event (how many people are invited; blank or 0 means not invited) plus a short “How to fill” sheet. Re-download after you add or rename events. Choose the filled file with **Import CSV / Excel**.
 - **Export CSV** gives every household with its personal link, handy for mail merges.
 - Per household:
   - **Copy link:** the personal link `https://yoursite/?i=CODE`.
@@ -94,6 +95,7 @@ node apps-script/test-harness.mjs
 - **Service worker:** `sw.js` must list every `src/**/*.js|css` file in `SHELL` (`tests/unit/sw.test.mjs` checks it). Bump `VERSION` when cached files change.
 - **Images:** `node tools/images.mjs` writes WebP versions (`assets/img/<name>.webp` and `-600.webp`). Icons: `node tools/icons.mjs`.
 - `vendor/qrcode.min.js` is `qrcodejs@1.0.0`, used by the editor's QR sheet and `/qr/`.
+- `vendor/xlsx.mini.min.js` is SheetJS `xlsx@0.18.5` (mini build), lazy-loaded by the guest manager for the Excel template and `.xlsx` import.
 
 ## Structure
 - `index.html`, `src/main.js`: shell, boot and router.

@@ -30,12 +30,13 @@ export function nameVariants(name) {
 
 /**
  * Build a household (a Guest without privateEvents). Generates a code and member ids unless supplied.
- * `seats` is how many people the household may bring to each event (the RSVP asks for a count up to it); `members` are
- * optional names. Older lists without `seats` get names + plus-ones.
- * @param {{household:string, members?:(string|{id?:string,name:string})[], seats?:number, eventIds?:string[], tags?:string[], plusOnes?:number, code?:string, greeting?:string, id?:string}} h
+ * `eventSeats` is how many people may come to each event (0 = not invited). `eventIds` stays the events with a
+ * count above 0. `seats` is the largest event count so older readers still have one number. Older lists with only
+ * `seats` + `eventIds` (or members + plus-ones) keep working.
+ * @param {{household:string, members?:(string|{id?:string,name:string})[], seats?:number, eventSeats?:Record<string,number>, eventIds?:string[], tags?:string[], plusOnes?:number, code?:string, greeting?:string, id?:string}} h
  * @param {Set<string>} [taken] codes already in use (the new code is added)
  */
-export function makeHousehold({ household, members = [], seats, eventIds = [], tags = [], plusOnes = 0, code, greeting, id }, taken = new Set()) {
+export function makeHousehold({ household, members = [], seats, eventSeats, eventIds = [], tags = [], plusOnes = 0, code, greeting, id }, taken = new Set()) {
   if (!household || !String(household).trim()) throw new Error("Household name is required");
   let c = code;
   if (!c) { do c = randomCode(10); while (taken.has(c)); }
@@ -45,17 +46,79 @@ export function makeHousehold({ household, members = [], seats, eventIds = [], t
     return { id: o.id || `m${i + 1}`, name: String(o.name ?? "").trim() };
   });
   const name = String(household).trim();
-  const hh = { code: c, household: name, greeting: greeting || `Dear ${name}`, members: ms, seats: seatsOf({ seats, members: ms, plusOnes }), eventIds: [...eventIds], tags: [...tags] };
+  const hh = { code: c, household: name, greeting: greeting || `Dear ${name}`, members: ms, seats: seatsOf({ seats, members: ms, plusOnes, eventSeats, eventIds }), eventIds: [...eventIds], tags: [...tags] };
+  if (eventSeats && typeof eventSeats === "object") hh.eventSeats = { ...eventSeats };
+  syncEventSeats(hh);
   if (id) hh.id = id;
   return hh;
 }
 
-/** How many people a household may bring: `seats`, or (older lists) named members + plus-ones; 1 to MAX_SEATS. */
+/** How many people a household may bring overall: max of `eventSeats`, else `seats`, else (older lists) names + plus-ones; 1 to MAX_SEATS. */
 export const MAX_SEATS = 20;
 export function seatsOf(h) {
+  const fromEvents = Object.values(h?.eventSeats || {}).map((n) => Math.round(+n) || 0).filter((n) => n > 0);
+  if (fromEvents.length) return Math.max(1, Math.min(MAX_SEATS, Math.max(...fromEvents)));
   const n = Number.isFinite(+h?.seats) && +h.seats > 0 ? Math.round(+h.seats)
     : (h?.members || []).filter((m) => String(m?.name ?? m ?? "").trim()).length + (Number(h?.plusOnes) || 0);
   return Math.max(1, Math.min(MAX_SEATS, n || 1));
+}
+
+/** Clamp a per-event invited count to 0..MAX_SEATS. */
+export function clampEventSeats(n) {
+  const v = Math.round(+n);
+  if (!Number.isFinite(v) || v <= 0) return 0;
+  return Math.min(MAX_SEATS, v);
+}
+
+/**
+ * How many people this household may bring to one event. Uses `eventSeats[id]` when present; otherwise the shared
+ * `seatsOf()` value when the id is in `eventIds`, else 0.
+ */
+export function eventSeatsOf(h, eventId) {
+  if (!eventId) return 0;
+  if (h?.eventSeats && Object.prototype.hasOwnProperty.call(h.eventSeats, eventId)) return clampEventSeats(h.eventSeats[eventId]);
+  return (h?.eventIds || []).includes(eventId) ? seatsOf(h) : 0;
+}
+
+/** Full map of event id -> invited count for the events this household knows about. */
+export function eventSeatsMap(h, eventIds = h?.eventIds || []) {
+  const ids = new Set([...(h?.eventIds || []), ...Object.keys(h?.eventSeats || {}), ...eventIds]);
+  const out = {};
+  for (const id of ids) {
+    const n = eventSeatsOf(h, id);
+    if (n > 0) out[id] = n;
+  }
+  return out;
+}
+
+/**
+ * Keep `eventIds` (ids with count > 0) and `seats` (the largest count) in sync with `eventSeats`.
+ * Mutates and returns the household.
+ */
+export function syncEventSeats(h) {
+  if (!h) return h;
+  if (h.eventSeats && typeof h.eventSeats === "object") {
+    const clean = {};
+    for (const [id, n] of Object.entries(h.eventSeats)) {
+      const v = clampEventSeats(n);
+      if (v > 0 && id) clean[id] = v;
+    }
+    h.eventSeats = clean;
+    h.eventIds = Object.keys(clean);
+    h.seats = seatsOf(h);
+    delete h.plusOnes;
+  } else if (h.eventIds?.length) {
+    // Older household: invent eventSeats from the shared seats so the editor and RSVP share one shape.
+    const cap = seatsOf(h);
+    h.eventSeats = Object.fromEntries(h.eventIds.map((id) => [id, cap]));
+    h.seats = cap;
+    delete h.plusOnes;
+  } else {
+    h.eventSeats = h.eventSeats || {};
+    h.eventIds = h.eventIds || [];
+    h.seats = seatsOf(h);
+  }
+  return h;
 }
 
 /**

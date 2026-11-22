@@ -330,7 +330,7 @@
     "rsvp": {
       "type": "object", "title": "RSVP", "description": "RSVP form settings.",
       "properties": {
-        "namesRequired": { "type": "boolean", "title": "Require names of those coming", "description": "When on, a household coming with more than one person must list names before sending. Turn this off to make that field optional.", "default": true },
+        "namesRequired": { "type": "boolean", "title": "Require names of those coming", "description": "When on, each person coming to an event needs a name before sending. Turn this off to make those fields optional.", "default": true },
         "deadline": { "type": "string", "format": "date", "title": "Reply by", "description": "Last day to RSVP." },
         "deadlineText": { "type": "string", "title": "Reply-by wording", "description": "How the deadline is written, for example June 1st, 2027." },
         "intro": { "type": "array", "title": "Introduction", "description": "Opening text, one paragraph per item.", "items": { "type": "string", "title": "Paragraph", "description": "One paragraph.", "x-widget": "textarea" } },
@@ -344,7 +344,7 @@
             "flight": { "type": "string", "title": "Flight question", "description": "Asks for flight details." },
             "address": { "type": "string", "title": "Address question", "description": "Asks for a mailing address." },
             "shuttle": { "type": "string", "title": "Shuttle question", "description": "Asks how many shuttle seats are needed." },
-            "phone": { "type": "string", "title": "Phone question", "description": "Asks for a phone number." },
+            "phone": { "type": "string", "title": "Phone question", "description": "Asks for a phone number for reminders and last-minute updates. Shown on the details step, and required before continuing when someone is coming." },
             "song": { "type": "string", "title": "Song question", "description": "Asks for a song request." }
           }
         }

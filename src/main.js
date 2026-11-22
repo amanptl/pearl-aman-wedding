@@ -2,6 +2,7 @@
 import { $, $$, html, esc } from "./lib/dom.js";
 import { loadContent } from "./lib/store.js";
 import { resolveGuest } from "./lib/guest.js";
+import { syncEventSeats } from "./lib/guestfiles.js";
 import { registerSW } from "./lib/pwa.js";
 import { toast, openSheet } from "./lib/ui.js";
 import { telUrl, whatsappUrl } from "./lib/maps.js";
@@ -360,6 +361,7 @@ async function boot() {
   const first = parseHash().id || "home";
   if (EDIT || !byId[first] || !pageVisible(byId[first])) PAGES.forEach(renderPage); else renderPage(byId[first]);
   setupHelp();
+  setupSignature();
   $("#app").hidden = false;
   const boot_ = $("#boot");
   if (boot_) { boot_.classList.add("is-done"); setTimeout(() => boot_.remove(), 400); }
@@ -373,11 +375,51 @@ async function boot() {
   if (rendered.size === PAGES.length) finish(); else setTimeout(finish, 30);
 }
 
+/* Easter egg: the footer heart reveals the couple's signature (and hides it again). */
+function setupSignature() {
+  const heart = $(".colophon-heart"), sign = $("#colophon-sign");
+  if (!heart || !sign) return;
+  // The image loads lazily, so fetch it once the footer is near; and only start writing it in once it has loaded,
+  // otherwise the first tap plays the animation on an empty image.
+  const preload = () => { if (sign.loading !== "eager") sign.loading = "eager"; if (!sign.complete) { const i = new Image(); i.src = sign.src; } };
+  const write = () => { sign.classList.remove("is-writing"); void sign.offsetWidth; sign.classList.add("is-writing"); };
+  heart.addEventListener("pointerenter", preload, { once: true });
+  heart.addEventListener("focus", preload, { once: true });
+  heart.addEventListener("click", () => {
+    const open = heart.getAttribute("aria-expanded") !== "true";
+    heart.setAttribute("aria-expanded", String(open));
+    sign.hidden = !open;
+    heart.classList.remove("is-hint");
+    if (!open) { sign.classList.remove("is-writing"); return; }
+    // Bring the whole signature into view (its space is reserved even while the image loads).
+    requestAnimationFrame(() => sign.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
+    if (sign.complete && sign.naturalWidth) write();
+    else { preload(); sign.addEventListener("load", write, { once: true }); }
+  });
+  if ("IntersectionObserver" in window) {
+    const near = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) { near.disconnect(); preload(); } }, { rootMargin: "200px 0px" });
+    near.observe(heart);
+  }
+  // Once per visit, a soft heartbeat when the footer first comes into view: a nudge that the heart can be tapped.
+  const KEY = "pa.heartHint";
+  let seen = false;
+  try { seen = sessionStorage.getItem(KEY) === "1"; } catch { /* storage blocked: hint every visit */ }
+  if (seen || !("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    io.disconnect();
+    try { sessionStorage.setItem(KEY, "1"); } catch { /* fine */ }
+    heart.classList.add("is-hint");
+    heart.addEventListener("animationend", () => heart.classList.remove("is-hint"), { once: true });
+  }, { threshold: 1 });
+  io.observe(heart);
+}
+
 /* Dev only: ?guest=tests/fixtures/guest-family.json loads a plaintext Guest (localhost only). */
 async function devGuest() {
   const g = params.get("guest");
   if (!isLocal || !g || !/^[\w\-./]+\.json$/.test(g)) return null;
-  try { return await (await fetch(g, { cache: "no-cache" })).json(); } catch { return null; }
+  try { return syncEventSeats(await (await fetch(g, { cache: "no-cache" })).json()); } catch { return null; }
 }
 
 /* ---------- Edit bridge (used by edit/) ---------- */
@@ -390,7 +432,7 @@ function exposeEditBridge() {
       // view: "public" = what an unrecognised visitor sees (public events, no greeting); default = everything in the draft, or the guest's own view.
       const v = view || (guest ? "guest" : "all");
       ctx.content = content;
-      ctx.guest = v === "public" ? null : guest;
+      ctx.guest = v === "public" ? null : guest ? syncEventSeats({ ...guest }) : guest;
       ctx.tz = content.site.timezone || "America/Toronto";
       ctx.events = visibleEvents(content, ctx.guest, v);
       ctx.rerender();

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
+import { workbookBuffer } from "./helpers/xlsx.js";
 
 // Guest manager + private-event editing. Uses the dev sample guest list (passphrase "dev-passphrase").
 const PASS = "dev-passphrase";
@@ -132,13 +133,16 @@ test.describe("guest manager", () => {
     const last = page.locator(".gm-table tbody tr:last-child");
     await last.locator(".chip-add").first().fill("Omar Ibrahim");
     await last.locator(".chip-add").first().press("Enter");
-    await page.locator(".gm-table tbody tr:last-child").getByLabel("Ibrahim Family: invited to Wedding Ceremony").check();
+    const weddingSeats = page.locator(".gm-table tbody tr:last-child").getByLabel("Ibrahim Family: guests invited to Wedding Ceremony");
+    await weddingSeats.fill("1");
+    await weddingSeats.blur();
     const d = await draft(page);
     const added = d._admin.households.at(-1);
     expect(added.household).toBe("Ibrahim Family");
     expect(added.greeting).toBe("Dear Ibrahim Family");
     expect(added.members.map((m) => m.name)).toEqual(["Omar Ibrahim"]);
     expect(added.eventIds).toEqual(["wedding"]);
+    expect(added.eventSeats).toEqual({ wedding: 1 });
     expect(added.code).toMatch(/^[A-HJKMNP-Z2-9]{10}$/);
     expect(d._admin.households.slice(0, 6).map((x) => x.code)).toEqual(before);
     await expect(page.locator("#badge")).not.toContainText(/problem/);
@@ -222,7 +226,9 @@ test.describe("guest manager", () => {
     await expect(fr(page).locator("[data-greeting]")).toContainText("Dear Jordan & Sam Walker");
     // a household's invitations change what its preview shows
     await page.locator('[data-tab="guests"]').click();
-    await row(page, CODES.walker).getByLabel("Jordan & Sam Walker: invited to Mehendi").check();
+    const mehendiSeats = row(page, CODES.walker).getByLabel("Jordan & Sam Walker: guests invited to Mehendi");
+    await mehendiSeats.fill("2");
+    await mehendiSeats.blur();
     await page.selectOption("#page-select", "schedule");
     await expect(fr(page).locator("[data-event]")).toHaveCount(2);
     await page.selectOption("#preview-as", "public");
@@ -238,7 +244,7 @@ test.describe("guest manager", () => {
   test("CSV import: preview shows parsed rows and problems before anything is added", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openGuests(page);
-    await page.getByRole("button", { name: "Import CSV" }).click();
+    await page.getByRole("button", { name: "Import CSV / Excel" }).click();
     const csv = [
       "household,members,tags,events,plusOnes",
       "Kapoor Family,Anil Kapoor; Rita Kapoor,family,wedding;haldi-vidhi,1",
@@ -273,6 +279,47 @@ test.describe("guest manager", () => {
     expect(text).toContain(`?i=${CODES.sharma}`);
   });
 
+  test("Excel template downloads .xlsx; importing a workbook adds households with event seats", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openGuests(page);
+    const [tpl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Excel template" }).click(),
+    ]);
+    expect(tpl.suggestedFilename()).toBe("households-template.xlsx");
+    const tplBytes = fs.readFileSync(await tpl.path());
+    expect(tplBytes.slice(0, 2).toString()).toBe("PK");
+
+    const xlsx = workbookBuffer({
+      Households: [
+        ["household", "members", "tags", "mehendi", "haldi-vidhi", "wedding"],
+        ["Nguyen Family", "Lan Nguyen; Minh Nguyen", "close-family", "3", "2", "4"],
+        ["Only Wedding", "", "friends", "0", "0", "2"],
+      ],
+      "How to fill": [["Delete the example rows before you import."]],
+    });
+    await page.getByRole("button", { name: "Import CSV / Excel" }).click();
+    await page.getByLabel("Choose a CSV or Excel file").setInputFiles({
+      name: "invite.xlsx",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: xlsx,
+    });
+    const prev = page.locator(".gm-prev");
+    await expect(prev).toContainText("2 households to add");
+    await expect(prev).toContainText("Nguyen Family");
+    expect((await draft(page))._admin.households).toHaveLength(6);
+    await page.getByRole("button", { name: "Import 2 households" }).click();
+    const d = await draft(page);
+    expect(d._admin.households).toHaveLength(8);
+    const nguyen = d._admin.households.find((x) => x.household === "Nguyen Family");
+    expect(nguyen.eventSeats).toEqual({ mehendi: 3, "haldi-vidhi": 2, wedding: 4 });
+    expect(nguyen.eventIds.sort()).toEqual(["haldi-vidhi", "mehendi", "wedding"]);
+    expect(nguyen.members.map((m) => m.name)).toEqual(["Lan Nguyen", "Minh Nguyen"]);
+    const only = d._admin.households.find((x) => x.household === "Only Wedding");
+    expect(only.eventSeats).toEqual({ wedding: 2 });
+    expect(only.eventIds).toEqual(["wedding"]);
+  });
+
   test("delete asks first", async ({ page }) => {
     await openGuests(page);
     await page.getByRole("button", { name: "Delete for Maria Garcia" }).click();
@@ -297,7 +344,9 @@ test.describe("publishing", () => {
     await name.press("Tab");
     await page.locator(".gm-table tbody tr:last-child .chip-add").first().fill("Wei Zhang");
     await page.locator(".gm-table tbody tr:last-child .chip-add").first().press("Enter");
-    await page.locator(".gm-table tbody tr:last-child").getByLabel("Zhang Family: invited to Mehendi").check();
+    const zhangMehendi = page.locator(".gm-table tbody tr:last-child").getByLabel("Zhang Family: guests invited to Mehendi");
+    await zhangMehendi.fill("2");
+    await zhangMehendi.blur();
     await page.evaluate(() => {
       const i = window.__editor.draft.events.findIndex((e) => e.id === "mehendi");
       window.__editor.commit(`events.${i}.visibility`, "public", "Make Mehendi public");

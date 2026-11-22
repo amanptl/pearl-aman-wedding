@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, toCsv, importRows, applyImport, DEFAULT_PRESETS, presetEventIds, waMessage, personalLink, analyseSummary, makeGuestFor, greetingName } from "../../edit/guestlib.js";
+import { parseCsv, toCsv, importRows, applyImport, DEFAULT_PRESETS, presetEventIds, waMessage, personalLink, analyseSummary, makeGuestFor, greetingName, householdsTemplateGrid, householdsGuideGrid, sheetToImportRows, matchEventHeader } from "../../edit/guestlib.js";
 import { buildGuestFiles, openAdmin } from "../../src/lib/guestfiles.js";
 
 const events = [{ id: "mehndi", name: "Mehndi", visibility: "private" }, { id: "sangeet", name: "Sangeet", visibility: "private" }, { id: "wedding", name: "Wedding", visibility: "public" }, { id: "reception", name: "Reception", visibility: "public" }];
@@ -83,10 +83,66 @@ test("importRows: a guests column sets seats; names are optional; plusOnes files
   const r = importRows(parseCsv("household,guests,members,events\nPatel Family,5,,all\nKim,0,,all\nLee,x,,all"), { events, presets: [], existing: [] });
   assert.deepEqual(r.rows.map((x) => x.action), ["add", "error", "error"]);
   assert.equal(r.rows[0].data.seats, 5);
+  assert.deepEqual(r.rows[0].data.eventSeats.wedding, 5);
   assert.match(r.rows[1].errors.join(), /Guests must be/);
   const old = importRows(parseCsv("household,members,events,plusOnes\nShah,Ravi Shah; Mina Shah,all,1"), { events, presets: [], existing: [] });
   assert.equal(old.rows[0].data.seats, 3);
   assert.equal(applyImport([], r.rows)[0].seats, 5);
+  const per = importRows(parseCsv("household,events\nDesai,mehndi:4; wedding:2"), { events, presets: [], existing: [] });
+  assert.equal(per.rows[0].action, "add");
+  assert.deepEqual(per.rows[0].data.eventSeats, { mehndi: 4, wedding: 2 });
+  assert.equal(per.rows[0].data.seats, 4);
+  const applied = applyImport([], per.rows)[0];
+  assert.deepEqual(applied.eventSeats, { mehndi: 4, wedding: 2 });
+  assert.deepEqual(applied.eventIds, ["mehndi", "wedding"]);
+});
+
+test("Excel template grid uses event name columns, or classic CSV columns when there are no events", () => {
+  const withEvents = householdsTemplateGrid([{ id: "mehendi", name: "Mehendi" }, { id: "wedding", name: "Wedding Ceremony" }]);
+  assert.deepEqual(withEvents[0], ["household", "members", "tags", "Mehendi", "Wedding Ceremony"]);
+  assert.equal(withEvents[1][0], "Sharma Family");
+  assert.deepEqual(withEvents[1].slice(3), ["4", "4"]);
+  assert.deepEqual(withEvents[2].slice(3), ["0", "2"]);
+  const bare = householdsTemplateGrid([{ id: "wedding", name: "Wedding" }], { examples: false });
+  assert.deepEqual(bare, [["household", "members", "tags", "Wedding"]]);
+  assert.deepEqual(householdsTemplateGrid([])[0], ["household", "guests", "members", "tags", "events"]);
+  const guide = householdsGuideGrid([{ id: "wedding", name: "Wedding" }], DEFAULT_PRESETS);
+  assert.match(guide.map((r) => r[0]).join("\n"), /Wedding/);
+  assert.match(guide.map((r) => r[0]).join("\n"), /Close family/);
+});
+
+test("sheetToImportRows: event name columns become per-event counts; classic headers pass through; blank rows drop", () => {
+  assert.equal(matchEventHeader("Mehendi", [{ id: "mehendi", name: "Mehendi" }]), "mehendi");
+  assert.equal(matchEventHeader("mehendi", [{ id: "mehendi", name: "Mehendi" }]), "mehendi");
+  assert.equal(matchEventHeader("Unknown", events), null);
+
+  const adapted = sheetToImportRows([
+    ["household", "members", "tags", "Mehndi", "Wedding", ""],
+    ["Patel Family", "A Patel; B Patel", "close-family", "4", "2", ""],
+    ["", "", "", "", "", ""],
+    ["Lee", "", "friends", "0", "1"],
+  ], { events });
+  assert.deepEqual(adapted.headerErrors, []);
+  assert.deepEqual(adapted.rows[0], ["household", "guests", "members", "tags", "events"]);
+  assert.deepEqual(adapted.rows[1], ["Patel Family", "", "A Patel; B Patel", "close-family", "mehndi:4; wedding:2"]);
+  assert.deepEqual(adapted.rows[2], ["Lee", "", "", "friends", "wedding:1"]);
+  assert.equal(adapted.rows.length, 3);
+
+  const imported = importRows(adapted.rows, { events, presets: DEFAULT_PRESETS, existing: [] });
+  assert.deepEqual(imported.rows.map((r) => r.action), ["add", "add"]);
+  assert.deepEqual(imported.rows[0].data.eventSeats, { mehndi: 4, wedding: 2 });
+  assert.equal(imported.rows[0].data.seats, 4);
+
+  const classic = [
+    ["household", "guests", "members", "tags", "events"],
+    ["Kim", "2", "", "friends", "Friends"],
+    ["", "", "", "", ""],
+  ];
+  const pass = sheetToImportRows(classic, { events });
+  assert.deepEqual(pass.rows, [["household", "guests", "members", "tags", "events"], ["Kim", "2", "", "friends", "Friends"]]);
+
+  assert.match(sheetToImportRows([["foo", "bar"]], { events }).headerErrors.join(), /household/);
+  assert.match(sheetToImportRows([], { events }).headerErrors.join(), /empty/);
 });
 
 test("admin bundle carries presets and message templates, and old bundles still open", async () => {

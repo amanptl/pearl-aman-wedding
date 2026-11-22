@@ -60,11 +60,21 @@ const PERIOD = {
   evening: { label: "Evening", icon: icon.moon },
 };
 
-function periodTag(e) {
-  const part = dayPart(e.start, e.end, e.dayPart);
-  const p = PERIOD[part];
-  if (!p) return "";
-  return html`<span class="period">${p.icon()}<span>${p.label}</span></span>`;
+/** "Afternoon · 5:00 – 9:00 PM" line for the burgundy band. */
+function whenLine(e, tz) {
+  const p = PERIOD[dayPart(e.start, e.end, e.dayPart)];
+  const when = whenLabel(e, tz);
+  return html`<p class="event-when">${p ? p.icon() : icon.clock()}<span>${p ? html`<span class="event-part">${p.label}</span><span aria-hidden="true"> · </span>` : ""}<span class="event-time">${when}</span></span></p>`;
+}
+
+/** Ticket stub: "FRI / 23 / JULY", read straight off the local date. */
+function dateStub(e) {
+  const m = String(e.start || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return "";
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  const wd = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  const mon = d.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+  return html`<div class="event-stub" aria-hidden="true"><span>${wd}</span><b>${+m[3]}</b><span>${mon}</span></div>`;
 }
 
 function eventCard(e, ctx, flags) {
@@ -79,20 +89,24 @@ function eventCard(e, ctx, flags) {
   const hasDress = showField(dress.title) || showField(dress.text) || showSwatches || tips.length;
   const hasVenue = v.name || v.address || isEdit();
   const canDirect = v.name || v.address || v.mapsQuery || typeof v.lat === "number";
+  // Only the wedding itself gets the burgundy band; the other events stay on paper.
+  const feature = /\bwedding\b/i.test(`${e.id || ""} ${e.name || ""}`);
   return html`
-    <article class="event card" id="event-${e.id}" data-event="${e.id}" ${i >= 0 ? itemAttrs("events", i) : ""}>
+    <article class="event card${feature ? " event--feature" : ""}" id="event-${e.id}" data-event="${e.id}" ${i >= 0 ? itemAttrs("events", i) : ""}>
       ${e.photo && !flags.samePhoto ? html`<div class="event-photo">${imgTag(e.photo, { path: p("photo"), sizes: "(min-width: 768px) 40rem, 100vw" })}</div>` : ""}
+      <div class="event-band">
+        <div class="event-band-main">
+          ${flags.current ? html`<span class="badge badge--band">Happening now</span>` : flags.next ? html`<span class="badge badge--gold">Up next</span>` : ""}
+          <p class="event-invite">You're invited to the</p>
+          <h3 class="event-name" ${editAttrs("text", p("name"), { placeholder: "Add event name" })}>${e.name}</h3>
+          ${whenLine(e, tz)}
+        </div>
+        ${dateStub(e)}
+      </div>
       <div class="event-body stack stack--s">
-        <div class="event-top cluster cluster--s">
-          <span class="event-time eyebrow">${icon.clock()}<span>${whenLabel(e, tz)}</span></span>
-          ${periodTag(e)}
-          ${flags.current ? html`<span class="badge">Happening now</span>` : flags.next ? html`<span class="badge badge--gold">Up next</span>` : ""}
-        </div>
-        <div class="stack stack--s event-title">
-          <h3 class="display display--m" ${editAttrs("text", p("name"), { placeholder: "Add event name" })}>${e.name}</h3>
-          ${showField(e.subtitle) ? html`<p class="lede" ${editAttrs("text", p("subtitle"), { placeholder: "Add a tagline" })}>${e.subtitle}</p>` : ""}
-        </div>
+        ${showField(e.subtitle) ? html`<p class="lede event-sub" ${editAttrs("text", p("subtitle"), { placeholder: "Add a tagline" })}>${e.subtitle}</p>` : ""}
         ${hasVenue ? html`<p class="event-venue">${icon.mapPin()}<span><strong ${editAttrs("text", p("venue.name"), { placeholder: "Add venue name" })}>${v.name || ""}</strong>${showField(v.address) ? html`<br /><span class="muted" ${editAttrs("text", p("venue.address"), { placeholder: "Add address" })}>${v.address || ""}</span>` : ""}</span></p>` : ""}
+        ${hasVenue ? html`<div class="event-perf" aria-hidden="true"></div>` : ""}
         ${showField(e.description) ? html`<p ${editAttrs("multiline", p("description"), { placeholder: "Describe this event" })}>${multiline(e.description || "")}</p>` : ""}
         ${(e.notes || []).length ? html`<ul class="cluster cluster--s event-notes" ${listAttrs(p("notes"))}>${e.notes.map((n, k) => html`<li class="chip" ${editAttrs("text", p(`notes.${k}`))}>${icon.info()}<span>${n}</span></li>`)}</ul>` : ""}
         ${v.parking ? html`<p class="event-parking">${icon.car()}<span ${editAttrs("text", p("venue.parking"))}>${v.parking}</span></p>` : ""}
@@ -112,7 +126,7 @@ function eventCard(e, ctx, flags) {
           </div>` : ""}
         <div class="event-actions">
           ${canDirect ? html`<a class="btn btn--primary" href="${directionsUrl(v)}" target="_blank" rel="noopener">${icon.directions()}Directions<span class="visually-hidden"> to ${e.name} (opens in a new tab)</span></a>` : ""}
-          <button class="btn btn--secondary" type="button" data-cal="${e.id}" aria-haspopup="dialog">${icon.calendarPlus()}Add to calendar<span class="visually-hidden"> for ${e.name}</span></button>
+          <button class="btn btn--secondary" type="button" data-cal="${e.id}" aria-haspopup="dialog">${icon.calendarPlus()}Save<span class="visually-hidden"> ${e.name} to your calendar</span></button>
           ${v.address ? html`<button class="btn btn--secondary" type="button" data-copy="${v.address}">${icon.copy()}Copy address<span class="visually-hidden"> for ${e.name}</span></button>` : ""}
         </div>
       </div>
@@ -120,7 +134,7 @@ function eventCard(e, ctx, flags) {
 }
 
 /** Sheet content with the two calendar flavours. One event, or all of them. */
-function calendarSheet(events, ctx, filename) {
+export function calendarSheet(events, ctx, filename) {
   const site = ctx.content.site;
   const wrap = document.createElement("div");
   wrap.className = "cal-sheet stack";
@@ -128,7 +142,7 @@ function calendarSheet(events, ctx, filename) {
   wrap.innerHTML = html`
     <div class="stack stack--s">
       <p class="muted">${multi ? "Adds all of your events in one go." : "Adds this event to your calendar."}</p>
-      <button class="btn btn--primary btn--block" type="button" data-ics>${icon.calendarPlus()}Apple / Outlook (.ics)</button>
+      <button class="btn btn--primary btn--block" type="button" data-ics>${icon.calendarPlus()}Apple, Samsung or Outlook (.ics)</button>
     </div>
     <div class="stack stack--s">
       <h3 class="cal-h">Google Calendar</h3>

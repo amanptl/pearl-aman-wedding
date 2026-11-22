@@ -163,23 +163,29 @@ test("RSVP stepper completes by keyboard alone (Tab / Space / Enter)", async ({ 
   }
   await tabTo(`${R} .rv-quick .btn`);
   await page.keyboard.press("Space");
-  await expect(page.locator(`${R} input[data-count]:checked`).first()).toBeAttached();
-  await tabTo("#x-names");
-  await page.keyboard.type("Raj and Priya");
+  // "Everyone" writes the household's names on every line of the guest book.
+  await expect(page.locator(`${R} input[data-name-slot]`).first()).toHaveValue("Raj Sharma");
+  // Clear one line by keyboard, then put the name back with its "Tap to add" pill (Tab + Enter).
+  const first = page.locator(`${R} input[data-name-slot]`).first();
+  await first.focus();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.press("Backspace");
+  await tabTo(`${R} .rv-addname`);
+  await page.keyboard.press("Enter");
+  await expect(first).toHaveValue("Raj Sharma");
   await tabTo(`${R} [data-act=next]`);
   await page.keyboard.press("Enter");
   await expect(H).toHaveText("A few details");
   await expect(H).toBeFocused();
-  await tabTo(`${R} [data-act="diet+"]`);
-  await page.keyboard.press("Space");
-  await expect(page.locator(`${R} [data-num="diet:0"]`)).toHaveText("1");
+  await tabTo(`${R} #x-phone`);
+  await page.keyboard.type("4165550100");
   await tabTo(`${R} [data-act=next]`);
   await page.keyboard.press("Enter");
   await expect(H).toHaveText("Review and send");
   await expect(H).toBeFocused();
   await tabTo(`${R} [data-act=send]`);
   await page.keyboard.press("Enter");
-  await expect(H).toHaveText("Thank you, Sharma Family");
+  await expect(H).toHaveText("Your reply");
   await expect(H).toBeFocused();
 });
 

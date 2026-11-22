@@ -118,8 +118,11 @@ test.describe("guest site", () => {
       await page.evaluate((h) => { location.hash = h; }, "#" + r);
       await expect(page.locator(`[data-page="${r}"] h1`)).toBeVisible();
     }
-    await page.getByRole("button", { name: "All 3 of us, every event ✓" }).click();
-    await page.locator("#x-names").fill("Raj, Priya, Anika");
+    await page.getByRole("button", { name: /Everyone, every event/ }).click();
+    for (const input of await page.locator("[data-page=rsvp] input[data-name-slot]").all()) {
+      const i = Number(await input.getAttribute("data-i"));
+      await input.fill(["Raj Sharma", "Priya Sharma", "Anika Sharma"][i] || "Guest");
+    }
     await page.locator("[data-page=rsvp] [data-act=next]").click();
     await expect(page.locator("[data-page=rsvp] [data-step-heading]")).toHaveText("A few details");
     // the sealed envelope at / also tolerates storage that throws

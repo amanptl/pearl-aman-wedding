@@ -26,7 +26,7 @@
     "rsvp": { "enabled": true, "order": 7 }
   },
   "home": {
-    "photo": { "src": "assets/img/couple-1.webp", "srcSmall": "assets/img/couple-1-600.webp", "alt": "Pearl and Aman together", "focal": [50, 40] },
+    "photo": { "src": "assets/img/couples-1.webp", "srcSmall": "assets/img/couples-1-600.webp", "alt": "Pearl and Aman smiling together", "focal": [48, 34] },
     "invitationLines": {
       "small": "Please join us\nfor the wedding of",
       "celebrationSmall": "Please join us\nfor the wedding\ncelebrations of",
@@ -43,7 +43,7 @@
       "name": "Edmonton Hotel & Convention Centre",
       "type": "block",
       "recommended": true,
-      "photo": null,
+      "photo": { "src": "assets/img/edm-hotel.webp", "srcSmall": "assets/img/edm-hotel-600.webp", "alt": "The Edmonton Hotel and Convention Centre at dusk, with the Edmonton sign lit on the front", "focal": [38, 42] },
       "rate": "",
       "rateNote": "",
       "bookingUrl": "",
@@ -75,19 +75,12 @@
       "text": "Check entry requirements early. Visitors from visa-exempt countries need an eTA (about CAD $7, usually approved within minutes). Others may need a visitor visa, which can take weeks. We are happy to provide an invitation letter; message a coordinator."
     },
     "aroundTown": [
-      { "id": "river-valley", "category": "See", "name": "Edmonton River Valley", "text": "North America's largest urban park, along the North Saskatchewan. In July the trails are easy walking and cycling, with picnic spots and views from the bridges.", "url": "https://exploreedmonton.com/attractions-and-experiences/north-saskatchewan-river-valley", "address": "North Saskatchewan River Valley, Edmonton, AB" },
-      { "id": "muttart", "category": "See", "name": "Muttart Conservatory", "text": "Four glass pyramids of tropical, desert and temperate gardens in the river valley. A calm hour indoors if the afternoon is hot or rainy.", "url": "https://www.edmonton.ca/attractions_events/muttart-conservatory", "address": "9626 96A St NW, Edmonton, AB T6C 4L8" },
-      { "id": "fort-edmonton", "category": "See", "name": "Fort Edmonton Park", "text": "Living history on 158 acres in the river valley, open through the summer. Period streets, rides and interpreters; give it a few hours.", "url": "https://www.fortedmontonpark.ca/", "address": "7000 143 St NW, Edmonton, AB T6H 4P3" },
       { "id": "elk-island", "category": "See", "name": "Elk Island National Park", "text": "Bison, elk and prairie lakes about 45 minutes east of the city. A morning trip if you have a car.", "url": "https://parks.canada.ca/pn-np/ab/elkisland", "address": "1-54401 Range Road 203, Fort Saskatchewan, AB T8L 0V3" },
-      { "id": "suvai-dosa", "category": "Eat", "name": "Suvai Dosa's Pure Veg", "text": "South Indian cooking in Mill Woods, a short drive from the hotels, and the menu is entirely vegetarian. Order idli, medu vada and a crisp masala dosa.", "url": "https://suvaidosaspureveg.com/", "address": "101, 4271 23 Ave NW, Edmonton, AB T6L 5Z8" },
-      { "id": "all-india", "category": "Eat", "name": "All India Restaurant & Sweets", "text": "A Mill Woods kitchen since 2006, with sweets made in the shop every day. Vegetarian dishes are marked on the menu; take gulab jamun or jalebi back with you.", "url": "https://allindiarestaurant.com/home-millwoods/", "address": "4249 23 Ave NW, Edmonton, AB T6L 5Z8" },
-      { "id": "khazana", "category": "Eat", "name": "Khazana", "text": "The downtown dining room for a proper Indian meal. Edify named it Edmonton's best Indian restaurant in 2025; order the samosas, pakoras, dal and paneer.", "url": "https://www.khazanarestaurant.ca/downtown", "address": "10177 107 St NW, Edmonton, AB T5J 1J5" },
-      { "id": "padmanadi", "category": "Eat", "name": "Padmanadi", "text": "Indonesian cooking from a family kitchen open since 2002, and the entire menu is vegan. Try the tom yum, spicy eggplant, tofu curry or ginger soy beef. The 101 Street dining room is the one to book; a smaller spot on Gateway Boulevard is closer to the hotels.", "url": "https://www.padmanadi.com/", "address": "10740 101 St NW, Edmonton, AB T5H 2S3" },
-      { "id": "an-chay", "category": "Eat", "name": "An Chay", "text": "A small Vietnamese restaurant on Jasper Avenue, and every dish is vegetarian. Start with the tofu rolls or green papaya salad, then a bowl of satay or lemongrass noodle soup.", "url": "https://www.facebook.com/anchayyeg/", "address": "11203 Jasper Ave NW, Edmonton, AB T5K 0L5" },
-      { "id": "mosaics", "category": "Eat", "name": "Caf\u00e9 Mosaics", "text": "A Whyte Avenue spot for a casual vegetarian meal: vegan wings, loaded nachos and all-day breakfast. Easy to pair with an afternoon in Old Strathcona.", "url": "https://cafemosaics.com/", "address": "10844 82 Ave NW, Edmonton, AB T6E 2B3" },
-      { "id": "farmers-market", "category": "Shop", "name": "Old Strathcona Farmers' Market", "text": "Edmonton's original indoor market, just off Whyte Avenue. Open Saturday 8 to 3 and Sunday 11 to 3, with growers, baking and local makers.", "url": "https://osfm.ca/", "address": "10310 83 Ave NW, Edmonton, AB T6E 5C3" },
-      { "id": "whyte", "category": "Shop", "name": "Whyte Avenue", "text": "Old Strathcona's main street of independent shops, bookstores and patios. Easy to combine with the farmers' market or Caf\u00e9 Mosaics.", "url": "https://www.oldstrathcona.ca/", "address": "Whyte Ave NW, Edmonton, AB" },
-      { "id": "wem", "category": "Shop", "name": "West Edmonton Mall", "text": "One of the largest malls in the world: shopping, an indoor waterpark and an amusement park. A reliable afternoon if the weather turns.", "url": "https://www.wem.ca/", "address": "8882 170 St NW, Edmonton, AB T5T 4J2" }
+      { "id": "wem", "category": "See", "name": "West Edmonton Mall", "text": "One of the largest malls in the world: shopping, an indoor waterpark and an amusement park. A reliable afternoon if the weather turns.", "url": "https://www.wem.ca/", "address": "8882 170 St NW, Edmonton, AB T5T 4J2" },
+      { "id": "savoys", "category": "Eat", "name": "Savoy's South Indian Kitchen", "text": "Kerala-style South Indian cooking on 34 Avenue, a few minutes from the Mehendi and Vidhi venue. Order a ghee roast or masala dosa, or paneer and veg kurma if you want a curry.", "url": "https://savoys.ca/", "address": "9-9261 34 Ave NW, Edmonton, AB T6E 5T5" },
+      { "id": "olive-garden", "category": "Eat", "name": "Olive Garden", "text": "Italian-American cooking on Gateway Boulevard, close to the south-side venues. Unlimited breadsticks and salad, with plenty of pasta if you want a familiar meal.", "url": "https://www.olivegarden.ca/en/locations/ab/edmonton/4110-gateway-boulevard-northwest", "address": "4110 Gateway Blvd NW, Edmonton, AB T6J 6S7" },
+      { "id": "golden-spoon", "category": "Eat", "name": "The Golden Spoon", "text": "A dine-in Indian room in southeast Edmonton, out toward Tamarack. Start with samosas or paneer pakora, then dal makhani, palak paneer and garlic naan.", "url": "https://thegoldenspoon.ca/", "address": "3820 17 St NW, Edmonton, AB T6T 0C2" },
+      { "id": "daal-roti", "category": "Eat", "name": "Daal Roti", "text": "Bombay-style Indian cooking on Gateway Boulevard, near the south venues. Come for dal and tandoori roti, with chaat, samosas and tandoor grills on the menu.", "url": "https://daalroti.ca/", "address": "3645 Gateway Blvd NW, Edmonton, AB T6J 5V5" }
     ]
   },
   "story": {
@@ -100,8 +93,8 @@
       "Thank you for being part of our story. We can't wait to celebrate the next chapter with you."
     ],
     "photos": [
-      { "src": "assets/img/couple-1.webp", "srcSmall": "assets/img/couple-1-600.webp", "alt": "Pearl and Aman smiling", "focal": [50, 40] },
-      { "src": "assets/img/couple-3.webp", "srcSmall": "assets/img/couple-3-600.webp", "alt": "Pearl and Aman at sunset", "focal": [50, 40] }
+      { "src": "assets/img/hilton-1.webp", "srcSmall": "assets/img/hilton-1-600.webp", "alt": "Pearl and Aman smiling together in a hotel lobby", "focal": [50, 52] },
+      { "src": "assets/img/peyto-1.webp", "srcSmall": "assets/img/peyto-1-600.webp", "alt": "Pearl and Aman smiling in front of snowy peaks", "focal": [48, 58] }
     ]
   },
   "people": [],
@@ -116,17 +109,19 @@
   },
   "faqCategories": [
     { "id": "before", "title": "Before you come" },
+    { "id": "weather", "title": "Weather" },
     { "id": "events", "title": "The events" },
     { "id": "travel", "title": "Getting here" },
     { "id": "food", "title": "Food and drink" },
     { "id": "gifts", "title": "Gifts" }
   ],
   "faq": [
-    { "id": "what-mehndi", "category": "events", "q": "What are Mehendi, Haldi and Vidhi, and the wedding?", "a": "Mehendi is an evening of henna. Haldi and Vidhi is a morning blessing where turmeric paste is applied to the couple. The wedding is our marriage ceremony, with vows around the sacred fire." },
-    { "id": "wear-events", "category": "before", "q": "What should I wear to each event?", "a": "Mehendi: colourful and comfortable. Haldi and Vidhi: yellow or white. Turmeric stains, so wear something you don't mind ruining. Wedding: colourful and comfortable — wear whatever you feel comfortable in. Rich, elegant colours are welcome; it is better to avoid black." },
+    { "id": "what-mehndi", "category": "events", "q": "What are Mehendi, Vidhi, and the wedding?", "a": "Mehendi is an evening of henna. Vidhi is a morning Grah Shanti puja for peace. The wedding is our marriage ceremony, with vows around the sacred fire." },
+    { "id": "wear-events", "category": "before", "q": "What should I wear to each event?", "a": "Mehendi: colourful and comfortable. Vidhi: traditional and comfortable. Wedding: colourful and comfortable — wear whatever you feel comfortable in. Rich, elegant colours are welcome; it is better to avoid black." },
+    { "id": "weather", "category": "weather", "q": "What will the weather be like?", "a": "Afternoons are usually around 23°C (73°F), then it cools quickly in the evening, so bring a light shawl or jacket. A brief shower is common, so a compact umbrella is useful." },
     { "id": "vegetarian", "category": "food", "q": "Is the food vegetarian?", "a": "The wedding menu is fully vegetarian." },
     { "id": "alcohol", "category": "food", "q": "Will there be alcohol?", "a": "The ceremony is alcohol-free." },
-    { "id": "gifts", "category": "gifts", "q": "Do you have a registry? What about cash gifts?", "a": "Your presence at our wedding is the greatest gift of all.\nWe kindly request no presents or covers—only your blessings and warm wishes." },
+    { "id": "gifts", "category": "gifts", "q": "Do you have a registry? What about cash gifts?", "a": "Your presence at our wedding is the greatest gift of all.\nWe kindly request no gifts or envelopes—only your blessings and warm wishes." },
     { "id": "parking", "category": "travel", "q": "Where should I park?", "a": "Parking is free at every venue. Accessible spaces are beside each main entrance." },
     { "id": "shuttle", "category": "travel", "q": "Is there a shuttle?", "a": "Shuttles are not confirmed or coordinated yet. We will update this page when we have news. Until then, we recommend a rental car or rideshare." },
     { "id": "arrive", "category": "before", "q": "What time should I arrive?", "a": "Please arrive 15 to 20 minutes early so you can find your seat before each event begins." }
@@ -135,7 +130,7 @@
     "namesRequired": true,
     "deadline": "2027-01-31",
     "deadlineText": "Jan 31st 2027",
-    "intro": ["We'd love for you to be part of our celebration!", "Kindly let us know which events you can join."],
+    "intro": ["We'd love for you to be part of our celebration!"],
     "mealOptions": ["Vegetarian", "Vegan", "Jain"],
     "dietaryOptions": ["Nut allergy", "Gluten free", "Dairy free", "Other"],
     "questions": {
@@ -144,7 +139,7 @@
       "flight": "Flight details (optional)",
       "address": "Mailing address for a thank-you note",
       "shuttle": "How many shuttle seats do you need?",
-      "phone": "Best phone number",
+      "phone": "Phone number",
       "song": "A song that will get you dancing"
     }
   }
