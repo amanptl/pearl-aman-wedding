@@ -11,7 +11,7 @@
     "weddingDate": "2027-07-25T16:00",
     "dateText": "July 25th, 2027",
     "city": "Edmonton, Canada",
-    "rsvpEndpoint": "",
+    "rsvpEndpoint": "https://script.google.com/macros/s/AKfycbx4ond-GeXuaJIvzGKh1e_voBHOlgk7I9uVCdnfLSYC2CdPQVqt7HWFQt3kfEF4n08zQg/exec",
     "siteUrl": "",
     "ogImage": {
       "src": "assets/img/og.jpg",
