@@ -49,13 +49,18 @@ A household's personal link never changes once created, so links already sent ke
 3. When guests open their link they see their own events and greeting. Guests without a link can type their name on the home page to find their invitation.
 
 ### Responses dashboard
-**Guests, then Responses** shows who has replied (it reads your Google Sheet), attendance per event (yes, no and pending, where pending means invited guests who haven't answered), meal and dietary totals, households that haven't replied yet (each with a *Copy reminder* button), hotel needs, arrivals and flights, and an *Export CSV*.
+**Guests, then Responses** loads the latest replies from your Google Sheet when you open it. It shows:
+- **Invitations:** one row per wave with when it was sent, its reply-by date and days left, and how many households were invited, replied and are still waiting.
+- **Events:** for each event, guests invited, coming, can't come and waiting. Only invitations already sent are counted; a note says how many guests are in waves not sent yet.
+- **Waiting / Replied:** households still to answer, grouped by wave, each with a *Copy reminder* button; and replies, newest first, with each event's count and any note.
+
+Use **Both / Pearl / Aman** at the top to see one side's numbers, or both together with each side's share in its own colour. *Export CSV* downloads every household with its side, wave and answers.
 
 To connect it:
 1. Deploy the Apps Script (section 4) and paste its web-app URL into the editor at *Home, Site, RSVP address* (`site.rsvpEndpoint`). Publish.
 2. In the Responses view open *RSVP connection and admin key* and press **Copy key** (use **Generate admin key** to make a new one).
 3. In your Google Sheet: *Extensions, Apps Script*, then *Project Settings* (the gear), scroll to **Script properties**, add a property named `ADMIN_KEY` and paste the key as its value. Save.
-4. Back in the editor, Publish (this stores the key encrypted with the guest list), then press **Refresh responses**.
+4. Back in the editor, Publish (this stores the key encrypted with the guest list), then open Responses again (or press **Refresh**).
 
 If the dashboard says the key wasn't accepted, the key in Apps Script and the one shown in the editor don't match.
 

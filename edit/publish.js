@@ -126,7 +126,7 @@ export async function openPublish(app) {
         const admin = JSON.parse(JSON.stringify(app.draft._admin));
         admin.rsvpAdminKey = admin.rsvpAdminKey || randomCode(24);
         const privateEvents = app.privateEvents();
-        const { guestsJson, adminJson } = await buildGuestFiles({ households: admin.households, privateEvents, passphrase: app.passphrase, nameLookup: app.draft.site?.nameLookup === true, rsvpAdminKey: admin.rsvpAdminKey, presets: admin.presets, waTemplate: admin.waTemplate, waReminder: admin.waReminder });
+        const { guestsJson, adminJson } = await buildGuestFiles({ households: admin.households, privateEvents, passphrase: app.passphrase, nameLookup: app.draft.site?.nameLookup === true, rsvpAdminKey: admin.rsvpAdminKey, presets: admin.presets, waves: admin.waves, waTemplate: admin.waTemplate, waReminder: admin.waReminder });
         files.push({ path: "content/guests.json", text: JSON.stringify(guestsJson) + "\n" }, { path: "content/admin.enc.json", text: JSON.stringify(adminJson) + "\n" });
         adminState = { admin, privateEvents, ct: adminJson.ct };
       }

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 import fs from "node:fs";
 import { MockRepo } from "./helpers/mockrepo.js";
 
@@ -124,7 +124,7 @@ test.describe("guest site", () => {
       await input.fill(["Raj Sharma", "Priya Sharma", "Anika Sharma"][i] || "Guest");
     }
     await page.locator("[data-page=rsvp] [data-act=next]").click();
-    await expect(page.locator("[data-page=rsvp] [data-step-heading]")).toHaveText("A few details");
+    await expect(page.locator("[data-page=rsvp] [data-step-heading]")).toHaveText("Review and send");
     // the sealed envelope at / also tolerates storage that throws
     await page.goto("/");
     await ready(page);

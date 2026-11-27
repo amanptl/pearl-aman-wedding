@@ -21,7 +21,7 @@ let households = Array.isArray(input) ? input : input.households;
 if (!Array.isArray(households)) fail("households file must be an array or { households: [] }");
 
 let privateEvents = content.events.filter((e) => e.visibility === "private");
-let rsvpAdminKey, presets, waTemplate, waReminder;
+let rsvpAdminKey, presets, waves, waTemplate, waReminder;
 const adminPath = path.join(root, "content/admin.enc.json");
 if (existsSync(adminPath)) {
   try {
@@ -29,6 +29,7 @@ if (existsSync(adminPath)) {
     households = reuseCodes(households, prev.households);
     rsvpAdminKey = prev.rsvpAdminKey;
     presets = prev.presets;
+    waves = prev.waves;
     waTemplate = prev.waTemplate;
     waReminder = prev.waReminder;
     if (!privateEvents.length) privateEvents = prev.privateEvents;
@@ -38,7 +39,7 @@ if (existsSync(adminPath)) {
 }
 
 const iter = args.iter ? Number(args.iter) : undefined;
-const { guestsJson, adminJson } = await buildGuestFiles({ households, privateEvents, passphrase: args.passphrase, nameLookup: content.site?.nameLookup === true, rsvpAdminKey, iter, presets, waTemplate, waReminder });
+const { guestsJson, adminJson } = await buildGuestFiles({ households, privateEvents, passphrase: args.passphrase, nameLookup: content.site?.nameLookup === true, rsvpAdminKey, iter, presets, waves, waTemplate, waReminder });
 await writeFile(path.join(root, "content/guests.json"), JSON.stringify(guestsJson) + "\n");
 await writeFile(adminPath, JSON.stringify(adminJson) + "\n");
 

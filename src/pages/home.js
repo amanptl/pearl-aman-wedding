@@ -1,5 +1,5 @@
 import { html, raw, editAttrs, multiline, imgTag, isEdit } from "../lib/dom.js";
-import { displayGreeting } from "../lib/guestfiles.js";
+import { displayGreeting, rsvpDeadline } from "../lib/guestfiles.js";
 import { formatRange, formatDate, toInstant, nowNext } from "../lib/time.js";
 import { renderLookup } from "./_lookup.js";
 import * as icon from "../lib/icons.js";
@@ -92,7 +92,8 @@ const pageOn = (ctx, id) => ctx.content.pages?.[id]?.enabled !== false;
 // Hidden once the deadline has passed, when there is no deadline, or when the RSVP page is off.
 const ordinal = (d) => d + (d % 100 >= 11 && d % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][d % 10] || "th");
 export function dueLabel(ctx) {
-  const d = ctx.content.rsvp?.deadline, custom = ctx.content.home?.board?.dueLabel;
+  const dl = rsvpDeadline(ctx.content, ctx.guest);
+  const d = dl.date, custom = dl.own ? "" : ctx.content.home?.board?.dueLabel; // a guest's own date beats the site-wide wording
   if (!pageOn(ctx, "rsvp") || !d) return "";
   if (!isEdit()) {
     const t = toInstant(`${d}T23:59:59`, ctx.tz);
@@ -138,7 +139,8 @@ function quickActions(ctx) {
   const c = ctx.content;
   const n = ctx.events.length;
   const replied = hasReplied(ctx.guest);
-  const deadline = c.rsvp?.deadlineText || (c.rsvp?.deadline ? formatDate(c.rsvp.deadline + "T12:00", ctx.tz, "full") : "");
+  const dl = rsvpDeadline(c, ctx.guest);
+  const deadline = dl.text || (dl.date ? formatDate(dl.date + "T12:00", ctx.tz, "full") : "");
   const items = [];
   if (n) items.push({ href: "#schedule", ic: icon.calendarPlus(), title: "Schedule", sub: ctx.guest ? `Your ${n} ${n === 1 ? "event" : "events"}` : `${n} ${n === 1 ? "event" : "events"}` });
   if (pageOn(ctx, "travel") && travelHasContent(c)) items.push({ href: "#travel", ic: icon.plane(), title: "Travel & Stay", sub: "Hotels, flights and getting around" });
@@ -180,7 +182,6 @@ export default {
           <span class="env-flap"><span class="flap-out"><span class="env-seal seal-hi"><span></span></span></span><span class="flap-in"></span></span>
           <div class="env-photo">${imgTag(home.photo, { eager: true, sizes: "(min-width: 641px) 10rem, 28vw", path: "home.photo" })}</div>
           <span class="env-pocket"></span>
-          ${ctx.guest?.household ? html`<span class="env-name">${ctx.guest.household}</span>` : ""}
           <span class="env-sprig" aria-hidden="true"></span>
           <span class="env-shade"></span>
           <span class="env-seal seal-lo"><span></span></span>

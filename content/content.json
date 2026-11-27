@@ -362,26 +362,6 @@
     "deadlineText": "Jan 31st 2027",
     "intro": [
       "We'd love for you to be part of our celebration!"
-    ],
-    "mealOptions": [
-      "Vegetarian",
-      "Vegan",
-      "Jain"
-    ],
-    "dietaryOptions": [
-      "Nut allergy",
-      "Gluten free",
-      "Dairy free",
-      "Other"
-    ],
-    "questions": {
-      "hotel": "Do you need a hotel?",
-      "travelDates": "When are you arriving and departing?",
-      "flight": "Flight details (optional)",
-      "address": "Mailing address for a thank-you note",
-      "shuttle": "How many shuttle seats do you need?",
-      "phone": "Phone number",
-      "song": "A song that will get you dancing"
-    }
+    ]
   }
 }

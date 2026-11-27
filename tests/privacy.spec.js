@@ -1,6 +1,6 @@
 // Guest access and privacy. Uses content/guests.json + content/admin.enc.json built by
 // `node tools/make-guests.mjs --households tools/sample-households.json --passphrase dev-passphrase`.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 import { readFile } from "node:fs/promises";
 import { openAdmin, displayGreeting } from "../src/lib/guestfiles.js";
 

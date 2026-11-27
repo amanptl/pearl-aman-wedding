@@ -22,9 +22,9 @@ Edit the code, then **Deploy -> Manage deployments -> pencil icon -> Version: Ne
 
 ## API
 
-- `POST` body `payload=<JSON>` (see CONTRACTS.md section 7). Responses has one row per household and event (`invited` seats, `attending` count); re-submitting replaces that household's rows (keyed by code + eventId). Households holds names, food counts and travel details. **Upgrading from the per-person version:** clear or rename the old Responses and Households tabs before deploying the new code, since the columns changed. Codes must match `^[A-Z2-9]{10}$`.
+- `POST` body `payload=<JSON>` (see CONTRACTS.md section 7). Responses has one row per household and event (`invited` seats, `attending` count); re-submitting replaces that household's rows (keyed by code + eventId). Households holds one row per household: `code, household, invited, names, message, submittedAt`. **Upgrading a Sheet made by an older version:** the Households columns changed, so rename the old Households tab before deploying the new code (it is recreated on the next RSVP; each household's full reply is still in History). Codes must match `^[A-Z2-9]{10}$`.
 - `GET ?action=get&code=CODE` returns `{ ok, P }` with the household's latest submission.
-- `GET ?action=summary&key=ADMIN_KEY` returns households, responses, per-event headcounts and food tallies.
+- `GET ?action=summary&key=ADMIN_KEY` returns households, responses and per-event headcounts.
 - Anything else returns `ok`.
 
 ## Tests

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 
 // Personal-link resolution cost and first-load weight. Numbers are logged as annotations so slow regressions are visible.
 const CODE = "NVMDUYC3MF"; // Sharma Family in the sample guest list (codes are stable: tools/make-guests.mjs keeps them)

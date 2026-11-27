@@ -1,6 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 import fs from "node:fs";
-import { workbookBuffer } from "./helpers/xlsx.js";
+import { workbookBuffer, loadXlsx } from "./helpers/xlsx.js";
 
 // Guest manager + private-event editing. Uses the dev sample guest list (passphrase "dev-passphrase").
 const PASS = "dev-passphrase";
@@ -432,59 +432,97 @@ test.describe("publishing", () => {
 });
 
 test.describe("RSVP dashboard", () => {
+  // Five households on both sides: Family (sent), Friends (not sent yet) and one with no wave.
+  const seatsAt = (m, v, w) => Object.fromEntries(Object.entries({ mehendi: m, vidhi: v, wedding: w }).filter(([, n]) => n));
+  const hh = (code, household, side, wave, eventSeats) => ({ id: `hh-${code}`, code, household, greeting: `Dear ${household}`, members: [], seats: Math.max(...Object.values(eventSeats)), eventIds: Object.keys(eventSeats), eventSeats, tags: [], side, ...(wave ? { wave } : {}) });
+  const HOUSEHOLDS = [
+    hh("SHAH222222", "Shah Family", "Pearl", "w1", seatsAt(4, 4, 4)),
+    hh("MEHTA22222", "Mehta Family", "Pearl", "w1", seatsAt(2, 2, 2)),
+    hh("JOSHI22222", "Joshi Family", "Aman", "w1", seatsAt(3, 3, 3)),
+    hh("RAO2222222", "Rao Family", "Aman", "w2", seatsAt(0, 0, 2)),
+    hh("KIM2222222", "Kim Family", "Aman", "", seatsAt(0, 0, 2)),
+  ];
+  const WAVES = [{ id: "w1", name: "Family", deadline: "2027-01-31", sent: true, sentOn: "2026-11-10" }, { id: "w2", name: "Friends", deadline: "2027-02-15", sent: false }];
   const SUMMARY = {
     ok: true,
     households: [
-      { code: CODES.sharma, household: "Sharma Family", invited: "3", names: "Raj, Priya", dietary: "Vegetarian: 2; Nut allergy: 1", dietNote: "No mustard", hotel: "need", arrival: "2027-07-22", departure: "2027-07-26", flight: "AC 123", flightTime: "14:05", shuttle: "{}", phone: "", song: "", message: "", submittedAt: "2027-01-02" },
-      { code: CODES.mehta, household: "Mehta Family", invited: "2", names: "", dietary: "Vegetarian: 1; Gluten free: 1", dietNote: "", hotel: "booked", arrival: "2027-07-23", departure: "", flight: "", flightTime: "", shuttle: "{}", phone: "", song: "", message: "", submittedAt: "2027-01-03" },
+      { code: "SHAH222222", household: "Shah Family", invited: "4", names: "Wedding: Raj, Priya, Anil", message: "So excited!", submittedAt: "2026-11-20T10:00:00Z" },
+      { code: "JOSHI22222", household: "Joshi Family", invited: "3", names: "", message: "", submittedAt: "2026-11-22T10:00:00Z" },
     ],
     responses: [
-      { code: CODES.sharma, household: "Sharma Family", eventId: "wedding", invited: "3", attending: "2", updatedAt: "" },
-      { code: CODES.mehta, household: "Mehta Family", eventId: "wedding", invited: "2", attending: "2", updatedAt: "" },
+      ...[["mehendi", 4], ["vidhi", 4], ["wedding", 3]].map(([eventId, n]) => ({ code: "SHAH222222", household: "Shah Family", eventId, invited: "4", attending: String(n), updatedAt: "" })),
+      ...["mehendi", "vidhi", "wedding"].map((eventId) => ({ code: "JOSHI22222", household: "Joshi Family", eventId, invited: "3", attending: "0", updatedAt: "" })),
     ],
   };
 
   async function openResponses(page, handler) {
     await page.route("https://script.google.com/**", handler);
-    await openGuests(page);
-    await page.evaluate(() => window.__editor.commit("site.rsvpEndpoint", "https://script.google.com/macros/s/TEST/exec", "Set endpoint"));
+    await openEditor(page);
+    await unlock(page);
+    await expect(page.locator("#lock-banner")).toBeHidden();
+    await page.click('[data-tab="guests"]');
+    await page.evaluate(({ households, waves }) => {
+      const e = window.__editor;
+      e.commit("_admin.waves", waves, "Waves");
+      e.commit("_admin.households", households, "Households");
+      e.commit("site.rsvpEndpoint", "https://script.google.com/macros/s/TEST/exec", "Set endpoint");
+    }, { households: HOUSEHOLDS, waves: WAVES });
     await page.getByRole("tab", { name: "Responses" }).click();
   }
+  const cells = (row) => row.locator("td.n .gm-tot");
+  const split = (row, i) => row.locator("td.n").nth(i).locator(".gm-split > span");
 
-  test("renders headcounts, food, reminders, hotel and arrivals from a mocked summary", async ({ page }) => {
+  test("loads on open and shows waves, events, both sides and who to remind", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     let requested;
     await openResponses(page, (route) => { requested = route.request().url(); return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(SUMMARY) }); });
     const key = (await draft(page))._admin.rsvpAdminKey;
-    await page.getByRole("button", { name: "Refresh responses" }).click();
+    // Loaded without pressing Refresh.
     const wedding = page.locator('tr[data-event="wedding"]');
-    await expect(wedding.locator("td").nth(0)).toHaveText("4"); // coming: 2 Sharmas + 2 Mehtas
-    await expect(wedding.locator("td").nth(1)).toHaveText("1"); // not coming: the Sharmas' third seat
-    await expect(wedding.locator("td").nth(2)).toHaveText("7"); // awaiting: 12 seats invited - 5 replied
-    await expect(wedding.locator("td").nth(3)).toHaveText("12"); // invited seats
-    await expect(page.locator('tr[data-event="mehendi"] td').nth(2)).toHaveText("5"); // invited seats without any reply
+    await expect(cells(wedding)).toHaveText(["11", "3", "4", "4"]); // invited, coming, can't come, waiting (Rao's wave isn't sent)
+    await expect(split(wedding, 0)).toHaveText(["Pearl's side: 6", "Aman's side: 5"]);
+    await expect(cells(page.locator('tr[data-event="mehendi"]'))).toHaveText(["9", "4", "3", "2"]);
     expect(requested).toContain("action=summary");
     expect(requested).toContain(`key=${key}`);
-    await expect(page.locator(".gm-tile").first()).toContainText("2 of 6");
-    const food = page.locator(".gm-sec", { hasText: "Food preferences" }).locator(".gm-counts");
-    await expect(food).toContainText("Vegetarian3");
-    await expect(food).toContainText("Nut allergy1");
-    await expect(page.locator(".gm-sec", { hasText: "Allergies and food notes" })).toContainText("No mustard");
-    await expect(page.locator(".gm-sec", { hasText: "Names given (1)" })).toContainText("Raj, Priya");
-    await expect(page.locator(".gm-sec", { hasText: "Not replied yet (4)" })).toContainText("Maria Garcia");
-    await expect(page.locator(".gm-sec", { hasText: "Hotel" })).toContainText("1 need a room");
-    await expect(page.locator(".gm-sec", { hasText: "Arrivals" })).toContainText("AC 123");
-    await page.getByRole("button", { name: "Copy WhatsApp reminder for Maria Garcia" }).click();
-    expect(await page.evaluate(() => window.__editor.lastCopied)).toMatch(/gentle reminder/);
+
+    // Waves: households invited, replied, waiting; the unsent wave shows dashes.
+    await expect(cells(page.locator('tr[data-wave="w1"]'))).toHaveText(["3", "2", "1"]);
+    await expect(page.locator('tr[data-wave="w1"]')).toContainText("Sent Nov 10");
+    await expect(page.locator('tr[data-wave="w1"]')).toContainText("Jan 31, 2027");
+    await expect(page.locator('tr[data-wave="w2"]')).toContainText("Not sent yet");
+    await expect(page.locator('tr[data-wave="w2"] td.n.muted')).toHaveCount(2);
+    await expect(cells(page.locator('tr[data-wave="none"]'))).toHaveText(["1", "0", "1"]);
+    await expect(cells(page.locator('tr[data-wave="total"]'))).toHaveText(["4", "2", "2"]);
+    await expect(page.locator(".gm-foot", { hasText: "Not counted yet" })).toHaveText("Not counted yet: 1 household (2 guests) in Friends, not sent yet.");
+
+    // One side at a time.
+    await page.getByRole("button", { name: "Pearl", exact: true }).click();
+    await expect(cells(wedding)).toHaveText(["6", "3", "1", "2"]);
+    await expect(wedding.locator(".gm-split")).toHaveCount(0);
+    await expect(page.locator(".gm-foot", { hasText: "Not counted yet" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Both" }).click();
+
+    // Waiting, grouped by wave, with reminders; Replied, newest first, with notes and counts.
+    await expect(page.getByRole("tab", { name: "Waiting (2)" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".gm-rrow strong")).toHaveText(["Mehta Family", "Kim Family"]);
+    await page.getByRole("button", { name: "Copy WhatsApp reminder for Kim Family" }).click();
+    expect(await page.evaluate(() => window.__editor.lastCopied)).toMatch(/reminder/i);
+    await page.getByRole("tab", { name: "Replied (2)" }).click();
+    await expect(page.locator(".gm-rrow strong")).toHaveText(["Joshi Family", "Shah Family"]);
+    await expect(page.locator('.gm-rrow[data-code="SHAH222222"]')).toContainText("So excited!");
+    await expect(page.locator('.gm-rrow[data-code="SHAH222222"] .gm-counts')).toHaveText("Mehendi 4/4Vidhi 4/4Wedding Ceremony 3/4");
+
     const [dl] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export CSV" }).click()]);
-    expect(fs.readFileSync(await dl.path(), "utf8")).toContain("Sharma Family");
-    await shot(page, "dashboard");
+    const csv = fs.readFileSync(await dl.path(), "utf8");
+    const [headRow, ...lines] = csv.trim().split(/\r?\n/);
+    expect(headRow).toMatch(/^household,guests,side,wave,replied,.*,names,message$/);
+    expect(lines.find((l) => l.startsWith("Rao Family"))).toMatch(/^Rao Family,2,Aman,Friends,no,/);
+    if (SHOTS) { await page.getByRole("tab", { name: /^Waiting/ }).click(); fs.mkdirSync("tests/screens", { recursive: true }); await page.locator(".gm-resp").screenshot({ path: "tests/screens/p2-dashboard.png" }); }
     expect(errors).toEqual([]);
   });
 
   test("a rejected key and a missing endpoint are explained, not thrown", async ({ page }) => {
     await openResponses(page, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: false, error: "Unauthorized" }) }));
-    await page.getByRole("button", { name: "Refresh responses" }).click();
     await expect(page.locator(".gm-note.err")).toContainText("didn't accept the admin key");
     await expect(page.getByRole("button", { name: "Generate admin key" })).toBeVisible();
     await expect(page.locator(".gm-steps")).toContainText("ADMIN_KEY");
@@ -492,7 +530,7 @@ test.describe("RSVP dashboard", () => {
     // network failure
     await page.unroute("https://script.google.com/**");
     await page.route("https://script.google.com/**", (r) => r.abort());
-    await page.getByRole("button", { name: "Refresh responses" }).click();
+    await page.getByRole("button", { name: "Refresh" }).click();
     await expect(page.locator(".gm-note.err")).toContainText("Couldn't reach the RSVP sheet");
     // no endpoint
     await page.evaluate(() => window.__editor.commit("site.rsvpEndpoint", "", "Clear endpoint"));
@@ -540,4 +578,113 @@ test("content fields: board labels and schedule intro come from content; hotels 
   const withPhoto = await page.evaluate(async () => (await (await fetch("/content/content.json")).json()).hotels.filter((h) => h.type === "block" && h.photo?.src).length);
   await expect(page.locator('[data-page="travel"] .hotel-photo')).toHaveCount(withPhoto);
   await expect(page.locator('[data-page="travel"] .hotel-photo img')).toHaveCount(withPhoto);
+});
+
+test.describe("invitation waves", () => {
+  test("make a wave, move a household into it; until it's sent it's left out of guests.json, and records never name the wave", async ({ page }) => {
+    const calls = await mockGitHub(page);
+    await openEditor(page);
+    await unlock(page);
+    await expect(page.locator("#lock-banner")).toBeHidden();
+    await page.click('[data-tab="guests"]');
+    await connect(page);
+    const all = (await draft(page))._admin.households;
+    expect(all.length).toBeGreaterThan(1);
+    const [first] = all;
+    await page.getByRole("button", { name: "Waves" }).click();
+    const dlg = page.locator("dialog.dlg");
+    await dlg.getByRole("button", { name: "Add wave" }).click();
+    await dlg.getByLabel("Wave name").fill("Second round");
+    await dlg.getByLabel(/reply by$/).fill("2027-03-15");
+    await dlg.getByRole("button", { name: "Save waves" }).click();
+    await expect(dlg).toBeHidden();
+
+    await expect(page.getByRole("button", { name: /Second round/ })).toBeDisabled();
+    await row(page, first.code).getByLabel(/^Select/).check();
+    await page.getByRole("button", { name: /Second round/ }).click();
+    const d = await draft(page);
+    const id = d._admin.waves[0].id;
+    expect(d._admin.waves[0]).toMatchObject({ name: "Second round", deadline: "2027-03-15", sent: false });
+    expect(d._admin.households.filter((x) => x.wave === id).map((x) => x.code)).toEqual([first.code]);
+    await expect(row(page, first.code).getByLabel(/: wave$/)).toHaveValue(id);
+    await page.getByLabel("Filter by wave").selectOption(id);
+    await expect(page.locator(".gm-table tbody tr")).toHaveCount(1);
+    await page.getByLabel("Filter by wave").selectOption("");
+
+    // previewing as that household shows their own date
+    await row(page, first.code).getByRole("button", { name: /Preview as/ }).click();
+    await page.evaluate(() => { document.querySelector("#frame").contentWindow.location.hash = "#rsvp"; });
+    await expect(fr(page).locator("[data-page=rsvp] .rv-warn")).toContainText("March 15th, 2027");
+
+    await page.click("#publish");
+    await page.getByRole("button", { name: "Publish now" }).click();
+    await expect(page.locator("dialog.dlg")).toContainText("Published", { timeout: 60000 });
+    const blobs = calls.filter((c) => c.path === "/git/blobs").map((c) => c.body.content);
+    const guests = JSON.parse(blobs[1]);
+    expect(Object.keys(guests.records)).toHaveLength(all.length - 1);
+    expect(blobs[1]).not.toContain("Second round");
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe("Excel by side", () => {
+  test("each side downloads its own list, edits it and uploads it back; replace only touches that side", async ({ page }) => {
+    await openEditor(page);
+    await unlock(page);
+    await page.click('[data-tab="guests"]');
+    const start = (await draft(page))._admin.households;
+    expect(start.length).toBeGreaterThan(1);
+    const [mine, theirs] = start;
+    await row(page, mine.code).getByLabel(/: side$/).selectOption("Pearl");
+    await row(page, theirs.code).getByLabel(/: side$/).selectOption("Aman");
+    const evs = (await draft(page)).events;
+
+    // Download Pearl's list
+    await page.getByRole("button", { name: "Download Excel" }).click();
+    const dlg = page.locator("dialog.dlg");
+    await dlg.getByRole("radio", { name: /Pearl's side list/ }).check();
+    const [dl] = await Promise.all([page.waitForEvent("download"), dlg.getByRole("button", { name: "Download", exact: true }).click()]);
+    expect(dl.suggestedFilename()).toBe("guest-list-pearl.xlsx");
+    const XLSX = loadXlsx();
+    const wb = XLSX.read(fs.readFileSync(await dl.path()), { type: "buffer" });
+    const grid = XLSX.utils.sheet_to_json(wb.Sheets.Households, { header: 1, defval: "" });
+    expect(grid[0].slice(0, 5)).toEqual(["household", "members", "side", "wave", "tags"]);
+    expect(grid.slice(1).map((r) => r[grid[0].indexOf("code")])).toEqual([mine.code]); // only Pearl's side
+    expect(wb.SheetNames).toEqual(["Households", "How to fill"]);
+
+    // Edit it: rename the household (same code) and add a new one, then upload as "add and update"
+    const ci = grid[0].indexOf("code");
+    const first = evs[0];
+    const ei = grid[0].indexOf(first.name || first.id);
+    const edited = [grid[0], grid[1].map((v, i) => (i === 0 ? "Renamed Family" : v)), grid[0].map((hd, i) => (i === 0 ? "Mehta Family" : i === ei ? "2" : i === ci || hd === "personal link" ? "" : ["side", "wave", "tags", "members"].includes(hd) ? "" : "0"))];
+    const upload = async (rows, name) => {
+      await page.getByRole("button", { name: "Import CSV / Excel" }).click();
+      await dlg.getByLabel("Whose list is this?").selectOption("Pearl");
+      await dlg.getByLabel("Choose a CSV or Excel file").setInputFiles({ name, mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: workbookBuffer({ Households: rows }) });
+    };
+    await upload(edited, "guest-list-pearl.xlsx");
+    const prev = page.locator(".gm-prev");
+    await expect(prev).toContainText("1 household to add, 1 to update");
+    await expect(prev).toContainText(`renamed from ${mine.household}`);
+    await dlg.getByRole("button", { name: "Import 2 households" }).click();
+    let d = await draft(page);
+    expect(d._admin.households.find((x) => x.code === mine.code).household).toBe("Renamed Family"); // same link
+    const mehta = d._admin.households.find((x) => x.household === "Mehta Family");
+    expect(mehta.side).toBe("Pearl");
+    expect(mehta.eventSeats[first.id]).toBe(2);
+
+    // Replace Pearl's list with a file that only has Mehta: Renamed Family is removed (after ticking the warning), Aman's stays
+    await upload([edited[0], [...edited[2].slice(0, ci), mehta.code, ""]], "pearl.xlsx");
+    await dlg.getByRole("radio", { name: /Replace Pearl's side list/ }).check();
+    await expect(prev).toContainText("1 to remove");
+    const go = dlg.getByRole("button", { name: /^Import .* and remove 1$/ });
+    await expect(go).toBeDisabled();
+    await dlg.getByText(/I understand/).click();
+    await go.click();
+    d = await draft(page);
+    expect(d._admin.households.map((x) => x.code).sort()).toEqual([theirs.code, mehta.code, ...start.slice(2).map((x) => x.code)].sort());
+    await page.getByLabel("Filter by side").selectOption("Aman");
+    await expect(page.locator(".gm-table tbody tr")).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
 });

@@ -1,7 +1,7 @@
 // RSVP guest book: each event is an ivory page with one line per invited seat; the names written are who's coming (and the
 // count). "Tap to add" pills offer the household's names; "None of us" declines. With namesRequired off, the older
-// "how many of you?" count chips come back. The details step asks for a phone number and an optional note. Event lists come from content.json plus the fixture's private events.
-import { test, expect } from "@playwright/test";
+// "how many of you?" count chips come back. An optional note sits at the bottom of step 1; step 2 is the review. Event lists come from content.json plus the fixture's private events.
+import { test, expect } from "./helpers/test.js";
 import { assertNoHorizontalOverflow, assertNoClippedText, assertNoOverlaps, runAxe } from "./helpers/layout.js";
 import fs from "node:fs";
 
@@ -51,7 +51,7 @@ async function fillComingNames(page, names) {
 async function checks(page, info, tag) {
   await assertNoHorizontalOverflow(page);
   await assertNoClippedText(page);
-  await assertNoOverlaps(page, `${R} .rv-card, ${R} .rv-segopt, ${R} .rv-nav .btn, ${R} .rv-opt, ${R} .rv-field, ${R} .rv-quick .btn, ${R} .rv-shuttle, ${R} .rv-line, ${R} .rv-addname, ${R} .rv-decline`);
+  await assertNoOverlaps(page, `${R} .rv-card, ${R} .rv-segopt, ${R} .rv-nav .btn, ${R} .rv-opt, ${R} .rv-field, ${R} .rv-quick .btn, ${R} .rv-line, ${R} .rv-addname, ${R} .rv-decline`);
   await page.evaluate(() => window.scrollTo(0, 0));
   const bad = (await runAxe(page)).filter((v) => ["serious", "critical"].includes(v.impact));
   expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(" | ")}`)).toEqual([]);
@@ -70,7 +70,7 @@ test("no guest: intro, deadline and lookup container", async ({ page }) => {
   await expect(page.locator(`${R} [data-form]`)).toHaveCount(0);
 });
 
-test("family: headcount per event, names, phone, review, submit, confirmation", async ({ page }, info) => {
+test("family: headcount per event, names, note, review, submit, confirmation", async ({ page }, info) => {
   test.setTimeout(150_000);
   await open(page, FAMILY);
   await expect(page.locator(`${R} .rv-warn`)).toContainText("Kindly reply");
@@ -78,7 +78,7 @@ test("family: headcount per event, names, phone, review, submit, confirmation", 
   await expect(page.locator(`${R} .rv-deadline`)).toHaveCount(0); // the note carries the date once
   await expect(page.locator(`${R} [data-list="rsvp.intro"] p`)).toHaveCount(1);
   await expect(heading(page)).toHaveText("Who's coming?");
-  await expect(page.locator(`${R} .rv-count`)).toHaveText("Step 1 of 3");
+  await expect(page.locator(`${R} .rv-count`)).toHaveText("Step 1 of 2");
   await expect(page.locator(`${R} [data-step="1"] > .rv-help`)).toContainText("Write the names of those joining us");
   const evs = await evIds(page);
   expect(evs.length).toBeGreaterThan(1);
@@ -99,36 +99,31 @@ test("family: headcount per event, names, phone, review, submit, confirmation", 
   for (const e of evs) await expect(page.locator(`${R} [data-count-for="${e}"]`)).toHaveText("3 of 3 coming ✓");
   await page.locator(`#x-name-${evs[0]}-2`).fill("");
   await expect(page.locator(`${R} [data-count-for="${evs[0]}"]`)).toHaveText("2 of 3 coming");
+  // the note is the last thing on step 1; there is no phone field
+  await expect(page.locator(`${R} [data-step="1"] .rv-note label`)).toHaveText("A note for the couple (optional)");
+  await expect(page.locator("#x-phone")).toHaveCount(0);
+  await page.locator("#x-message").fill("So excited!");
   await checks(page, info, "step1-filled");
   await next(page);
   await expect(heading(page)).toBeFocused();
-  await expect(heading(page)).toHaveText("A few details");
-  await expect(page.locator(`${R} .rv-food`)).toHaveCount(0);
-  await expect(page.locator(`${R} #hh-h`)).toHaveCount(0);
-  await page.locator("#x-phone").fill("416 555 0100");
-  await page.locator("#x-message").fill("So excited!");
-  await checks(page, info, "step2");
-  await next(page);
   await expect(heading(page)).toHaveText("Review and send");
+  await expect(page.locator(`${R} .rv-count`)).toHaveText("Step 2 of 2");
   await expect(page.locator(`${R} [data-sum-event="${evs[0]}"]`)).toContainText("2 guests");
   await expect(page.locator(`${R} [data-sum-event="${evs[0]}"]`)).toContainText("Raj Sharma, Priya Sharma");
   await expect(page.locator(`${R} [data-sum-event="${evs[1]}"]`)).toContainText("3 guests");
-  await expect(page.locator(`${R} .rv-dl`)).toContainText("Phone");
-  await expect(page.locator(`${R} .rv-dl`)).not.toContainText("names");
-  await checks(page, info, "step3");
+  await expect(page.locator(`${R} .rv-note-text`)).toHaveText("So excited!");
+  await checks(page, info, "review");
   await page.getByRole("button", { name: "Send RSVP" }).click();
   await expect(heading(page)).toHaveText("Your reply");
   await expect(page.locator(`${R} .rv-warn`)).toBeHidden();
   const P = await stored(page, "FAMILY2345");
-  expect(P).toMatchObject({ v: 2, code: "FAMILY2345", household: "Sharma Family", seats: 3, dietNote: "" });
+  expect(P).toMatchObject({ v: 3, code: "FAMILY2345", household: "Sharma Family", seats: 3, message: "So excited!" });
   expect(P.submittedAt).toMatch(/^\d{4}-\d\d-\d\dT/);
   expect(P.counts).toEqual(Object.fromEntries(evs.map((e, i) => [e, i === 0 ? 2 : 3])));
   expect(P.namesByEvent[evs[0]]).toEqual(["Raj Sharma", "Priya Sharma"]);
   expect(P.namesByEvent[evs[1]]).toEqual(["Raj Sharma", "Priya Sharma", "Anika Sharma"]);
   expect(P.names).toContain("Raj Sharma");
-  expect(P.diet).toEqual({});
-  expect(P.extras).toMatchObject({ phone: "416 555 0100", message: "So excited!" });
-  expect(P.extras.song || "").toBe("");
+  expect(Object.keys(P).sort()).toEqual(["code", "counts", "eventSeats", "household", "message", "names", "namesByEvent", "seats", "submittedAt", "v"]);
   const done = page.locator(`${R} [data-done]`);
   await expect(done.locator(".rv-sum-ev")).toHaveCount(evs.length);
   await expect(done.locator(".rv-signed")).toBeVisible(); // the signed note from the couple
@@ -153,31 +148,19 @@ test("family: headcount per event, names, phone, review, submit, confirmation", 
   await expect.poll(() => vals(page, evs[1])).toEqual(["Raj Sharma", "Priya Sharma", "Anika Sharma"]);
 });
 
-test("phone is required on the details step when anyone is coming, so reminders can be sent", async ({ page }) => {
+test("the review's Edit on the note goes back to step 1 and keeps what was typed", async ({ page }) => {
   await open(page, FAMILY);
   await everyone(page).click();
   await next(page);
-  await expect(heading(page)).toHaveText("A few details");
-  await expect(page.locator(`${R} .rv-food`)).toHaveCount(0);
-  await expect(page.locator(`${R} #hh-h`)).toHaveCount(0);
-  await expect(page.locator("#ph-help")).toContainText("reminders");
-  await expect(page.locator("#x-phone")).toHaveAttribute("aria-required", "true");
-  await next(page);
-  await expect(heading(page)).toHaveText("A few details");
-  const err = page.locator("#er-phone");
-  await expect(err).toBeVisible();
-  await expect(err).toContainText("reminders");
-  await expect(page.locator("#x-phone")).toBeFocused();
-  await page.locator("#x-phone").fill("555");
-  await expect(err).toContainText("area code");
-  await next(page);
-  await expect(heading(page)).toHaveText("A few details");
-  await page.locator("#x-phone").fill("+1 (416) 555-0199");
-  await expect(err).toBeHidden();
-  await next(page);
   await expect(heading(page)).toHaveText("Review and send");
-  await expect(page.locator(`${R} .rv-dl`)).toContainText("Phone");
-  await expect(page.locator(`${R} .rv-dl`)).toContainText("+1 (416) 555-0199");
+  await expect(page.locator(`${R} [aria-labelledby="rv-s2"]`)).toContainText("No note added.");
+  await page.getByRole("button", { name: "Edit your note" }).click();
+  await expect(heading(page)).toHaveText("Who's coming?");
+  await page.locator("#x-message").fill("Line one\nLine two");
+  await next(page);
+  await expect(page.locator(`${R} .rv-note-text`)).toHaveText("Line one\nLine two");
+  await page.locator(`${R} [data-act=back]`).click();
+  await expect(page.locator("#x-message")).toHaveValue("Line one\nLine two");
 });
 
 test("validation blocks Continue and focuses the first unanswered event", async ({ page }) => {
@@ -237,9 +220,7 @@ test("friend with 2 seats: counts up to 2, names required and sent", async ({ pa
   await fillComingNames(page, ["Jordan Lee", "Sam Lee"]);
   await expect(err).toBeHidden();
   await next(page);
-  await expect(heading(page)).toHaveText("A few details");
-  await page.locator("#x-phone").fill("416 555 0100");
-  await next(page);
+  await expect(heading(page)).toHaveText("Review and send");
   await page.getByRole("button", { name: "Send RSVP" }).click();
   await expect(heading(page)).toHaveText("Your reply");
   const P = await stored(page, "FRIEND2345");
@@ -253,6 +234,7 @@ test("names stay optional when namesRequired is off", async ({ page }) => {
   await page.route("**/content/content.json", async (route) => {
     const j = JSON.parse(fs.readFileSync("content/content.json", "utf8"));
     j.rsvp.namesRequired = false;
+    j.site.rsvpEndpoint = ""; // never post a test reply to the live Sheet
     await route.fulfill({ json: j });
   });
   await open(page, FRIEND);
@@ -260,10 +242,9 @@ test("names stay optional when namesRequired is off", async ({ page }) => {
   await everyone(page).click();
   await expect(page.locator(`${R} .rv-names-label`).first()).toContainText("(optional)");
   await expect(page.locator(`#x-name-${evs[0]}-0`)).not.toHaveAttribute("aria-required", "true");
+  await expect(page.locator(`${R} [data-step="1"] .rv-note`)).toHaveCount(1); // the note shows in the count-chip layout too
   await next(page);
-  await expect(heading(page)).toHaveText("A few details");
-  await page.locator("#x-phone").fill("416 555 0100");
-  await next(page);
+  await expect(heading(page)).toHaveText("Review and send");
   await page.getByRole("button", { name: "Send RSVP" }).click();
   await expect(heading(page)).toHaveText("Your reply");
   expect((await stored(page, "FRIEND2345")).names).toBe("");
@@ -281,31 +262,25 @@ test("one seat: one line, the guest's own name to tap, and Regretfully declines"
   await expect(page.locator(`${R} [data-count-for="${evs[0]}"]`)).toHaveText("Coming ✓");
   await everyone(page).click();
   await next(page);
-  await expect(heading(page)).toHaveText("A few details");
-  await expect(page.locator("#ph-help")).toContainText("reminders");
-  await expect(page.locator(`${R} .rv-food`)).toHaveCount(0);
-  await page.locator("#x-phone").fill("416 555 0100");
-  await next(page);
+  await expect(heading(page)).toHaveText("Review and send");
   await expect(page.locator(`${R} [data-summary]`).first()).toContainText("Coming");
 });
-test("declining everything skips details", async ({ page }, info) => {
+test("declining everything: the note is still on step 1 and it goes straight to review", async ({ page }, info) => {
   await open(page, FRIEND);
   for (const e of await evIds(page)) await decline(page, e);
   await expect(page.locator(`${R} [data-names-for]`).first()).toBeHidden();
-  await next(page);
-  await expect(heading(page)).toHaveText("Send your wishes");
-  await expect(page.locator(`${R} .rv-food`)).toHaveCount(0);
   await page.locator("#x-message").fill("Sending love");
-  await checks(page, info, "wishes");
+  await checks(page, info, "declined");
   await next(page);
+  await expect(heading(page)).toHaveText("Review and send");
   await expect(page.locator(`${R} [data-summary]`)).toContainText("None of us");
   await page.getByRole("button", { name: "Send RSVP" }).click();
   await expect(page.locator(`${R} [data-done]`)).toContainText("We'll miss you");
   await expect(page.locator(`${R} [data-done]`).getByRole("button", { name: /calendar/i })).toHaveCount(0);
   const P = await stored(page, "FRIEND2345");
   expect(Object.values(P.counts).every((n) => n === 0)).toBe(true);
-  expect(P.diet).toEqual({});
-  expect(P.extras.message).toBe("Sending love");
+  expect(P.message).toBe("Sending love");
+  expect(P).not.toHaveProperty("phone");
 });
 
 test("reload mid-form keeps the draft", async ({ page }) => {
@@ -313,63 +288,73 @@ test("reload mid-form keeps the draft", async ({ page }) => {
   const evs = await evIds(page);
   await decline(page, evs[1]);
   await fillEventNames(page, evs[0], ["Raj Sharma", "Priya Sharma"]);
+  await page.locator("#x-message").fill("Half typed");
   await page.reload();
   await page.waitForSelector("html[data-ready]");
   await expect.poll(() => vals(page, evs[0])).toEqual(["Raj Sharma", "Priya Sharma", ""]);
   await expect(page.locator(`${R} [data-count-for="${evs[0]}"]`)).toHaveText("2 of 3 coming");
   await expect(page.locator(`${R} [data-act=decline][data-k="${evs[1]}"]`)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#x-message")).toHaveValue("Half typed");
 });
 
-test("a saved food or hotel answer stays off the details step and the review", async ({ page }) => {
+test("an older three-step draft is ignored, and an older v2 reply keeps only counts, names and the note", async ({ page }) => {
   const events = ["mehndi", "vidhi", "sangeet", "wedding", "reception"];
   const namesByEvent = Object.fromEntries(events.map((id) => [id, ["Raj Sharma"]]));
-  const draft = {
-    phase: "form", step: 2, counts: Object.fromEntries(events.map((id) => [id, 1])), namesByEvent,
-    diet: { Vegetarian: 1 }, dietNote: "no onion",
-    x: { hotel: "local", arrival: "2027-07-22", departure: "2027-07-26", flight: "AC 123", flightTime: "14:05", address: "1 Main St", phone: "416 555 0100", song: "September", message: "See you there", shuttle: { wedding: 1 } },
-  };
-  await page.addInitScript(([k, saved]) => { try { sessionStorage.setItem(k, JSON.stringify(saved)); } catch {} }, ["pa.rsvp.draft.v2.FAMILY2345", draft]);
+  const draft = { phase: "form", step: 3, counts: Object.fromEntries(events.map((id) => [id, 1])), namesByEvent, x: { phone: "416 555 0100", message: "Old draft" } };
+  const v2 = { v: 2, code: "FAMILY2345", household: "Sharma Family", seats: 3, submittedAt: "2027-01-05T15:00:00.000Z", counts: Object.fromEntries(events.map((id) => [id, 1])), namesByEvent,
+    names: "Raj Sharma", diet: { Vegetarian: 1 }, dietNote: "no onion",
+    extras: { hotel: "local", arrival: "2027-07-22", flight: "AC 123", address: "1 Main St", phone: "416 555 0100", song: "September", message: "See you there", shuttle: { wedding: 1 } } };
+  await page.addInitScript(([dk, d, k, p]) => { try { sessionStorage.setItem(dk, JSON.stringify(d)); localStorage.setItem(k, JSON.stringify(p)); } catch {} }, ["pa.rsvp.draft.v2.FAMILY2345", draft, KEY("FAMILY2345"), v2]);
   await open(page, FAMILY);
-  await expect(heading(page)).toHaveText("A few details");
-  const step2 = page.locator(`${R} [data-step="2"]`);
-  await expect(step2.locator(".rv-food, #hh-h")).toHaveCount(0);
-  await expect(step2).not.toContainText(/Food|For your household|The family|No, we're local/);
+  await expect(heading(page)).toHaveText("Your reply");
+  await page.getByRole("button", { name: "Change my response" }).click();
+  await expect(heading(page)).toHaveText("Who's coming?");
+  await expect(page.locator("#x-message")).toHaveValue("See you there");
   await next(page);
   await expect(heading(page)).toHaveText("Review and send");
-  const review = page.locator(`${R} .rv-dl`);
-  await expect(review).toContainText("Phone");
-  await expect(review).toContainText("416 555 0100");
-  await expect(review).toContainText("See you there");
-  await expect(review).not.toContainText(/Food|Hotel|No, we're local|Vegetarian|no onion|AC 123|September|1 Main St/);
+  const form = page.locator(`${R} [data-form]`);
+  await expect(form).toContainText("See you there");
+  await expect(form).not.toContainText(/416 555 0100|Phone|Vegetarian|no onion|AC 123|September|1 Main St|Old draft/);
+  await page.getByRole("button", { name: "Send RSVP" }).click();
+  await expect(heading(page)).toHaveText("Your reply");
+  const P = await stored(page, "FAMILY2345");
+  expect(P.v).toBe(3);
+  expect(P.message).toBe("See you there");
+  expect(P).not.toHaveProperty("phone");
+  expect(P).not.toHaveProperty("extras");
+  expect(P).not.toHaveProperty("diet");
 });
 
 test("revisit pre-fills from the stored response", async ({ page }) => {
   await open(page, FAMILY);
   const evs = await evIds(page);
   await everyone(page).click();
-  await next(page);
-  await page.locator("#x-phone").fill("647 555 0000");
+  await page.locator("#x-message").fill("See you soon");
   await next(page);
   await page.getByRole("button", { name: "Send RSVP" }).click();
   await expect(page.locator(`${R} [data-done]`)).toBeVisible();
-  await page.evaluate(() => sessionStorage.removeItem("pa.rsvp.draft.v2.FAMILY2345"));
+  await page.evaluate(() => sessionStorage.removeItem("pa.rsvp.draft.v3.FAMILY2345"));
   await page.goto(FAMILY);
   await page.reload();
   await page.waitForSelector("html[data-ready]");
   await expect(page.locator(`${R} [data-replied]`)).toContainText("Replied");
   await expect(page.locator(`${R} [data-replied]`)).toContainText("You can update it until Jan 31st 2027");
   await expect(page.locator(`${R} [data-greet]`)).toHaveText("Thank you, Sharma Family");
+  // Comes back to their reply, not step 1; "Change my response" opens the pre-filled form.
+  await expect(page.locator(`${R} [data-done]`)).toBeVisible();
+  await expect(page.locator(`${R} [data-form]`)).toHaveCount(0);
+  await page.getByRole("button", { name: "Change my response" }).click();
   for (const e of evs) await expect.poll(() => vals(page, e)).toEqual(["Raj Sharma", "Priya Sharma", "Anika Sharma"]);
-  await next(page);
-  await expect(page.locator("#x-phone")).toHaveValue("647 555 0000");
+  await expect(page.locator("#x-message")).toHaveValue("See you soon");
 });
 
-test("an older per-person reply (v1) is read back as counts, names and food", async ({ page }) => {
+test("an older per-person reply (v1) is read back as counts and names", async ({ page }) => {
   const v1 = { code: "FAMILY2345", household: "Sharma Family", submittedAt: "2027-03-01T15:00:00.000Z",
     members: [{ id: "m1", name: "Raj Sharma", meal: "Vegetarian", dietary: "Nut allergy" }, { id: "m2", name: "Priya Sharma", meal: "", dietary: "No mustard" }, { id: "m3", name: "Anika Sharma", meal: "", dietary: "" }],
     responses: [{ memberId: "m1", eventId: "mehndi", attending: "yes" }, { memberId: "m2", eventId: "mehndi", attending: "yes" }, { memberId: "m3", eventId: "mehndi", attending: "no" }], extras: {} };
   await page.addInitScript(([k, v]) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }, [KEY("FAMILY2345"), v1]);
   await open(page, FAMILY);
+  await page.getByRole("button", { name: "Change my response" }).click();
   await expect.poll(() => vals(page, "mehndi")).toEqual(["Raj Sharma", "Priya Sharma", ""]);
   await expect(page.locator(`${R} [data-count-for="mehndi"]`)).toHaveText("2 of 3 coming");
 });
@@ -385,7 +370,7 @@ test("deadline passed shows message, contacts and what was sent", async ({ page 
   await expect(p.locator("a[href^='tel:']").first()).toBeVisible();
   await expect(page.locator(`${R} [data-sum-event="mehndi"]`)).toContainText("2 guests");
   await expect(page.locator(`${R} [data-sum-event="mehndi"]`)).toContainText("Raj Sharma");
-  await expect(page.locator(`${R} .rv-dl`)).toHaveCount(0);
+  await expect(page.locator(`${R} .rv-note-text`)).toHaveCount(0);
   await expect(page.locator(`${R} [data-form]`)).toHaveCount(0);
 });
 
@@ -410,8 +395,6 @@ test("endpoint: GET prefill and POST payload; failure keeps answers and retries"
   await everyone(page).click();
   await fillComingNames(page, ["Jordan Lee", "Sam Lee"]);
   await next(page);
-  await page.locator("#x-phone").fill("416 555 0100");
-  await next(page);
   await page.getByRole("button", { name: "Send RSVP" }).click();
   await expect(page.locator(`${R} [data-send-err]`)).toBeVisible();
   await expect(page.locator(`${R} [data-send-err]`)).toContainText("Nothing you typed is lost");
@@ -421,7 +404,7 @@ test("endpoint: GET prefill and POST payload; failure keeps answers and retries"
   await expect(heading(page)).toHaveText("Your reply");
   const P = JSON.parse(new URLSearchParams(posts[posts.length - 1]).get("payload"));
   expect(P.code).toBe("FRIEND2345");
-  expect(P.extras.phone).toBe("416 555 0100");
+  expect(P).not.toHaveProperty("phone");
   expect(Object.keys(P.counts)).toEqual(evs);
   expect(P.namesByEvent[evs[0]]).toEqual(["Jordan Lee", "Sam Lee"]);
   expect(await stored(page, "FRIEND2345")).toMatchObject({ code: "FRIEND2345" });
@@ -434,8 +417,6 @@ test("endpoint: a POST the backend did not save shows an unconfirmed message and
   await everyone(page).click();
   await fillComingNames(page, ["Jordan Lee", "Sam Lee"]);
   await next(page);
-  await page.locator("#x-phone").fill("416 555 0100");
-  await next(page);
   await page.getByRole("button", { name: "Send RSVP" }).click();
   await expect(page.locator(`${R} [data-send-err]`)).toContainText("couldn't confirm your RSVP was saved", { timeout: 15000 });
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
@@ -447,9 +428,36 @@ test("endpoint: remote response pre-fills the form", async ({ page }) => {
   await page.route(`${EP}**`, (route) => route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: JSON.stringify({ ok: true, P }) }));
   await open(page, "/?content=tests/fixtures/content-rsvp-endpoint.json&guest=tests/fixtures/guest-friend.json&intro=0#rsvp");
   await expect(page.locator(`${R} [data-replied]`)).toContainText("Feb 2, 2027");
+  // Another device: the saved reply opens on "Your reply", and "Change my response" opens the pre-filled form.
+  await expect(heading(page)).toHaveText("Your reply");
+  await expect(page.locator(`${R} [data-done]`)).toContainText("Jordan, Sam");
+  await page.getByRole("button", { name: "Change my response" }).click();
   await expect.poll(() => vals(page, "sangeet")).toEqual(["Jordan", "Sam"]);
   await expect.poll(() => vals(page, "wedding")).toEqual(["Jordan", ""]);
   await expect(page.locator(`${R} [data-act=decline][data-k="reception"]`)).toHaveAttribute("aria-pressed", "true");
+});
+
+test("endpoint: while the server answers, a new device shows 'Looking up your reply' instead of step 1", async ({ page }) => {
+  const P = { v: 2, code: "FRIEND2345", household: "Jordan Lee", seats: 2, submittedAt: "2027-02-02T10:00:00.000Z", counts: { sangeet: 2, wedding: 1, reception: 0 }, names: "Jordan, Sam", diet: {}, dietNote: "", extras: {} };
+  let answer;
+  const answered = new Promise((r) => { answer = r; });
+  await page.route(`${EP}**`, async (route) => {
+    await answered;
+    route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: JSON.stringify({ ok: true, P }) });
+  });
+  await open(page, "/?content=tests/fixtures/content-rsvp-endpoint.json&guest=tests/fixtures/guest-friend.json&intro=0#rsvp");
+  await expect(page.locator(`${R} [data-loading]`)).toContainText("Looking up your reply");
+  await expect(page.locator(`${R} [data-form]`)).toHaveCount(0);
+  answer();
+  await expect(heading(page)).toHaveText("Your reply");
+  await expect(page.locator(`${R} [data-loading]`)).toHaveCount(0);
+});
+
+test("endpoint: a household that hasn't replied gets the form once the server answers", async ({ page }) => {
+  await page.route(`${EP}**`, (route) => route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: JSON.stringify({ ok: true, P: null }) }));
+  await open(page, "/?content=tests/fixtures/content-rsvp-endpoint.json&guest=tests/fixtures/guest-friend.json&intro=0#rsvp");
+  await expect(page.locator(`${R} [data-form]`)).toBeVisible();
+  await expect(page.locator(`${R} [data-loading]`)).toHaveCount(0);
 });
 
 test("name pills, lines and buttons are at least 44px tall", async ({ page }) => {
@@ -457,4 +465,31 @@ test("name pills, lines and buttons are at least 44px tall", async ({ page }) =>
   const small = await page.evaluate(() =>
     [...document.querySelectorAll("[data-page=rsvp] .rv-segopt > span, [data-page=rsvp] .btn, [data-page=rsvp] .rv-addname, [data-page=rsvp] .rv-decline, [data-page=rsvp] .rv-line input")].filter((e) => e.offsetParent && e.offsetHeight < 44).map((e) => e.textContent.trim())); // layout size: the page-enter scale must not count
   expect(small).toEqual([]);
+});
+
+test.describe("invitation waves", () => {
+  const WAVE = "/?guest=tests/fixtures/guest-wave.json&intro=0";
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/tests/fixtures/guest-wave.json", async (route) => {
+      const g = JSON.parse(fs.readFileSync("tests/fixtures/guest-family.json", "utf8"));
+      await route.fulfill({ json: { ...g, code: "WAVE234567", rsvpBy: { date: "2027-03-15", text: "March 15th, 2027" } } });
+    });
+  });
+
+  test("a second-wave guest sees their own date and can still reply after the site-wide deadline", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2027-02-10T12:00:00-07:00"));
+    await open(page, WAVE + "#rsvp");
+    await expect(page.locator(`${R} .rv-warn`)).toContainText("Please let us know by March 15th, 2027.");
+    await expect(page.locator(`${R} [data-passed]`)).toHaveCount(0);
+    await expect(page.locator(`${R} [data-body]`)).toBeVisible();
+    await page.goto(WAVE + "#home");
+    await page.waitForSelector("html[data-ready]");
+    await expect(page.locator(".due-text")).toHaveText("by Mar 15th");
+  });
+
+  test("their RSVP closes after their own date", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2027-03-16T12:00:00-07:00"));
+    await open(page, WAVE + "#rsvp");
+    await expect(page.locator(`${R} [data-passed]`)).toContainText("The RSVP deadline has passed");
+  });
 });

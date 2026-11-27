@@ -1,11 +1,15 @@
 {
-  "_comment": "DEV ONLY sample data. The dev passphrase is 'dev-passphrase'. Never use it for the real guest list. Replace these households with the real list before publishing.",
+  "_comment": "DEV ONLY local guest list. The dev passphrase is 'dev-passphrase'. Never use it for the real guest list. The first two households are already in use: their codes must stay. Events are mehendi, vidhi, and wedding. The rest are family combinations for local preview: every event at the same size, a different headcount at each event, each pair of events, each single event, and children only at the wedding.",
   "households": [
-    { "id": "sharma", "household": "Sharma Family", "members": ["Raj Sharma", "Priya Sharma", "Anika Sharma"], "eventIds": ["mehendi", "haldi-vidhi", "wedding"], "tags": ["close-family"], "plusOnes": 0 },
-    { "id": "mehta", "household": "Mehta Family", "members": ["Rohan Mehta", "Sunita Mehta"], "eventIds": ["mehendi", "haldi-vidhi", "wedding"], "tags": ["close-family"], "plusOnes": 0 },
-    { "id": "chen", "household": "Chen & Okafor", "members": ["Daniel Chen", "Ada Okafor"], "eventIds": ["haldi-vidhi", "wedding"], "tags": ["friends"], "plusOnes": 0 },
-    { "id": "garcia", "household": "Maria Garcia", "members": ["Maria Garcia"], "eventIds": ["haldi-vidhi", "wedding"], "tags": ["friends"], "plusOnes": 0 },
-    { "id": "walker", "household": "Jordan & Sam Walker", "members": ["Jordan Walker", "Sam Walker"], "eventIds": ["wedding"], "tags": ["colleagues"], "plusOnes": 0 },
-    { "id": "patel", "household": "Neha Patel", "members": ["Neha Patel"], "eventIds": ["haldi-vidhi", "wedding"], "tags": ["friends"], "plusOnes": 1 }
+    { "id": "hh-h22m87", "code": "Q7NERU2HYS", "household": "Patel Family", "members": [{ "id": "m1", "name": "Keyuri Patel" }, { "id": "m2", "name": "Kalpesh Patel" }, { "id": "m3", "name": "Karan Patel" }, { "id": "m4", "name": "Vedant Patel" }], "eventSeats": { "vidhi": 4, "wedding": 4 }, "tags": [] },
+    { "id": "hh-ayrtmv", "code": "SAYW32YKBX", "household": "Patel family", "members": [], "eventSeats": { "vidhi": 3, "wedding": 2 }, "tags": [] },
+    { "id": "gill", "household": "Gill Family", "members": ["Harjit Gill", "Simran Gill", "Arun Gill", "Noor Gill"], "eventIds": ["mehendi", "vidhi", "wedding"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "malhotra", "household": "Malhotra Family", "members": ["Vikram Malhotra", "Ananya Malhotra", "Suresh Malhotra"], "eventSeats": { "mehendi": 5, "vidhi": 3, "wedding": 7 }, "tags": ["close-family"] },
+    { "id": "sethi", "household": "Sethi Family", "members": ["Rohit Sethi", "Pooja Sethi", "Ayaan Sethi", "Kiara Sethi"], "eventIds": ["mehendi", "wedding"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "khanna", "household": "Khanna Family", "members": ["Deepak Khanna", "Nisha Khanna", "Kabir Khanna"], "eventIds": ["vidhi", "wedding"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "bhatt", "household": "Bhatt Family", "members": ["Neil Bhatt", "Rina Bhatt"], "eventIds": ["mehendi"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "chawla", "household": "Chawla Family", "members": ["Om Chawla", "Lata Chawla"], "eventIds": ["vidhi"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "ahluwalia", "household": "Ahluwalia Family", "members": ["Karan Ahluwalia", "Maya Ahluwalia", "Tara Ahluwalia", "Dev Ahluwalia"], "eventIds": ["wedding"], "tags": ["close-family"], "plusOnes": 0 },
+    { "id": "nair", "household": "Nair Family", "members": ["Arjun Nair", "Meera Nair"], "eventSeats": { "mehendi": 2, "vidhi": 2, "wedding": 4 }, "tags": ["close-family"] }
   ]
 }

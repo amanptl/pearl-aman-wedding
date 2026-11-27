@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 
 // The home page shows only the days a guest is invited to, and the city (never the wedding venue): not every guest is
 // invited to the wedding itself.

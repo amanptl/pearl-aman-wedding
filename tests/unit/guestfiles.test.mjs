@@ -114,3 +114,31 @@ test("displayGreeting drops a leading Dear and keeps a custom line", () => {
   assert.equal(displayGreeting("Hi Raj"), "Hi Raj");
   assert.equal(displayGreeting(""), "");
 });
+
+test("waves: unsent waves stay out of guests.json; sent ones carry their own reply-by date, never the wave", async () => {
+  const { rsvpDeadline, deadlineWords } = await import("../../src/lib/guestfiles.js");
+  const waves = [{ id: "w1", name: "Close family", deadline: "2027-01-31", sent: true }, { id: "w2", name: "Second round", deadline: "2027-03-15", sent: false }];
+  const list = hh();
+  list[0].wave = "w1"; list[1].wave = "w2";
+  const { guestsJson, adminJson } = await build(list, { waves, nameLookup: true });
+  const admin = await openAdmin(adminJson, "pw");
+  assert.deepEqual(admin.waves, waves);
+  assert.deepEqual(admin.households.map((h) => h.wave), ["w1", "w2", undefined]);
+  assert.equal(Object.keys(guestsJson.records).length, 2);
+  const [a, b, c] = admin.households;
+  assert.equal(guestsJson.records[await sha256Hex(b.code)], undefined);
+  assert.equal(await lookup(guestsJson, "zed quillfeather"), null);
+  const open = async (h) => decryptJSON(await deriveKey(h.code, guestsJson.kdf.salt, guestsJson.kdf.iter), guestsJson.records[await sha256Hex(h.code)]);
+  const ga = await open(a), gc = await open(c);
+  assert.deepEqual(ga.rsvpBy, { date: "2027-01-31", text: "January 31st, 2027" });
+  assert.equal(ga.wave, undefined);
+  assert.ok(!JSON.stringify(ga).includes("Close family"));
+  assert.equal(gc.rsvpBy, undefined);
+  assert.equal(deadlineWords("2027-03-22"), "March 22nd, 2027");
+  assert.equal(deadlineWords("2027-03-11"), "March 11th, 2027");
+  assert.equal(deadlineWords(""), "");
+  const content = { rsvp: { deadline: "2027-01-31", deadlineText: "Jan 31st 2027" } };
+  assert.deepEqual(rsvpDeadline(content, ga), { date: "2027-01-31", text: "January 31st, 2027", own: true });
+  assert.deepEqual(rsvpDeadline(content, gc), { date: "2027-01-31", text: "Jan 31st 2027", own: false });
+  assert.deepEqual(rsvpDeadline(content, null), { date: "2027-01-31", text: "Jan 31st 2027", own: false });
+});
