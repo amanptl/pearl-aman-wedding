@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 import { assertNoHorizontalOverflow, assertNoClippedText, runAxe } from "./helpers/layout.js";
 import fs from "node:fs";
 

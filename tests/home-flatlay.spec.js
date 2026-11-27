@@ -2,7 +2,7 @@
 // photo envelope → invitation card → "Kindly Rsvp" → Respond (just under the script).
 // A fixed chevron cues the scroll to the welcome block. Desktop may shrink the board
 // so the script + Respond clear the fold; phones/tablets show the tall crop.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 import { assertNoHorizontalOverflow } from "./helpers/layout.js";
 
 const URL = "/?intro=0&guest=tests/fixtures/guest-family.json#home";

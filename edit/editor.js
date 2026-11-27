@@ -98,6 +98,11 @@ async function boot() {
       hhs.forEach((hh, i) => {
         if (!String(hh.household || "").trim()) app.errors.push({ path: `_admin.households.${i}.household`, message: "A household needs a name" });
       });
+      for (const w of draft._admin.waves || []) {
+        if (!w.deadline) app.errors.push({ path: "_admin.waves", message: `The wave "${w.name || w.id}" needs a reply-by date` });
+        const n = hhs.filter((hh) => hh.wave === w.id).length;
+        if (!w.sent && n) warn.push({ path: "_admin.waves", message: `"${w.name || w.id}" isn't sent yet, so the links for its ${n} household${n === 1 ? "" : "s"} won't work until you mark it sent` });
+      }
       for (const e of draft.events.filter(GL.isPrivate)) if (!hhs.some((hh) => (hh.eventIds || []).includes(e.id))) warn.push({ path: "_admin.households", message: `Nobody is invited to the private event "${e.name || e.id}" yet` });
     }
     app.warnings = warn;
@@ -211,7 +216,7 @@ async function boot() {
     const g = app.previewGuest;
     if (!g || g._preview) return g;
     const hh = (draft._admin?.households || []).find((x) => x.code === g.code);
-    return hh ? GL.makeGuestFor(hh, draft.events) : g; // rebuilt from the draft so edits show straight away
+    return hh ? GL.makeGuestFor(hh, draft.events, draft._admin?.waves) : g; // rebuilt from the draft so edits show straight away
   };
   app.setPreviewGuest = (guest) => {
     app.previewGuest = guest || null;
@@ -222,7 +227,7 @@ async function boot() {
   app.previewAs = (code) => {
     const hh = (draft._admin?.households || []).find((x) => x.code === code);
     if (!hh) return;
-    app.setPreviewGuest(GL.makeGuestFor(hh, draft.events));
+    app.setPreviewGuest(GL.makeGuestFor(hh, draft.events, draft._admin?.waves));
     app.toast(`Previewing as ${hh.household}`);
   };
   app.refreshPreview = () => { if (app.previewGuest && !app.previewGuest._preview) app.render({ soon: true, source: "guests" }); };
@@ -467,7 +472,7 @@ async function boot() {
   /* ---------- guest list: private events + households (encrypted in admin.enc.json) ---------- */
   const PASS_KEY = "pa.editor.pass.v1"; // sessionStorage only: gone when the tab closes
   app.unlocked = false; app.passphrase = ""; app.adminBase = null; app.adminCt = null; app.adminIsNew = false;
-  const normAdmin = (b) => ({ households: clone(b.households || []), presets: b.presets, waTemplate: b.waTemplate, waReminder: b.waReminder, rsvpAdminKey: b.rsvpAdminKey });
+  const normAdmin = (b) => ({ households: clone(b.households || []), presets: b.presets, waves: b.waves, waTemplate: b.waTemplate, waReminder: b.waReminder, rsvpAdminKey: b.rsvpAdminKey });
   function showLock() { $("#lock-banner").hidden = app.unlocked; }
 
   async function fetchAdminFile() {

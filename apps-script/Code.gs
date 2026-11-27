@@ -1,19 +1,20 @@
 /**
  * Wedding RSVP backend (Google Apps Script web app). See README.md.
  * POST  payload=<JSON>            -> upserts Responses (one row per household and event: how many are coming) and
- *                                    Households (names, food counts, travel), appends History
- * Payload (v2): { v, code, household, seats, eventSeats:{eventId:n}, submittedAt, counts:{eventId:n},
- *                 namesByEvent:{eventId:string[]}, names, diet:{label:n}, dietNote, extras }
+ *                                    Households (names, note), appends History
+ * Payload (v3): { v, code, household, seats, eventSeats:{eventId:n}, submittedAt, counts:{eventId:n},
+ *                 namesByEvent:{eventId:string[]}, names, message }
+ *               (v2 sent the message inside `extras`; it is still read from there.)
  * GET   ?action=get&code=CODE     -> { ok, P }
- * GET   ?action=summary&key=KEY   -> { ok, households, responses, counts, dietary, meals }
+ * GET   ?action=summary&key=KEY   -> { ok, households, responses, counts }
  */
 var CODE_RE = /^[A-Z2-9]{10}$/;
 var SHEETS = {
   Responses: ['code', 'household', 'eventId', 'invited', 'attending', 'updatedAt'],
-  Households: ['code', 'household', 'invited', 'names', 'dietary', 'dietNote', 'hotel', 'arrival', 'departure', 'flight', 'flightTime', 'address', 'shuttle', 'phone', 'song', 'message', 'submittedAt'],
+  Households: ['code', 'household', 'invited', 'names', 'message', 'submittedAt'],
   History: ['receivedAt', 'code', 'payload']
 };
-var LIMITS = { events: 30, seats: 50, diet: 30, str: 500, long: 2000, payload: 60000 };
+var LIMITS = { events: 30, seats: 50, long: 2000, payload: 60000 };
 var EVENT_RE = /^[A-Za-z0-9_-]{1,40}$/;
 
 function json_(obj) {
@@ -70,8 +71,6 @@ function validate_(P) {
     counts[id] = Math.min(count(P.counts[id]), cap);
     if (eventSeats[id] == null) eventSeats[id] = seats;
   });
-  var top = 0;
-  evIds.forEach(function (id) { top = Math.max(top, counts[id]); });
   var namesByEvent = {};
   var namesIn = P.namesByEvent && typeof P.namesByEvent === 'object' && !Array.isArray(P.namesByEvent) ? P.namesByEvent : null;
   if (namesIn) {
@@ -84,25 +83,10 @@ function validate_(P) {
       namesByEvent[id] = list.slice(0, attending).map(function (n) { return str_(n, 80); });
     });
   }
-  var dietIn = P.diet && typeof P.diet === 'object' && !Array.isArray(P.diet) ? P.diet : {};
-  var labels = Object.keys(dietIn);
-  if (labels.length > LIMITS.diet) throw new Error('Bad diet');
-  var diet = {};
-  labels.forEach(function (k) {
-    var label = str_(k, 60).replace(/[:;\r\n]/g, ' ').trim();
-    var n = Math.min(count(dietIn[k]), top);
-    if (label && n > 0) diet[label] = n;
-  });
-  var x = P.extras || {};
-  var shuttle = {};
-  var sh = x.shuttle && typeof x.shuttle === 'object' ? x.shuttle : {};
-  Object.keys(sh).slice(0, 20).forEach(function (k) {
-    var n = Number(sh[k]);
-    if (n > 0 && n <= 50) shuttle[str_(k, 40)] = Math.floor(n);
-  });
+  var x = P.extras && typeof P.extras === 'object' ? P.extras : {};
   return {
     code: P.code,
-    v: 2,
+    v: 3,
     household: str_(P.household, 120),
     submittedAt: str_(P.submittedAt, 40) || new Date().toISOString(),
     seats: seats,
@@ -110,27 +94,8 @@ function validate_(P) {
     counts: counts,
     namesByEvent: namesByEvent,
     names: str_(P.names, 1000),
-    diet: diet,
-    dietNote: str_(P.dietNote, LIMITS.str),
-    extras: {
-      hotel: str_(x.hotel, 20), arrival: str_(x.arrival, 20), departure: str_(x.departure, 20),
-      flight: str_(x.flight, 80), flightTime: str_(x.flightTime, 20), address: str_(x.address, LIMITS.long),
-      shuttle: shuttle, phone: str_(x.phone, 40), song: str_(x.song, 200), message: str_(x.message, LIMITS.long)
-    }
+    message: str_(P.message != null ? P.message : x.message, LIMITS.long)
   };
-}
-
-/** {Jain: 2, Vegetarian: 3} -> "Jain: 2; Vegetarian: 3" (readable in the Sheet; parsed back by the summary). */
-function dietText_(d) {
-  return safe_(Object.keys(d || {}).map(function (k) { return k + ': ' + d[k]; }).join('; '));
-}
-function dietParse_(s) {
-  var out = {};
-  String(s || '').split(';').forEach(function (part) {
-    var m = /^\s*(.+?):\s*(\d+)\s*$/.exec(part);
-    if (m) out[m[1]] = (out[m[1]] || 0) + Number(m[2]);
-  });
-  return out;
 }
 
 /** Neutralise spreadsheet formula injection (=, +, -, @, and leading tab/CR, which Excel also treats as formula starts). */
@@ -177,8 +142,7 @@ function doPost(e) {
 
     // Households: one row per code.
     var hs = sheet_('Households');
-    var x = P.extras;
-    var hrow = [P.code, safe_(P.household), P.seats, safe_(P.names), dietText_(P.diet), safe_(P.dietNote), safe_(x.hotel), safe_(x.arrival), safe_(x.departure), safe_(x.flight), safe_(x.flightTime), safe_(x.address), JSON.stringify(x.shuttle), safe_(x.phone), safe_(x.song), safe_(x.message), safe_(P.submittedAt)];
+    var hrow = [P.code, safe_(P.household), P.seats, safe_(P.names), safe_(P.message), safe_(P.submittedAt)];
     var codes = hs.getLastRow() > 1 ? hs.getRange(2, 1, hs.getLastRow() - 1, 1).getValues() : [];
     var at = -1;
     for (var i = 0; i < codes.length; i++) if (String(codes[i][0]) === P.code) { at = i + 2; break; }
@@ -231,18 +195,14 @@ function doGet_(e) {
     var responses = rv.map(toObj(SHEETS.Responses));
     var households = hv.map(toObj(SHEETS.Households));
     // counts[eventId] = { coming: people, invited: seats of replying households, households: replies, declined: replies with 0 }
-    var counts = {}, dietary = {};
+    var counts = {};
     responses.forEach(function (r) {
       var c = counts[r.eventId] || (counts[r.eventId] = { coming: 0, invited: 0, households: 0, declined: 0 });
       var n = Number(r.attending) || 0;
       c.coming += n; c.invited += Number(r.invited) || 0; c.households++;
       if (!n) c.declined++;
     });
-    households.forEach(function (h) {
-      var d = dietParse_(h.dietary);
-      Object.keys(d).forEach(function (k) { dietary[k] = (dietary[k] || 0) + d[k]; });
-    });
-    return json_({ ok: true, households: households, responses: responses, counts: counts, dietary: dietary });
+    return json_({ ok: true, households: households, responses: responses, counts: counts });
   }
   return ContentService.createTextOutput('ok');
 }

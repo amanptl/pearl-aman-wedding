@@ -1,6 +1,6 @@
 // The opening film (src/lib/film.js): it plays on the real home board, so its last frame must be the home page
 // exactly as it looks with no intro, whether it plays out, is skipped mid-shot, or motion is reduced.
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 
 const GUEST = "guest=tests/fixtures/guest-family.json";
 const PIECES = [".env", ".env-photo", ".invite", ".rsvp-word", ".tag-respond"];
@@ -30,7 +30,10 @@ async function sealed(page) {
 test("plays through and ends on the home page exactly", async ({ page }) => {
   const rest = await restingLayout(page);
   await sealed(page);
-  await expect(page.locator(".env-name")).toHaveText("Sharma Family");
+  await expect(page.locator(".env-name")).toHaveCount(0);
+  await expect(page.locator(".intro-for")).toBeVisible();
+  await expect(page.locator(".intro-for [data-for-name]")).toHaveText("Sharma Family");
+  await expect(page.locator("#intro")).toHaveAttribute("aria-label", "Invitation for Sharma Family");
   await page.locator("#intro-open").click();
   await expect(page.locator("html")).toHaveAttribute("data-film", "play");
   await expect(page.locator("#intro")).toHaveCount(0, { timeout: 8000 });
@@ -62,9 +65,9 @@ test("reduced motion: the tap opens without the film", async ({ page }) => {
   expectSame(await rects(page), rest);
 });
 
-test("the zoomed board never widens the page, and a public visitor's envelope has no name", async ({ page }) => {
+test("the zoomed board never widens the page, and a public visitor sees no name", async ({ page }) => {
   await page.goto("/");
   await page.waitForSelector("#intro.is-ready");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.locator(".env-name")).toHaveCount(0);
+  await expect(page.locator(".intro-for")).toBeHidden();
 });

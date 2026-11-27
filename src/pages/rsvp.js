@@ -3,37 +3,37 @@ import { renderLookup } from "./_lookup.js";
 import { formatDate, formatTime, toInstant } from "../lib/time.js";
 import { downloadIcs } from "../lib/calendar.js";
 import { calendarSheet } from "./schedule.js";
-import { seatsOf, eventSeatsOf, eventSeatsMap, displayGreeting } from "../lib/guestfiles.js";
+import { seatsOf, eventSeatsOf, eventSeatsMap, displayGreeting, rsvpDeadline } from "../lib/guestfiles.js";
 import { envelopeHeart, calendarPlus as calIcon } from "../lib/icons.js";
 
 /*
  * RSVP by household headcount: for each invited event the family says how many of them are coming (0 up to that
  * event's invited count), plus one empty name field per person coming (required unless rsvp.namesRequired is false),
- * and, on the details step when anyone is coming, a phone number for reminders and an optional note.
- * Payload v2: { v:2, code, household, seats, eventSeats, submittedAt, counts:{eventId:n}, namesByEvent:{eventId:string[]}, names, diet, dietNote, extras }.
+ * and an optional note for the couple at the bottom of the same step. Step 2 is the review.
+ * Payload v3: { v:3, code, household, seats, eventSeats, submittedAt, counts:{eventId:n}, namesByEvent:{eventId:string[]}, names, message }.
+ * Older saved replies (v1 per-person, v2 with diet/extras/phone) are still read back; only counts, names and the note are kept.
  */
 
 /* ---------- storage helpers (always guarded) ---------- */
 const KEY = (code) => `pa.rsvp.v1.${code}`; // the last reply sent (also read by the home page); v1 or v2 payloads
-const DRAFT = (code) => `pa.rsvp.draft.v2.${code}`;
+const DRAFT = (code) => `pa.rsvp.draft.v3.${code}`; // v3: two steps (v2 drafts had three)
 const read = (area, k) => { try { return JSON.parse(window[area].getItem(k)); } catch { return null; } };
 const write = (area, k, v) => { try { window[area].setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
 const drop = (area, k) => { try { window[area].removeItem(k); } catch { /* ignore */ } };
 
 const UI = new WeakMap();
-const STEP_NAMES = ["Who's coming", "Details", "Review"];
+const STEP_NAMES = ["Who's coming", "Review"];
+const LAST = STEP_NAMES.length;
 
 const blank = () => ({
-  phase: "form", step: 1, counts: {}, namesByEvent: {}, diet: {}, dietNote: "", replied: null,
-  x: { hotel: "", arrival: "", departure: "", flight: "", flightTime: "", address: "", phone: "", song: "", message: "", shuttle: {} },
+  phase: "form", step: 1, counts: {}, namesByEvent: {}, replied: null,
+  x: { message: "" },
 });
 
 /* ---------- derived data ---------- */
 const rsvpEvents = (ctx) => ctx.events.filter((e) => e.rsvp !== false);
 /** Names of those coming. Required unless content.rsvp.namesRequired is explicitly false. */
 const namesAreRequired = (ctx) => ctx.content.rsvp?.namesRequired !== false;
-/** Food preferences asked as counts: the meal options then the dietary options, without "Other" (that's the notes box). */
-const foodOptions = (ctx) => [...new Set([...(ctx.content.rsvp?.mealOptions || []), ...(ctx.content.rsvp?.dietaryOptions || [])])].filter((o) => o && !/^other$/i.test(o));
 const evTz = (e, ctx) => e.timezone || ctx.tz;
 const when = (e, ctx) => `${formatDate(e.start, evTz(e, ctx), "long")} · ${formatTime(e.start, evTz(e, ctx))}`;
 const seats = (ctx) => seatsOf(ctx.guest);
@@ -43,9 +43,6 @@ const plural = (n, one, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 
 const countAt = (st, eid) => (Number.isInteger(st.counts[eid]) ? st.counts[eid] : 0);
 const answered = (st, eid) => Number.isInteger(st.counts[eid]);
-/** The most people coming to any one event: the cap for food and shuttle counts. */
-const most = (st, ctx) => Math.max(0, ...rsvpEvents(ctx).map((e) => countAt(st, e.id)));
-const dietTotal = (st) => Object.values(st.diet).reduce((a, n) => a + (+n || 0), 0);
 const comingLabel = (n, cap) => (n === 0 ? (cap === 1 ? "Not coming" : "None of us") : cap === 1 ? "Coming" : plural(n, "guest"));
 
 /** Keep namesByEvent[eid] length equal to the coming count; new slots stay empty. */
@@ -127,19 +124,13 @@ function buildPayload(st, ctx) {
     return [e.id, Math.min(cap, countAt(st, e.id))];
   }));
   const any = Object.values(counts).some((n) => n > 0);
-  const top = Math.max(0, ...Object.values(counts));
   const namesByEvent = {};
   if (any) for (const e of evs) {
     const n = counts[e.id];
     if (n > 0) namesByEvent[e.id] = namesFor(st, e.id, ctx).slice(0, n);
   }
-  const x = st.x;
-  const shuttle = {};
-  if (any) for (const e of evs) { const n = Math.min(+x.shuttle?.[e.id] || 0, counts[e.id]); if (e.shuttle && n > 0) shuttle[e.id] = n; }
-  const diet = {};
-  if (any) for (const o of foodOptions(ctx)) { const n = Math.min(+st.diet[o] || 0, top); if (n > 0) diet[o] = n; }
   return {
-    v: 2,
+    v: 3,
     code: ctx.guest.code,
     household: ctx.guest.household,
     seats: seats(ctx),
@@ -148,21 +139,16 @@ function buildPayload(st, ctx) {
     counts,
     namesByEvent,
     names: any ? namesSummary({ ...st, counts, namesByEvent }, ctx) : "",
-    diet,
-    dietNote: any ? (st.dietNote || "").trim() : "",
-    extras: any
-      ? { hotel: x.hotel || "", arrival: x.arrival || "", departure: x.departure || "", flight: x.flight || "", flightTime: x.flightTime || "", address: x.address || "", shuttle, phone: x.phone || "", song: x.song || "", message: x.message || "" }
-      : { hotel: "", arrival: "", departure: "", flight: "", flightTime: "", address: "", shuttle: {}, phone: "", song: "", message: x.message || "" },
+    message: (st.x.message || "").trim(),
   };
 }
 
-/** State from a saved reply. Also reads the older per-person replies (v1): counts are the yeses, names the people saying yes. */
+/** State from a saved reply (v3, or an older v2 whose note sat in `extras`). Also reads the older per-person
+    replies (v1): counts are the yeses, names the people saying yes. Food, hotel and travel answers in old replies are dropped. */
 function fromPayload(P, ctx) {
   const st = blank();
-  if (P.v === 2 || P.counts) {
+  if (P.v >= 2 || P.counts) {
     for (const [id, n] of Object.entries(P.counts || {})) if (Number.isInteger(n)) st.counts[id] = n;
-    st.diet = { ...(P.diet || {}) };
-    st.dietNote = P.dietNote || "";
     if (P.namesByEvent && typeof P.namesByEvent === "object") {
       for (const [id, list] of Object.entries(P.namesByEvent)) {
         const n = countAt(st, id);
@@ -181,22 +167,17 @@ function fromPayload(P, ctx) {
       st.counts[r.eventId] = (st.counts[r.eventId] || 0) + (r.attending === "yes" ? 1 : 0);
       if (r.attending === "yes") yes.add(r.memberId);
     }
-    const people = (P.members || []).filter((m) => yes.has(m.id));
-    const shared = people.map((m) => m.name).filter(Boolean);
+    const shared = (P.members || []).filter((m) => yes.has(m.id)).map((m) => m.name).filter(Boolean);
     for (const e of rsvpEvents(ctx)) {
       const n = countAt(st, e.id);
       if (n > 0) st.namesByEvent[e.id] = Array.from({ length: n }, (_, i) => shared[i] || "");
     }
-    const opts = foodOptions(ctx), notes = [];
-    for (const m of people) for (const part of [m.meal, ...String(m.dietary || "").split(";")].map((v) => String(v || "").trim()).filter(Boolean)) {
-      if (opts.includes(part)) st.diet[part] = (st.diet[part] || 0) + 1; else notes.push(`${m.name}: ${part}`);
-    }
-    st.dietNote = notes.join("; ");
   }
   fitAll(st, ctx);
-  Object.assign(st.x, P.extras || {});
-  st.x.shuttle = { ...(P.extras?.shuttle || {}) };
+  st.x.message = String(P.message ?? P.extras?.message ?? "");
   st.replied = P.submittedAt || null;
+  // A household that has replied comes back to their reply (with "Change my response"), not to step 1 of the form.
+  if (st.replied) st.phase = "done";
   return st;
 }
 
@@ -204,7 +185,7 @@ const fmtDay = (iso, ctx) => {
   try { return new Date(iso).toLocaleDateString("en-US", { timeZone: ctx.tz, month: "long", day: "numeric", year: "numeric" }); } catch { return ""; }
 };
 const deadlinePassed = (ctx) => {
-  const d = ctx.content.rsvp?.deadline;
+  const d = rsvpDeadline(ctx.content, ctx.guest).date;
   if (!d || ctx.mode === "edit") return false;
   const t = toInstant(`${d}T23:59:59`, ctx.tz);
   return !isNaN(t) && ctx.now() > t;
@@ -237,28 +218,14 @@ function summaryHtml(st, ctx) {
   </ul>`;
 }
 
-function stepper(act, key, n, max, label) {
-  return html`<span class="rv-step-ctl">
-    <button type="button" class="rv-round" data-act="${act}-" data-k="${key}" aria-label="Fewer: ${label}" ${n <= 0 ? "disabled" : ""}>−</button>
-    <output class="rv-num" data-num="${act}:${key}" aria-live="polite">${n}</output>
-    <button type="button" class="rv-round" data-act="${act}+" data-k="${key}" data-max="${max}" aria-label="More: ${label}" ${n >= max ? "disabled" : ""}>+</button>
-  </span>`;
-}
-
-function detailsSummary(st, ctx) {
-  const q = ctx.content.rsvp?.questions || {};
-  const rows = [];
-  const x = st.x;
-  const any = most(st, ctx) > 0;
-  if (any && q.phone && x.phone) rows.push(["Phone", x.phone]);
-  if (x.message) rows.push(["Your note", x.message]);
-  if (!rows.length) return "";
-  return html`<dl class="rv-dl">${rows.map(([k, v]) => html`<div><dt>${k}</dt><dd>${v}</dd></div>`)}</dl>`;
+function noteSummary(st) {
+  const note = String(st.x.message || "").trim();
+  return note ? html`<p class="rv-note-text">${note}</p>` : "";
 }
 
 /* ---------- steps ---------- */
 function stepHead(n, title, help) {
-  return html`<legend class="rv-legend"><span class="rv-count">Step ${n} of 3</span><h2 tabindex="-1" data-step-heading>${title}</h2></legend>${help ? html`<p class="rv-help">${help}</p>` : ""}`;
+  return html`<legend class="rv-legend"><span class="rv-count">Step ${n} of ${LAST}</span><h2 tabindex="-1" data-step-heading>${title}</h2></legend>${help ? html`<p class="rv-help">${help}</p>` : ""}`;
 }
 
 function step1(st, ctx) {
@@ -308,18 +275,13 @@ function bookCard(st, ctx, e, pool, seatsSaid) {
   </section>`;
 }
 
-/** Phone for reminders. On the details step, and required there when anyone is coming. */
-function phoneCard(st, ctx) {
-  const q = ctx.content.rsvp?.questions?.phone;
-  if (!q) return "";
-  const need = most(st, ctx) > 0;
-  return html`<section class="rv-card rv-phone">
+/** Optional note for the couple, at the bottom of the first step. */
+function noteCard(st) {
+  return html`<section class="rv-card rv-note">
     <div class="rv-field">
-      <label for="x-phone">${q}</label>
-      <p class="rv-help" id="ph-help">We'll use this for reminders and last-minute updates.</p>
-      <input id="x-phone" type="tel" inputmode="tel" autocomplete="tel" data-f="x.phone" value="${st.x.phone}" maxlength="40" placeholder="416 555 0100" ${need ? raw('aria-required="true"') : ""} aria-describedby="ph-help er-phone" />
+      <label for="x-message">A note for the couple (optional)</label>
+      <textarea id="x-message" data-f="x.message" rows="3" maxlength="1000">${st.x.message}</textarea>
     </div>
-    <p class="rv-err" id="er-phone" hidden></p>
   </section>`;
 }
 
@@ -342,6 +304,7 @@ function step1Book(st, ctx) {
       <button type="button" class="rv-quick-link" data-act="clear">Clear</button>
     </div>
     <div class="rv-sheet">${evs.map((e) => bookCard(st, ctx, e, pool, seats > 0))}</div>
+    ${noteCard(st)}
   </fieldset>`;
 }
 
@@ -415,42 +378,17 @@ function step1Counts(st, ctx) {
         </div>
       </section>`;
     })}
+    ${noteCard(st)}
   </fieldset>`;
 }
 
-function optRadio(name, value, label, checked, f, path) {
-  return html`<label class="rv-opt"><input type="radio" name="${name}" value="${value}" data-f="${f}" ${checked ? "checked" : ""} /><span ${path ? editAttrs("text", path) : ""}>${label}</span></label>`;
-}
-
-function step2(st, ctx) {
-  const r = ctx.content.rsvp || {};
-  const q = r.questions || {};
-  const top = most(st, ctx);
-  if (!top) {
-    return html`<fieldset class="rv-step" data-step="2">
-      ${stepHead(2, "Send your wishes", "We're sorry you can't make it, and we'll be thinking of you. A note is always welcome.")}
-      <div class="rv-card"><div class="rv-field"><label for="x-message">A note for the couple (optional)</label>
-        <textarea id="x-message" data-f="x.message" rows="4" maxlength="1000">${st.x.message}</textarea></div></div>
-    </fieldset>`;
-  }
-  const x = st.x;
-  return html`<fieldset class="rv-step" data-step="2">
-    ${stepHead(2, "A few details", q.phone
-      ? "We need a phone number so we can send reminders. A note is optional."
-      : "A note for us is welcome.")}
-    ${phoneCard(st, ctx)}
-    <div class="rv-card"><div class="rv-field"><label for="x-message">A note for the couple (optional)</label>
-      <textarea id="x-message" data-f="x.message" rows="3" maxlength="1000">${x.message}</textarea></div></div>
-  </fieldset>`;
-}
-
-function step3(st, ctx, err) {
+function stepReview(st, ctx, err) {
   const goto = (n, label) => html`<button type="button" class="btn btn--ghost btn--small" data-act="goto" data-step="${n}">${label}</button>`;
-  return html`<fieldset class="rv-step" data-step="3">
-    ${stepHead(3, "Review and send", "Please check everything. You can edit any part before sending.")}
+  return html`<fieldset class="rv-step" data-step="2">
+    ${stepHead(2, "Review and send", "Please check everything. You can edit any part before sending.")}
     <section class="rv-card" aria-labelledby="rv-s1"><div class="rv-cardhead"><h3 id="rv-s1">Who's coming</h3>${goto(1, html`Edit<span class="visually-hidden"> who's coming</span>`)}</div>${summaryHtml(st, ctx)}</section>
-    <section class="rv-card" aria-labelledby="rv-s2"><div class="rv-cardhead"><h3 id="rv-s2">Details</h3>${goto(2, html`Edit<span class="visually-hidden"> details</span>`)}</div>
-      ${detailsSummary(st, ctx) || html`<p class="rv-muted">Nothing added.</p>`}</section>
+    <section class="rv-card" aria-labelledby="rv-s2"><div class="rv-cardhead"><h3 id="rv-s2">Your note</h3>${goto(1, html`Edit<span class="visually-hidden"> your note</span>`)}</div>
+      ${noteSummary(st) || html`<p class="rv-muted">No note added.</p>`}</section>
     <p class="rv-err rv-send-err" data-send-err role="alert" ${err ? "" : "hidden"}>${err || ""}</p>
   </fieldset>`;
 }
@@ -458,9 +396,9 @@ function step3(st, ctx, err) {
 /* ---------- views ---------- */
 function formView(ui, ctx) {
   const st = ui.st;
-  const fn = st.step === 1 ? step1 : st.step === 2 ? step2 : step3;
+  const fn = st.step === 1 ? step1 : stepReview;
   const stepper = html`<ol class="rv-steps" aria-label="Progress">${STEP_NAMES.map((n, i) => html`<li ${st.step === i + 1 ? raw('aria-current="step"') : ""} class="${st.step === i + 1 ? "is-current" : st.step > i + 1 ? "is-done" : ""}"><span class="rv-dot" aria-hidden="true">${st.step > i + 1 ? "✓" : i + 1}</span><span class="rv-steplabel">${n}${st.step === i + 1 ? html`<span class="visually-hidden"> (current step)</span>` : ""}</span></li>`)}</ol>`;
-  const last = st.step === 3;
+  const last = st.step === LAST;
   return html`${stepper}<form class="rv-form" novalidate data-form>
     ${fn(st, ctx, ui.sendErr)}
     <div class="rv-nav">
@@ -477,7 +415,7 @@ function passedView(ui, ctx) {
       <p>The RSVP deadline has passed — please message us and we'll do our best to help.</p>
       ${contactsHtml(ctx)}
     </div>
-    ${has ? html`<div class="rv-card"><h3>What we have for you${st.replied ? html` <span class="rv-muted">(sent ${fmtDay(st.replied, ctx)})</span>` : ""}</h3>${summaryHtml(st, ctx)}${detailsSummary(st, ctx)}</div>` : ""}`;
+    ${has ? html`<div class="rv-card"><h3>What we have for you${st.replied ? html` <span class="rv-muted">(sent ${fmtDay(st.replied, ctx)})</span>` : ""}</h3>${summaryHtml(st, ctx)}${noteSummary(st)}</div>` : ""}`;
 }
 
 const NOTED = (code) => `pa.rsvp.noted.${code}`;
@@ -505,6 +443,9 @@ function doneView(ui, ctx) {
   </div>`;
 }
 
+/** While we ask the server whether this household already replied (from another device), so step 1 doesn't flash first. */
+const loadingView = () => html`<div class="rv-card rv-loading" data-loading aria-busy="true"><p class="rv-help">Looking up your reply…</p></div>`;
+
 /* ---------- drawing ---------- */
 function setLive(root, msg) {
   const el = root.querySelector("[data-live]");
@@ -520,6 +461,7 @@ function draw(root, focus) {
   if (!body) return;
   let v;
   if (deadlinePassed(ctx)) v = passedView(ui, ctx);
+  else if (ui.loading) v = loadingView();
   else if (ui.st.phase === "done") v = doneView(ui, ctx);
   else v = formView(ui, ctx);
   body.innerHTML = String(v);
@@ -551,7 +493,7 @@ function syncHead(root, ui, ctx) {
     if (replied) {
       let day = "";
       try { day = new Date(ui.st.replied).toLocaleDateString("en-US", { timeZone: ctx.tz, month: "short", day: "numeric", year: "numeric" }); } catch { /* keep it short */ }
-      const until = ctx.content.rsvp?.deadlineText;
+      const until = rsvpDeadline(ctx.content, ctx.guest).text;
       line.innerHTML = String(html`<span class="rv-replied-tag"><span aria-hidden="true">✓ </span>Replied</span><span class="rv-replied-rule" aria-hidden="true"></span><span>${day}${until ? html` · You can update it until ${until}` : ""}</span>`);
     }
   }
@@ -569,7 +511,7 @@ function goStep(root, n) {
   ui.sendErr = "";
   saveDraft(ui);
   draw(root, "heading");
-  setLive(root, `Step ${n} of 3: ${n === 2 && !most(ui.st, ui.ctx) ? "Send your wishes" : STEP_NAMES[n - 1]}`);
+  setLive(root, `Step ${n} of ${LAST}: ${STEP_NAMES[n - 1]}`);
 }
 
 /* ---------- validation ---------- */
@@ -632,55 +574,6 @@ function validate1(root) {
     return false;
   }
   return true;
-}
-
-/** Digits only, so "416 555-0100" and "+1 (416) 555-0100" can be checked the same way. */
-const phoneDigits = (s) => String(s || "").replace(/\D/g, "");
-const phoneNeeded = (st, ctx) => !!(ctx.content.rsvp?.questions?.phone && most(st, ctx) > 0);
-/** Empty when the number is usable for a reminder. Otherwise the message to show. */
-function phoneProblem(s) {
-  const t = String(s || "").trim();
-  if (!t) return "Please add a phone number so we can send reminders.";
-  const digits = phoneDigits(t);
-  if (/[a-z]/i.test(t) || digits.length < 10 || digits.length > 15) return "Please check that number. Include the area code, for example 416 555 0100.";
-  return "";
-}
-
-/** Keep the required state in step with who's coming, without redrawing the lines being typed in. */
-function syncPhoneNeed(root, st, ctx) {
-  const input = root.querySelector("#x-phone");
-  if (!input) return;
-  if (phoneNeeded(st, ctx)) input.setAttribute("aria-required", "true");
-  else input.removeAttribute("aria-required");
-}
-
-/** A phone number is required on the details step when anyone is coming. */
-function validatePhone(root) {
-  const ui = UI.get(root);
-  const { st, ctx } = ui;
-  const input = root.querySelector("#x-phone");
-  const err = root.querySelector("#er-phone");
-  if (!input || !err) return true;
-  syncPhoneNeed(root, st, ctx);
-  if (!phoneNeeded(st, ctx)) {
-    input.removeAttribute("aria-invalid");
-    err.hidden = true;
-    return true;
-  }
-  const msg = phoneProblem(input.value || st.x.phone);
-  if (!msg) {
-    st.x.phone = input.value.trim();
-    input.removeAttribute("aria-invalid");
-    err.hidden = true;
-    return true;
-  }
-  input.setAttribute("aria-invalid", "true");
-  err.textContent = msg;
-  err.hidden = false;
-  input.focus();
-  input.scrollIntoView({ block: "center" });
-  setLive(root, msg);
-  return false;
 }
 
 /* ---------- submit ---------- */
@@ -750,7 +643,7 @@ function bind(root) {
   if (root.dataset.bound) return;
   root.dataset.bound = "1";
 
-  root.addEventListener("submit", (e) => { e.preventDefault(); const ui = UI.get(root); if (ui && ui.st.step === 3) submit(root); });
+  root.addEventListener("submit", (e) => { e.preventDefault(); const ui = UI.get(root); if (ui && ui.st.step === LAST) submit(root); });
 
   const onField = (e) => {
     const ui = UI.get(root);
@@ -761,13 +654,6 @@ function bind(root) {
     if (t.dataset.f) {
       if (t.type === "radio" && !t.checked) return;
       setPath(st, t.dataset.f, t.value);
-      if (t.id === "x-arrival") { const d = root.querySelector("#x-departure"); if (d) d.min = t.value || d.min; }
-      if (t.id === "x-phone") {
-        const err = root.querySelector("#er-phone");
-        const msg = phoneProblem(t.value);
-        if (!msg) { t.removeAttribute("aria-invalid"); if (err) err.hidden = true; }
-        else if (err && !err.hidden) { t.setAttribute("aria-invalid", "true"); err.textContent = msg; }
-      }
     } else if (t.dataset.nameSlot && namesAreRequired(ctx)) {
       const eid = t.dataset.nameSlot;
       st.namesByEvent[eid] = linesOf(st, ctx, eid);
@@ -815,31 +701,6 @@ function bind(root) {
   addEventListener("pointercancel", release, true);
   root.addEventListener("change", onField);
   root.addEventListener("input", (e) => { if (e.target.matches("input:not([type=radio]):not([type=checkbox]), textarea")) onField(e); });
-
-  /** −/+ on a counter: shuttle seats per event (cap: that event's count) or a food count (cap: the biggest event). */
-  function bump(root, b, st, ctx) {
-    const [kind, dir] = [b.dataset.act.slice(0, -1), b.dataset.act.slice(-1)];
-    const k = b.dataset.k;
-    let mx, cur, set;
-    if (kind === "seat") {
-      mx = countAt(st, k);
-      cur = Math.min(+st.x.shuttle[k] || 0, mx);
-      set = (n) => { st.x.shuttle[k] = n; };
-    } else {
-      const label = foodOptions(ctx)[+k];
-      mx = most(st, ctx);
-      cur = Math.min(+st.diet[label] || 0, mx);
-      set = (n) => { if (n) st.diet[label] = n; else delete st.diet[label]; };
-    }
-    const n = Math.max(0, Math.min(mx, cur + (dir === "+" ? 1 : -1)));
-    set(n);
-    const out = root.querySelector(`[data-num="${kind}:${k}"]`);
-    if (out) out.textContent = n;
-    const grp = b.closest(".rv-step-ctl");
-    grp.querySelector(`[data-act='${kind}-']`).disabled = n <= 0;
-    grp.querySelector(`[data-act='${kind}+']`).disabled = n >= mx;
-    if (b.disabled) grp.querySelector("button:not([disabled])")?.focus();
-  }
 
   root.addEventListener("click", (e) => {
     const b = e.target.closest("[data-act]");
@@ -908,21 +769,17 @@ function bind(root) {
       setLive(root, yes ? (allOne ? "Set to coming to every event." : "Set to everyone invited at every event.") : "All answers cleared.");
     } else if (act === "next") {
       if (st.step === 1 && !validate1(root)) return;
-      if (st.step === 2 && !validatePhone(root)) return;
-      goStep(root, Math.min(3, st.step + 1));
+      goStep(root, Math.min(LAST, st.step + 1));
     } else if (act === "back") goStep(root, Math.max(1, st.step - 1));
     else if (act === "goto") goStep(root, +b.dataset.step);
-    else if (/^(seat|diet)[+-]$/.test(act)) {
-      bump(root, b, st, ctx);
-      saveDraft(ui);
-    } else if (act === "ics") {
+    else if (act === "ics") {
       const evs = rsvpEvents(ctx).filter((ev) => countAt(st, ev.id) > 0);
       if (isApple()) downloadIcs(evs, ctx.content.site, "pearl-and-aman-wedding.ics");
       else calendarSheet(evs, ctx, "pearl-and-aman-wedding.ics");
     } else if (act === "change") {
       st.phase = "form"; st.step = 1;
       draw(root, "heading");
-      setLive(root, "Step 1 of 3: Who's coming");
+      setLive(root, `Step 1 of ${LAST}: Who's coming`);
     }
   });
 }
@@ -935,7 +792,7 @@ function initUi(root, ctx) {
   if (prior && (prior.counts || prior.members)) ui.st = fromPayload(prior, ctx);
   const draft = read("sessionStorage", DRAFT(code));
   if (draft && draft.counts) {
-    ui.st = { ...blank(), ...draft, namesByEvent: { ...(draft.namesByEvent || {}) }, x: { ...blank().x, ...draft.x }, replied: ui.st.replied };
+    ui.st = { ...blank(), ...draft, namesByEvent: { ...(draft.namesByEvent || {}) }, step: Math.min(LAST, Math.max(1, +draft.step || 1)), x: { message: String(draft.x?.message || "") }, replied: ui.st.replied };
     // Older drafts stored a single names string — spread into each event's slots.
     if (draft.names && !draft.namesByEvent) {
       for (const e of rsvpEvents(ctx)) {
@@ -950,6 +807,15 @@ function initUi(root, ctx) {
   const ep = ctx.content.site?.rsvpEndpoint;
   if (ep && ctx.mode !== "edit") {
     const url = ep + (ep.includes("?") ? "&" : "?") + "action=get&code=" + encodeURIComponent(code);
+    // Nothing saved on this device yet: show "Looking up your reply…" instead of step 1 until the server answers
+    // (or 8 s pass), so a reply sent from another device opens straight on "Your reply".
+    ui.loading = !ui.st.replied && !ui.dirty;
+    const settle = () => {
+      if (!ui.loading) return;
+      ui.loading = false;
+      if (UI.get(root) === ui) draw(root);
+    };
+    const slow = setTimeout(settle, 8000);
     fetch(url).then((r) => r.json()).then((j) => {
       const P = j && j.ok && j.P;
       if (!P || !(P.counts || P.members)) return;
@@ -958,8 +824,9 @@ function initUi(root, ctx) {
       write("localStorage", KEY(code), P);
       if (ui.dirty || ui.busy || ui.st.phase === "done") { ui.st.replied = ui.st.replied || P.submittedAt; return; }
       ui.st = fromPayload(P, ui.ctx);
+      ui.loading = false;
       if (UI.get(root) === ui) draw(root);
-    }).catch(() => { /* offline: local data is enough */ });
+    }).catch(() => { /* offline: local data is enough */ }).finally(() => { clearTimeout(slow); settle(); });
   }
   return ui;
 }
@@ -973,6 +840,7 @@ export default {
     root._ctx = ctx;
     const r = ctx.content.rsvp || {};
     const g = ctx.guest;
+    const dl = rsvpDeadline(ctx.content, g); // the guest's own reply-by date (from their invitation wave) or the site-wide one
     root.innerHTML = String(html`
       <div class="section section--paper rv page-head">
         <div class="container container--narrow rv-wrap">
@@ -982,7 +850,7 @@ export default {
             ${(r.intro || []).map((p, i) => html`<p class="lede" ${editAttrs("multiline", `rsvp.intro.${i}`)} data-index="${i}">${p}</p>`)}
           </div>
           ${!g && (r.deadlineText || ctx.mode === "edit") ? html`<p class="center rv-deadline">Kindly RSVP by <strong ${editAttrs("text", "rsvp.deadlineText", { placeholder: "Add deadline" })}>${r.deadlineText}</strong></p>` : ""}
-          ${g && (r.deadlineText || ctx.mode === "edit") && !deadlinePassed(ctx) ? html`<div class="rv-warn" role="note"><span class="rv-warn-tag">${envelopeHeart()}<span>Kindly reply</span></span><p>Please let us know by <strong ${editAttrs("text", "rsvp.deadlineText", { placeholder: "Add deadline" })}>${r.deadlineText || ""}</strong>. If we don't hear from you by then, we'll miss you, but we'll assume you can't make it.</p></div>` : ""}
+          ${g && (dl.text || ctx.mode === "edit") && !deadlinePassed(ctx) ? html`<div class="rv-warn" role="note"><span class="rv-warn-tag">${envelopeHeart()}<span>Kindly reply</span></span><p>Please let us know by <strong ${dl.own ? "" : editAttrs("text", "rsvp.deadlineText", { placeholder: "Add deadline" })}>${dl.text || ""}</strong>. If we don't hear from you by then, we'll miss you, but we'll assume you can't make it.</p></div>` : ""}
           ${g ? html`<p class="rv-replied" data-replied hidden></p>` : ""}
           <div class="visually-hidden" role="status" aria-live="polite" data-live></div>
           ${g ? html`<div class="rv-body" data-body></div>` : html`<div class="rv-card rv-lookup" data-lookup></div>`}

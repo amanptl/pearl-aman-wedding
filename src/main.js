@@ -2,7 +2,7 @@
 import { $, $$, html, esc } from "./lib/dom.js";
 import { loadContent } from "./lib/store.js";
 import { resolveGuest } from "./lib/guest.js";
-import { syncEventSeats } from "./lib/guestfiles.js";
+import { syncEventSeats, displayGreeting } from "./lib/guestfiles.js";
 import { registerSW } from "./lib/pwa.js";
 import { toast, openSheet } from "./lib/ui.js";
 import { telUrl, whatsappUrl } from "./lib/maps.js";
@@ -218,6 +218,15 @@ function setupEnvelope() {
     introEl = null;
     return;
   }
+  // "An invitation for …" above the envelope: the household's greeting without "Dear", as on the home heading.
+  const who = displayGreeting(ctx?.guest?.greeting) || ctx?.guest?.household || "";
+  const forLine = introEl.querySelector(".intro-for");
+  if (forLine && who) {
+    forLine.querySelector("[data-for-name]").textContent = who;
+    forLine.hidden = false;
+    introEl.setAttribute("aria-label", `Invitation for ${who}`);
+  }
+  window.addEventListener("resize", placeForLine);
   // Skip / Escape jump to the last frame, also mid-shot.
   const skip = () => { if (film?.state === "play") film.finish(); else openEnvelope(false); };
   $("#intro-open").addEventListener("click", () => openEnvelope(true));
@@ -258,8 +267,15 @@ function queueFilm() {
     film = createFilm(board, { chrome: [$("#site-header"), $("#top-nav"), $("#tabbar"), $("#help")], vignette: introEl.querySelector(".intro-lens") });
     const art = ["env-back", "env-pocket", "env-flap-out", "env-sprig"].map((n) => { const i = new Image(); i.src = `assets/img/${n}.webp`; return i.decode().catch(() => {}); });
     await Promise.race([Promise.all(art), new Promise((r) => setTimeout(r, 1500))]);
-    if (gen === envelopeGen && introEl?.isConnected) introEl.classList.add("is-ready");
+    if (gen === envelopeGen && introEl?.isConnected) { placeForLine(); introEl.classList.add("is-ready"); }
   });
+}
+
+/** Keep "An invitation for …" just above the sealed envelope, wherever the camera has framed it. */
+function placeForLine() {
+  if (!introEl?.isConnected || introEl.hidden || envelopeOpening || document.documentElement.dataset.film !== "idle") return;
+  const env = sectionFor("home")?.querySelector(".env");
+  if (env) introEl.style.setProperty("--env-top", `${Math.round(env.getBoundingClientRect().top)}px`);
 }
 
 function hideEnvelope() {

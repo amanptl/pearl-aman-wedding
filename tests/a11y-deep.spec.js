@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test.js";
 import AxeBuilder from "@axe-core/playwright";
 
 const ROUTES = ["home", "schedule", "travel", "story", "faq", "rsvp"];
@@ -173,12 +173,8 @@ test("RSVP stepper completes by keyboard alone (Tab / Space / Enter)", async ({ 
   await tabTo(`${R} .rv-addname`);
   await page.keyboard.press("Enter");
   await expect(first).toHaveValue("Raj Sharma");
-  await tabTo(`${R} [data-act=next]`);
-  await page.keyboard.press("Enter");
-  await expect(H).toHaveText("A few details");
-  await expect(H).toBeFocused();
-  await tabTo(`${R} #x-phone`);
-  await page.keyboard.type("4165550100");
+  await tabTo(`${R} #x-message`);
+  await page.keyboard.type("See you there");
   await tabTo(`${R} [data-act=next]`);
   await page.keyboard.press("Enter");
   await expect(H).toHaveText("Review and send");

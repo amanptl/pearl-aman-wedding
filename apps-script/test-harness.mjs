@@ -45,13 +45,12 @@ const reset = () => { sheets = {}; props = { ADMIN_KEY: "secret" }; lockFails = 
 const raw = (text) => JSON.parse(ctx.doPost({ parameter: { payload: text } }).t);
 const post = (P) => raw(JSON.stringify(P));
 const get = (p) => JSON.parse(ctx.doGet({ parameter: p }).t);
-// Household-level payload (v2): how many are coming to each event, food counts, optional names.
-const mk = (counts, extras = {}) => ({
-  v: 2, code: "ABCDE23456", household: "Test Fam", seats: 4, submittedAt: "2027-01-01T00:00:00Z",
-  counts, names: "Raj, Priya", diet: { Jain: 1, "Nut allergy": 2 }, dietNote: "no onion",
-  extras: { hotel: "need", shuttle: { wedding: 2 }, phone: "=1+1", ...extras },
+// Household-level payload (v3): how many are coming to each event, optional names and a note.
+const mk = (counts, more = {}) => ({
+  v: 3, code: "ABCDE23456", household: "Test Fam", seats: 4, submittedAt: "2027-01-01T00:00:00Z",
+  counts, names: "Raj, Priya", message: "=1+1 see you there", ...more,
 });
-const H = { invited: 2, names: 3, dietary: 4, dietNote: 5, hotel: 6, shuttle: 12, phone: 13, message: 15 }; // Households columns
+const H = { invited: 2, names: 3, message: 4, submittedAt: 5 }; // Households columns
 const R = { eventId: 2, invited: 3, attending: 4 }; // Responses columns
 
 /* ---------- basics (upsert, delete, get, summary) ---------- */
@@ -73,11 +72,10 @@ assert.ok(!sheets.Responses.rows.some((r) => r[R.eventId] === "vidhi"));
 assert.equal(sheets.Responses.rows.find((r) => r[R.eventId] === "mehndi")[R.attending], 1);
 assert.equal(sheets.Households.rows.length, 2, "one household row");
 const hrow = sheets.Households.rows[1];
-assert.equal(hrow[H.phone], "'=1+1", "formula injection neutralised");
+assert.equal(hrow[H.message], "'=1+1 see you there", "formula injection neutralised");
 assert.equal(hrow[H.invited], 4);
 assert.equal(hrow[H.names], "Raj, Priya");
-assert.equal(hrow[H.dietary], "Jain: 1; Nut allergy: 1", "food counts capped at the most coming to one event (1 here)");
-assert.equal(hrow[H.dietNote], "no onion");
+assert.deepEqual(sheets.Households.rows[0], ["code", "household", "invited", "names", "message", "submittedAt"]);
 assert.equal(sheets.History.rows.length, 1 + 2);
 
 // counts above the household's seats are capped
@@ -93,7 +91,10 @@ assert.equal(sheets.Responses.rows.filter((r) => r[0] === "ZZZZZ99999").length, 
 const g = get({ action: "get", code: "abcde23456" });
 assert.equal(g.ok, true);
 assert.deepEqual(g.P.counts, { mehndi: 3, wedding: 4 });
-assert.equal(g.P.v, 2);
+assert.equal(g.P.v, 3);
+assert.equal(g.P.message, "=1+1 see you there", "get hands back the stored reply");
+assert.equal(g.P.phone, undefined, "no phone stored");
+assert.equal(g.P.diet, undefined, "nothing beyond the v3 fields is stored");
 assert.equal(get({ action: "get", code: "NOPE" }).P, null);
 assert.equal(get({ action: "get", code: "QQQQQ22222" }).P, null);
 
@@ -103,8 +104,8 @@ assert.equal(s.ok, true);
 assert.equal(s.households.length, 2);
 assert.equal(s.responses.length, 4);
 assert.deepEqual(s.counts.mehndi, { coming: 5, invited: 8, households: 2, declined: 0 });
-assert.deepEqual(s.dietary, { Jain: 2, "Nut allergy": 4 });
-assert.equal(s.households.find((h) => h.code === "ABCDE23456").phone, "=1+1", "summary hands the editor the guest's real text back");
+assert.equal(s.dietary, undefined, "no food tally any more");
+assert.equal(s.households.find((h) => h.code === "ABCDE23456").message, "=1+1 see you there", "summary hands the editor the guest's real text back");
 
 /* ---------- edge cases ---------- */
 // sheets are created as plain text so dates, times and phone numbers are not coerced
@@ -112,11 +113,10 @@ reset();
 post(mk({ wedding: 1 }));
 for (const n of ["Responses", "Households", "History"]) assert.deepEqual(sheets[n].formats, ["@"], `${n} is plain text`);
 
-// formula injection in every free-text field (event ids are checked and prefixed, food labels and text prefixed)
+// formula injection in every free-text field (event ids are checked and prefixed, text prefixed)
 const evil = (v) => ({
-  v: 2, code: "ABCDE23456", household: v + "H", seats: 2, submittedAt: "2027-01-01T00:00:00Z",
-  counts: { wedding: 2, "-x": 1 }, names: v + "N", diet: { [v + "D"]: 1 }, dietNote: v + "DN",
-  extras: { hotel: v, arrival: v, departure: v, flight: v, flightTime: v, address: v, shuttle: {}, phone: v, song: v, message: v },
+  v: 3, code: "ABCDE23456", household: v + "H", seats: 2, submittedAt: "2027-01-01T00:00:00Z",
+  counts: { wedding: 2, "-x": 1 }, names: v + "N", message: v,
 });
 for (const lead of ["=", "+", "-", "@", "\t", "\r"]) {
   reset();
@@ -157,25 +157,31 @@ assert.equal(post({ ...base, counts: { wedding: 1.5 } }).ok, false, "fractional 
 assert.equal(post({ ...base, counts: { wedding: "lots" } }).ok, false, "non-numeric count");
 assert.equal(post({ ...base, counts: [2] }).ok, false, "counts must be an object");
 assert.equal(post({ ...base, counts: Object.fromEntries(Array.from({ length: 31 }, (_, i) => ["e" + i, 1])) }).ok, false, "too many events");
-assert.equal(post({ ...base, diet: Object.fromEntries(Array.from({ length: 31 }, (_, i) => ["d" + i, 1])) }).ok, false, "too many food labels");
 assert.equal(post({ ...base, names: "x".repeat(1001) }).ok, false, "names too long");
-assert.equal(post({ ...base, extras: { message: "x".repeat(2001) } }).ok, false, "message too long");
+assert.equal(post({ ...base, message: "x".repeat(2001) }).ok, false, "message too long");
 assert.equal(raw(JSON.stringify(base) + " ".repeat(60001)).ok, false, "payload over 60 KB");
 assert.equal(sheets.Responses?.rows.length ?? 0, 0, "invalid submissions never write");
-assert.equal(post({ ...base, extras: { shuttle: { wedding: 9999, vidhi: -1, sangeet: "abc", mehndi: 3.7 } } }).ok, true);
-assert.equal(sheets.Households.rows[1][H.shuttle], '{"mehndi":3}', "shuttle seats clamped and floored");
-// food labels can't smuggle the separators the summary parses
+
+// an older v2 reply (note inside extras, plus phone, food and travel answers) is accepted; only the note is kept
 reset();
-post({ ...base, diet: { "Veg; Jain: 9": 1 } });
-assert.deepEqual(get({ action: "summary", key: "secret" }).dietary, { "Veg  Jain  9": 1 });
+const v2 = { v: 2, code: "ABCDE23456", household: "Old Fam", seats: 2, submittedAt: "2027-01-01T00:00:00Z", counts: { wedding: 2 }, names: "A, B",
+  diet: { Jain: 1 }, dietNote: "no onion", extras: { hotel: "need", arrival: "2027-07-22", shuttle: { wedding: 2 }, phone: "416 555 0100", song: "x", message: "Hi" } };
+assert.equal(post(v2).ok, true);
+assert.equal(sheets.Households.rows[1][H.message], "Hi");
+assert.equal(sheets.Households.rows[1].length, 6);
+const back = get({ action: "get", code: "ABCDE23456" }).P;
+assert.equal(back.v, 3);
+assert.equal(back.extras, undefined);
+assert.equal(back.diet, undefined);
+assert.equal(back.message, "Hi");
+assert.equal(back.phone, undefined);
 
 // the largest legal submission still fits in one Sheets cell (limit 50,000 characters) in History
 reset();
 const big = {
-  v: 2, code: "ABCDE23456", household: "H".repeat(120), seats: 50, submittedAt: "2027-01-01T00:00:00Z",
+  v: 3, code: "ABCDE23456", household: "H".repeat(120), seats: 50, submittedAt: "2027-01-01T00:00:00Z",
   counts: Object.fromEntries(Array.from({ length: 30 }, (_, i) => ["e" + String(i).padStart(2, "0").repeat(19), 50])),
-  names: "N".repeat(1000), diet: Object.fromEntries(Array.from({ length: 30 }, (_, i) => ["D" + String(i).padStart(2, "0").repeat(29), 50])), dietNote: "X".repeat(500),
-  extras: { hotel: "need", arrival: "2027-07-22", departure: "2027-07-26", flight: "F".repeat(80), flightTime: "14:05", address: "A".repeat(2000), shuttle: {}, phone: "1".repeat(40), song: "S".repeat(200), message: "M".repeat(2000) },
+  names: "N".repeat(1000), message: "M".repeat(2000),
 };
 assert.equal(post(big).ok, true);
 assert.ok(sheets.History.rows[1][2].length < 50000, "history cell " + sheets.History.rows[1][2].length);
@@ -215,7 +221,7 @@ const codes = Array.from({ length: 100 }, (_, i) => "ABCDE" + L(Math.floor(i / 1
 const events = ["mehndi", "vidhi", "sangeet", "wedding", "reception"];
 for (let pass = 0; pass < 2; pass++) {
   for (const code of codes) {
-    const r = post({ v: 2, code, household: "HH " + code, seats: 4, submittedAt: "2027-01-01T00:00:00Z", counts: Object.fromEntries(events.map((e) => [e, pass ? 0 : 4])), names: "", diet: { Veg: 2 }, dietNote: "", extras: { hotel: "need", shuttle: {} } });
+    const r = post({ v: 3, code, household: "HH " + code, seats: 4, submittedAt: "2027-01-01T00:00:00Z", counts: Object.fromEntries(events.map((e) => [e, pass ? 0 : 4])), names: "", message: "" });
     assert.equal(r.ok, true);
   }
 }
@@ -230,6 +236,5 @@ const all = get({ action: "summary", key: "secret" });
 assert.equal(all.responses.length, 500);
 assert.equal(all.households.length, 100);
 assert.deepEqual(all.counts.wedding, { coming: 0, invited: 400, households: 100, declined: 100 });
-assert.deepEqual(all.dietary, {}, "food counts are dropped when nobody is coming");
 
 console.log("apps-script harness: all assertions passed");

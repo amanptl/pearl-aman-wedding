@@ -113,7 +113,8 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
   seats: 4,                          // largest eventSeats value (older readers still have one number)
   members: [{ id: "m1", name: "Raj Sharma" }, { id: "m2", name: "Priya Sharma" }],  // optional names (lookup only)
   privateEvents: [Event, ...],       // full copies of the private events this household is invited to
-  tags: ["close-family"] }
+  tags: ["close-family"],
+  rsvpBy: { date: "2027-03-15", text: "March 15th, 2027" } } // optional: this household's own reply-by date (from its wave)
 ```
 
 **content/guests.json (public, all values opaque):**
@@ -130,6 +131,8 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
 { households: [Guest without privateEvents], privateEvents: [Event], rsvpAdminKey }
 ```
 
+- **Sides (admin bundle only):** a household may carry `side` (usually a partner's first name, "Pearl" / "Aman"), so each family keeps its own spreadsheet. The Excel sheet is `household, members, side, wave, tags, <one column per event>, code, personal link`; `code` ties a row to its household (renames keep the link). Import modes: add-and-update, or replace one side's list (removes only that side's households missing from the file). A name that exists only on the other side's list is a problem row. `side` never goes into a guest record.
+- **Invitation waves (admin bundle only):** `waves: [{ id, name, deadline: "YYYY-MM-DD", sent, sentOn? }]` (`sentOn` = the local date the wave was ticked as sent, shown on the Responses dashboard), and a household may carry `wave: <id>`. On publish a household in a wave gets `rsvpBy` in its record (never the wave's id or name); households in a wave with `sent: false` get no record and no name entries, so their links don't work yet. Pages read the date through `rsvpDeadline(content, guest)`: the guest's `rsvpBy`, else `content.rsvp.deadline`/`deadlineText`.
 - **Editor extras in the admin bundle (never in public files):** `presets: [{ id, name, tag, eventIds: [ids] | ["*"] }]` (group presets, `"*"` = every event), `waTemplate` / `waReminder` (WhatsApp message texts with `{greeting} {link} {couple} {household} {deadline}`), and `rsvpAdminKey`. Households may carry an `id` (kept for matching only; it is stripped from guest records).
 - **Editor draft:** `draft.events` holds ALL events (public + private) and `draft._admin` holds `{ households, presets, waTemplate, waReminder, rsvpAdminKey }`. On publish `content.json` gets the public events only; `guests.json` + `admin.enc.json` are rebuilt only when the guest list or private events changed, all in one commit.
 - **Public vs private events:** `content.json` holds only events with `visibility: "public"`. Private events live only in `admin.enc.json`, plus copies inside each invited household's record. The editor regenerates `guests.json` on every publish.
@@ -139,19 +142,17 @@ Render with `object-fit: cover; object-position: <focal[0]>% <focal[1]>%`. Use `
 ## 7. RSVP backend contract (Apps Script web app)
 **POST** (`mode: "no-cors"`), body `URLSearchParams({ payload: JSON.stringify(P) })`:
 ```js
-P = { v: 2, code, household, seats, submittedAt,
+P = { v: 3, code, household, seats, submittedAt,
       eventSeats: { [eventId]: n },                     // invited headcount per event
       counts: { [eventId]: n },                         // how many are coming, 0..eventSeats[id], every RSVP event
       namesByEvent: { [eventId]: ["Raj Sharma", "Priya Sharma"] }, // one name per person coming (empty until the guest types)
       names: "Mehndi: Raj Sharma, Priya Sharma; Wedding: Raj Sharma", // readable summary for the Households sheet
-      diet: { Vegetarian: 3, Jain: 1 },                 // food counts (meal + dietary options), each <= the biggest count
-      dietNote: "one peanut allergy",
-      extras: { hotel: "need"|"booked"|"local"|"", arrival, departure, flight, flightTime, address, shuttle: { [eventId]: seats }, phone, song, message } }
+      message: "So excited!" }                          // optional note to the couple (sent even when nobody is coming)
 ```
-The backend upserts one row per (code, eventId) in the **Responses** sheet (`invited` = that event’s `eventSeats`, `attending` = count), and one row per code in the **Households** sheet (`names` summary, `dietary` as "Jain: 1; Vegetarian: 3", dietNote, extras). Re-submitting replaces rather than duplicates. Older replies with a single `names` string (or v1 per-person replies) are still read back by the form.
+The backend upserts one row per (code, eventId) in the **Responses** sheet (`invited` = that event’s `eventSeats`, `attending` = count), and one row per code in the **Households** sheet (`code, household, invited, names, message, submittedAt`). Re-submitting replaces rather than duplicates. The payload carries only what the form asks; a new question adds a field here, a column in Code.gs, and a line in the dashboard. Older replies are still read back by the form, keeping only counts, names and the note: v2 (note inside `extras`, plus phone, food and travel answers that are now ignored), replies with a single `names` string, and v1 per-person replies.
 
 - **GET `?action=get&code=CODE`:** returns `{ ok, P | null }`, the household's latest submission, used to pre-fill the form.
-- **GET `?action=summary&key=ADMIN_KEY`:** returns `{ ok, households:[…], responses:[…], counts: { [eventId]: { coming, invited, households, declined } }, dietary: { label: n } }` for the editor dashboard.
+- **GET `?action=summary&key=ADMIN_KEY`:** returns `{ ok, households:[…], responses:[…], counts: { [eventId]: { coming, invited, households, declined } } }` for the editor dashboard.
 - The endpoint URL lives in `content.site.rsvpEndpoint`. If it's empty, the site runs in demo mode: it logs to the console and stores the submission in localStorage under `pa.rsvp.v1.<code>`.
 
 ## 8. content.json shape (summary; schema.json is authoritative)
@@ -177,13 +178,12 @@ The backend upserts one row per (code, eventId) in the **Responses** sheet (`inv
             shuttles: [{ id, eventId, from, departs, returns }],
             international: { title, text },
             aroundTown: [{ id, category, name, text, url, address }] },
-  story: { teaser, paragraphs: [], photos: [Image] },
+  story: { teaser, lede, hero: StoryPhoto, message: { date, text, note }, paragraphs: [], chapters: [{ title, paragraphs: [], photos: [StoryPhoto] }], closing: { title, paragraphs: [] } },  // StoryPhoto = { photo: Image, caption }
   people: [{ id, name, role, side, bio, photo }],      // optional, the page is hidden when empty
   registry: { photo: Image, paragraphs: [], links: [{ label, url }] },
   faqCategories: [{ id, title }],
   faq: [{ id, category, q, a }],
-  rsvp: { deadline: "2027-06-01", deadlineText, intro: [], mealOptions: [], dietaryOptions: [],
-          questions: { hotel, travelDates, flight, address, shuttle, phone, song } }
+  rsvp: { deadline: "2027-06-01", deadlineText, intro: [], namesRequired: true }
 }
 ```
 

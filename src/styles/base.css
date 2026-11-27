@@ -413,12 +413,25 @@ main { view-transition-name: main; }
 @keyframes hint-in { from { opacity: 0; } to { opacity: 0.85; } }
 @keyframes hint-pulse { 50% { opacity: 0.45; } }
 .intro.opening .intro-hint { animation: none; opacity: 0; }
+/* "An invitation for <name>" in the dark above the sealed envelope. --env-top (set from the envelope's on-screen
+   position) keeps it just above the envelope on any screen height. It fades out as the envelope opens. */
+.intro-for {
+  position: absolute; left: var(--space-m); right: var(--space-m); bottom: calc(100% - var(--env-top, 34%) + clamp(1rem, 4vh, 2.25rem));
+  margin: 0; text-align: center; pointer-events: none; color: #e6d3a3; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  opacity: 0; transition: opacity 500ms ease;
+}
+.intro-for small { display: block; margin-bottom: var(--space-2xs); font-family: var(--font-body); font-size: 0.8125rem; letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.8; }
+.intro-for span { display: block; font-family: var(--font-script); font-size: clamp(2.1rem, 10vw, 3rem); line-height: 1.15; text-wrap: balance; }
+.intro.is-ready .intro-for { opacity: 1; animation: hint-for 900ms ease 0.5s backwards; }
+@keyframes hint-for { from { opacity: 0; translate: 0 0.4rem; } to { opacity: 1; translate: 0 0; } }
+.intro.opening .intro-for { animation: none; opacity: 0; transition-duration: 300ms; }
 .intro.opening .intro-open { cursor: default; }
 .intro.gone { opacity: 0; pointer-events: none; }
 /* display:none hides Skip for guests; delete that declaration to show it again. */
 .intro-skip { display: none; position: absolute; z-index: 1; right: var(--space-s); top: calc(var(--space-s) + var(--safe-t)); }
 @media (prefers-reduced-motion: reduce) {
   .intro.is-ready .intro-hint { animation: none; opacity: 0.85; }
+  .intro.is-ready .intro-for { animation: none; }
   .intro-lens::after { animation: none; }
 }
 

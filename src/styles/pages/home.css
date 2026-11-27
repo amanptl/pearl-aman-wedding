@@ -36,11 +36,6 @@
 }
 .env-photo img { display: block; width: 100%; aspect-ratio: 228 / 260; height: auto; object-fit: cover; border-radius: calc(var(--e) * 1.6); }
 .env-pocket { inset: 0; z-index: 4; background-image: url("../../../assets/img/env-pocket.webp"); }
-/* The household's name, written on the pocket under the seal, clear of the corner bouquet on the left */
-.env-name {
-  left: 32%; right: 14%; bottom: 4%; z-index: 4; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-family: var(--font-script); font-size: calc(var(--e) * 7.4); line-height: 1.3; color: #e6d3a3; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
-}
 /* Corner bouquet (inspiration/envolope-insp.PNG): tucked into the bottom-left corner, spilling past the left edge,
    trails hanging below. Built by tools/make-env-sprig.mjs; aspect-ratio is the image's own size.
    On the pocket, not the flap, so it stays when the flap opens. The card sits above it once the film ends. */

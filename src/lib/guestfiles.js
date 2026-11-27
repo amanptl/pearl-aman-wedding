@@ -33,10 +33,10 @@ export function nameVariants(name) {
  * `eventSeats` is how many people may come to each event (0 = not invited). `eventIds` stays the events with a
  * count above 0. `seats` is the largest event count so older readers still have one number. Older lists with only
  * `seats` + `eventIds` (or members + plus-ones) keep working.
- * @param {{household:string, members?:(string|{id?:string,name:string})[], seats?:number, eventSeats?:Record<string,number>, eventIds?:string[], tags?:string[], plusOnes?:number, code?:string, greeting?:string, id?:string}} h
+ * @param {{household:string, members?:(string|{id?:string,name:string})[], seats?:number, eventSeats?:Record<string,number>, eventIds?:string[], tags?:string[], plusOnes?:number, code?:string, greeting?:string, id?:string, wave?:string, side?:string}} h
  * @param {Set<string>} [taken] codes already in use (the new code is added)
  */
-export function makeHousehold({ household, members = [], seats, eventSeats, eventIds = [], tags = [], plusOnes = 0, code, greeting, id }, taken = new Set()) {
+export function makeHousehold({ household, members = [], seats, eventSeats, eventIds = [], tags = [], plusOnes = 0, code, greeting, id, wave, side }, taken = new Set()) {
   if (!household || !String(household).trim()) throw new Error("Household name is required");
   let c = code;
   if (!c) { do c = randomCode(10); while (taken.has(c)); }
@@ -50,7 +50,37 @@ export function makeHousehold({ household, members = [], seats, eventSeats, even
   if (eventSeats && typeof eventSeats === "object") hh.eventSeats = { ...eventSeats };
   syncEventSeats(hh);
   if (id) hh.id = id;
+  if (wave) hh.wave = String(wave);
+  if (side) hh.side = String(side);
   return hh;
+}
+
+/* ---------- Invitation waves (admin only) ----------
+ * waves: [{ id, name, deadline: "2027-03-15", sent: bool, sentOn?: "2026-11-10" }]. A household's `wave` names one of them.
+ * Guests never see a wave: their record only carries `rsvpBy: { date, text }`, and households in a wave that
+ * hasn't been sent are left out of guests.json so their links and name lookup don't work yet. */
+const ord = (d) => d + (d % 100 >= 11 && d % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][d % 10] || "th");
+/** "2027-03-15" -> "March 15th, 2027" ("" for anything that isn't a date). */
+export function deadlineWords(date) {
+  const [y, m, d] = String(date || "").split("-").map(Number);
+  if (!y || !m || !d) return "";
+  const mon = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+  return `${mon} ${ord(d)}, ${y}`;
+}
+export const waveOf = (h, waves) => (h?.wave && Array.isArray(waves) ? waves.find((w) => w.id === h.wave) : undefined) || null;
+/** True when the household's wave exists and hasn't been sent: it stays out of guests.json. */
+export const isHeld = (h, waves) => { const w = waveOf(h, waves); return !!w && !w.sent; };
+/** The household's own reply-by date from its wave, or null (the site then uses content.rsvp). */
+export function rsvpByFor(h, waves) {
+  const w = waveOf(h, waves);
+  return w?.deadline ? { date: w.deadline, text: deadlineWords(w.deadline) } : null;
+}
+/** The reply-by date a page should show: the guest's own (from their wave) or the site-wide one. */
+export function rsvpDeadline(content, guest) {
+  const own = guest?.rsvpBy;
+  if (own?.date) return { date: own.date, text: own.text || deadlineWords(own.date), own: true };
+  const r = content?.rsvp || {};
+  return { date: r.deadline || "", text: r.deadlineText || "", own: false };
 }
 
 /** Site headings show the name on its own. Stored greetings often start with "Dear", which invitation messages add themselves. */
@@ -141,10 +171,10 @@ export function reuseCodes(households, existing = []) {
 }
 
 /**
- * @param {{households:object[], privateEvents:object[], passphrase:string, rsvpAdminKey?:string, iter?:number, presets?:object[], waTemplate?:string, waReminder?:string}} opts
+ * @param {{households:object[], privateEvents:object[], passphrase:string, rsvpAdminKey?:string, iter?:number, presets?:object[], waves?:object[], waTemplate?:string, waReminder?:string}} opts
  * @returns {Promise<{guestsJson:object, adminJson:object}>}
  */
-export async function buildGuestFiles({ households, privateEvents = [], passphrase, nameLookup = true, rsvpAdminKey, iter = 150000, presets, waTemplate, waReminder }) {
+export async function buildGuestFiles({ households, privateEvents = [], passphrase, nameLookup = true, rsvpAdminKey, iter = 150000, presets, waves, waTemplate, waReminder }) {
   if (!passphrase) throw new Error("A passphrase is required");
   const taken = new Set(households.map((h) => h.code).filter(Boolean));
   const hhs = households.map((h) => makeHousehold(h, taken));
@@ -155,9 +185,15 @@ export async function buildGuestFiles({ households, privateEvents = [], passphra
   const records = {};
   const names = {};
 
-  await Promise.all(hhs.map(async (h) => {
+  const live = hhs.filter((h) => !isHeld(h, waves)); // households in an unsent wave get no record and no name entries yet
+
+  await Promise.all(live.map(async (h) => {
     const guest = { ...h, privateEvents: h.eventIds.map((id) => evById.get(id)).filter(Boolean) };
     delete guest.id;
+    delete guest.wave;
+    delete guest.side;
+    const by = rsvpByFor(h, waves);
+    if (by) guest.rsvpBy = by;
     const key = await deriveKey(h.code, salt, iter);
     records[await sha256Hex(h.code)] = await encryptJSON(key, guest);
   }));
@@ -165,7 +201,7 @@ export async function buildGuestFiles({ households, privateEvents = [], passphra
   // Name index: normName -> Set(codes). Left empty when name lookup is off (site.nameLookup), so a known name can't be
   // turned into a household's code, even by reading guests.json directly.
   const byName = new Map();
-  if (nameLookup) for (const h of hhs) for (const m of h.members) for (const v of nameVariants(m.name)) {
+  if (nameLookup) for (const h of live) for (const m of h.members) for (const v of nameVariants(m.name)) {
     if (!byName.has(v)) byName.set(v, new Set());
     byName.get(v).add(h.code);
   }
@@ -183,6 +219,7 @@ export async function buildGuestFiles({ households, privateEvents = [], passphra
   const key = await deriveKey(passphrase, adminSalt, adminIter);
   const bundle = { households: hhs, privateEvents, rsvpAdminKey: rsvpAdminKey || randomCode(24) };
   if (presets) bundle.presets = presets; // editor-only extras, only ever stored inside the encrypted bundle
+  if (Array.isArray(waves) && waves.length) bundle.waves = waves;
   if (waTemplate) bundle.waTemplate = waTemplate;
   if (waReminder) bundle.waReminder = waReminder;
   const adminJson = { v: 1, kdf: { iter: adminIter, salt: adminSalt }, ...(await encryptJSON(key, bundle)) };

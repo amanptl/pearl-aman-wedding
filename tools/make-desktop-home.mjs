@@ -30,3 +30,6 @@ const wide = path.join(root, "assets/source/flatlay-desktop-v2.png");
 await sharp(wide).removeAlpha().webp({ quality: 88 }).toFile(out("flatlay-desktop-v2.webp"));
 const wm = await sharp(wide).metadata();
 console.log(`desktop flat lay v2 ${wm.width}x${wm.height} → assets/img/flatlay-desktop-v2.webp`);
+// The site shows a slightly lighter version of this image. This script writes the dark original, so afterwards copy
+// assets/img/flatlay-desktop-v2.webp into assets/source/home-original-dark/ and run: python tools/relight-home.py
+console.log("Note: now copy it into assets/source/home-original-dark/ and run python tools/relight-home.py");
